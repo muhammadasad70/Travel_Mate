@@ -1,0 +1,19 @@
+# Node + React Native
+node_modules/
+.expo/
+.expo-shared/
+
+# Go Binaries
+*.exe
+*.out
+
+# Logs & dumps
+*.log
+
+# macOS
+.DS_Store
+
+# Databases or big files
+*.db
+# Ignore docker volume data
+backend/docker-data/

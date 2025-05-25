@@ -1,0 +1,38 @@
+### Signup (Traveler or Vendor)
+POST http://localhost:8080/signup
+Content-Type: application/json
+
+{
+  "email": "asadc8430@gmail.com",
+  "password": "@54321",
+  "confirm": "@54321",
+  "role": "traveler"
+}
+
+###
+
+### Login
+POST http://localhost:8080/login
+Content-Type: application/json
+
+{
+  "email": "asadc8430@gmail.com",
+  "password": "@54321"
+}
+
+
+### Update Profile
+PUT http://localhost:8080/user/profile
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFzYWRjODQzMEBnbWFpbC5jb20iLCJleHAiOjE3NDY5OTQ3NTEsInVzZXJJZCI6Mn0.SCETnN0uKVwl9CeDMsVfNdHl7B9YzZ69Xg9mApnoo1c
+{
+  "first_name": "Muhammad",
+  "last_name": "Assad",
+  "country_code": "+92",
+  "phone": "3016996105",
+  "country": "Pakistan"
+}
+
+### Get Profile
+GET http://localhost:8080/user/profile
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFzYWRjODQzMEBnbWFpbC5jb20iLCJleHAiOjE3NDY5OTQ3NTEsInVzZXJJZCI6Mn0.SCETnN0uKVwl9CeDMsVfNdHl7B9YzZ69Xg9mApnoo1c
+
