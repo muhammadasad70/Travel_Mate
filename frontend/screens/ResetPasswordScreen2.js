@@ -1,4 +1,5 @@
-// import React, { useState } from 'react';
+
+// import React, { useState, useEffect } from 'react';
 // import {
 //   View,
 //   Text,
@@ -10,14 +11,14 @@
 //   Dimensions
 // } from 'react-native';
 // import { useNavigation } from '@react-navigation/native';
-// import api from '../api';
 
 // const { width } = Dimensions.get('window');
 
 // const ResetPasswordScreen2 = () => {
 //   const [token, setToken] = useState('');
 //   const [newPassword, setNewPassword] = useState('');
-//   const navigation = useNavigation(); // ✅ Add navigation
+//   const [redirect, setRedirect] = useState(false);
+//   const navigation = useNavigation();
 
 //   const handleResetPassword = async () => {
 //     if (!token || !newPassword) {
@@ -25,29 +26,30 @@
 //       return;
 //     }
 
-//     try {
-//       const res = await api.post('/reset-password', {
-//         token,
-//         new_password: newPassword
-//       });
+//     Alert.alert(
+//       '✅ Password Changed',
+//       'Your password has been updated successfully!',
+//       [
+//         {
+//           text: 'OK',
+//           onPress: () => setRedirect(true) // ✅ Set flag
+//         }
+//       ]
+//     );
 
-//       Alert.alert(
-//         '✅ Success',
-//         res.data.message || 'Password updated successfully.',
-//         [
-//           {
-//             text: 'OK',
-//             onPress: () => navigation.navigate('Login') // ✅ Redirect to login
-//           }
-//         ]
-//       );
-
-//       setToken('');
-//       setNewPassword('');
-//     } catch (err) {
-//       Alert.alert('❌ Failed', err.response?.data?.error || 'Server error');
-//     }
+//     setToken('');
+//     setNewPassword('');
 //   };
+
+//   useEffect(() => {
+//     if (redirect) {
+//       const timer = setTimeout(() => {
+//         navigation.navigate('Login');
+//       }, 200); // small delay to let alert close smoothly
+
+//       return () => clearTimeout(timer);
+//     }
+//   }, [redirect]);
 
 //   return (
 //     <ScrollView contentContainerStyle={styles.container}>
@@ -129,6 +131,7 @@
 // });
 
 // export default ResetPasswordScreen2;
+
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -138,11 +141,14 @@ import {
   StyleSheet,
   Alert,
   ScrollView,
-  Dimensions
+  Dimensions,
+  Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
+const isWeb = Platform.OS === 'web';
 
 const ResetPasswordScreen2 = () => {
   const [token, setToken] = useState('');
@@ -162,7 +168,7 @@ const ResetPasswordScreen2 = () => {
       [
         {
           text: 'OK',
-          onPress: () => setRedirect(true) // ✅ Set flag
+          onPress: () => setRedirect(true)
         }
       ]
     );
@@ -175,7 +181,7 @@ const ResetPasswordScreen2 = () => {
     if (redirect) {
       const timer = setTimeout(() => {
         navigation.navigate('Login');
-      }, 200); // small delay to let alert close smoothly
+      }, 200);
 
       return () => clearTimeout(timer);
     }
@@ -183,6 +189,12 @@ const ResetPasswordScreen2 = () => {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      {isWeb && (
+        <TouchableOpacity style={styles.backArrow} onPress={() => navigation.navigate('Login')}>
+          <Ionicons name="arrow-back" size={24} color="#007bff" />
+        </TouchableOpacity>
+      )}
+
       <View style={styles.card}>
         <Text style={styles.header}>Reset Password</Text>
 
@@ -217,6 +229,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     backgroundColor: '#f5f8fa'
+  },
+  backArrow: {
+    position: 'absolute',
+    top: 30,
+    left: 30,
+    zIndex: 10,
   },
   card: {
     width: '95%',

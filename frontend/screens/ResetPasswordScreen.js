@@ -6,10 +6,12 @@
 //   TextInput,
 //   TouchableOpacity,
 //   StyleSheet,
+//   Alert,
 //   ScrollView,
 //   Dimensions
 // } from 'react-native';
 // import { useNavigation } from '@react-navigation/native';
+// import api from "../api";
 
 // const { width } = Dimensions.get('window');
 
@@ -17,15 +19,26 @@
 //   const [email, setEmail] = useState('');
 //   const navigation = useNavigation();
 
-//   const handleResetRequest = () => {
+//   const handleResetRequest = async() => {
+//     console.log(email)
 //     if (!email) {
 //       alert('Please enter your email');
 //       return;
 //     }
+//     try {
+//       const res = await api.post('/email-varification', {
+//         email
+//       });
 
+//       Alert.alert('✅ Success', res.data.message);
+//     } catch (err) {
+//       Alert.alert('❌ Failed', err.response?.data?.error || 'Server error');
+//     }
+    
+//     // 🔒 Simulate email reset link
 //     alert('Reset link sent to your email. Please check your inbox.');
 //     setEmail('');
-//     navigation.navigate('Login');
+//     navigation.navigate('ResetPasswordScreen2'); // ✅ Adjusted to your actual route
 //   };
 
 //   return (
@@ -111,7 +124,7 @@
 //   }
 // });
 
-//export default ResetPasswordScreen;
+// export default ResetPasswordScreen;
 
 
 import React, { useState } from 'react';
@@ -123,41 +136,44 @@ import {
   StyleSheet,
   Alert,
   ScrollView,
-  Dimensions
+  Dimensions,
+  Platform
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import api from "../api";
 
 const { width } = Dimensions.get('window');
+const isWeb = Platform.OS === 'web';
 
 const ResetPasswordScreen = () => {
   const [email, setEmail] = useState('');
   const navigation = useNavigation();
 
-  const handleResetRequest = async() => {
-    console.log(email)
+  const handleResetRequest = async () => {
     if (!email) {
-      alert('Please enter your email');
+      Alert.alert('❗ Error', 'Please enter your email');
       return;
     }
-    try {
-      const res = await api.post('/email-varification', {
-        email
-      });
 
+    try {
+      const res = await api.post('/email-varification', { email });
       Alert.alert('✅ Success', res.data.message);
+      setEmail('');
+      navigation.navigate('ResetPasswordScreen2');
     } catch (err) {
       Alert.alert('❌ Failed', err.response?.data?.error || 'Server error');
     }
-    
-    // 🔒 Simulate email reset link
-    alert('Reset link sent to your email. Please check your inbox.');
-    setEmail('');
-    navigation.navigate('ResetPasswordScreen2'); // ✅ Adjusted to your actual route
   };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      {isWeb && (
+        <TouchableOpacity style={styles.backArrow} onPress={() => navigation.navigate('Login')}>
+          <Ionicons name="arrow-back" size={24} color="#007bff" />
+        </TouchableOpacity>
+      )}
+
       <View style={styles.card}>
         <Text style={styles.headerTitle}>Forgot Your Password?</Text>
         <Text style={styles.subtitleText}>
@@ -189,6 +205,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     backgroundColor: '#f5f8fa'
+  },
+  backArrow: {
+    position: 'absolute',
+    top: 30,
+    left: 30,
+    zIndex: 10,
   },
   card: {
     width: width < 420 ? '100%' : '90%',
@@ -240,4 +262,3 @@ const styles = StyleSheet.create({
 });
 
 export default ResetPasswordScreen;
-

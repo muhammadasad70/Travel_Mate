@@ -1,167 +1,4 @@
-// import React, { useState } from 'react';
-// import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-// import { Ionicons } from '@expo/vector-icons';
 
-// const RecommendationScreen = () => {
-//   const [selectedType, setSelectedType] = useState('crowdsourced');
-//   const [selectedTab, setSelectedTab] = useState('All');
-//   const tabs = ['All', 'Itineraries', 'Events', 'Destinations', 'Services', 'Restaurants'];
-
-//   const renderContent = () => {
-//     switch (selectedTab) {
-//       case 'Itineraries':
-//         return <Text style={styles.contentText}>🧳 Itinerary Cards ({selectedType})</Text>;
-//       case 'Events':
-//         return <Text style={styles.contentText}>🎉 Event Cards ({selectedType})</Text>;
-//       case 'Destinations':
-//         return <Text style={styles.contentText}>📍 Destination Cards ({selectedType})</Text>;
-//       case 'Services':
-//         return <Text style={styles.contentText}>🛎️ Vendor Services ({selectedType})</Text>;
-//       case 'Restaurants':
-//         return <Text style={styles.contentText}>🍽️ Restaurant Suggestions ({selectedType})</Text>;
-//       default:
-//         return <Text style={styles.contentText}>✨ Mixed recommendations from all categories ({selectedType})</Text>;
-//     }
-//   };
-
-//   return (
-//     <ScrollView contentContainerStyle={styles.container}>
-//       <Text style={styles.title}>Recommendations For You</Text>
-
-//       <View style={styles.toggleRow}>
-//         <TouchableOpacity
-//           style={[styles.card, selectedType === 'crowdsourced' && styles.cardActive]}
-//           onPress={() => setSelectedType('crowdsourced')}
-//           activeOpacity={0.8}
-//         >
-//           <View style={styles.cardContent}>
-//             <View>
-//               <Text style={styles.cardTitle}>Crowdsourced-Based</Text>
-//               <Text style={styles.cardSubtitle}>🔥 Trending itineraries, events, and more</Text>
-//             </View>
-//             <Ionicons name="chevron-forward" size={24} color="#888" />
-//           </View>
-//         </TouchableOpacity>
-
-//         <TouchableOpacity
-//           style={[styles.card, selectedType === 'ai' && styles.cardActive]}
-//           onPress={() => setSelectedType('ai')}
-//           activeOpacity={0.8}
-//         >
-//           <View style={styles.cardContent}>
-//             <View>
-//               <Text style={styles.cardTitle}>AI-Based</Text>
-//               <Text style={styles.cardSubtitle}>🤖 Personalized travel recommendations</Text>
-//             </View>
-//             <Ionicons name="chevron-forward" size={24} color="#888" />
-//           </View>
-//         </TouchableOpacity>
-//       </View>
-
-//       <View style={styles.tabRow}>
-//         {tabs.map((tab) => (
-//           <TouchableOpacity
-//             key={tab}
-//             style={[styles.tab, selectedTab === tab && styles.activeTab]}
-//             onPress={() => setSelectedTab(tab)}
-//           >
-//             <Text
-//               style={[styles.tabText, selectedTab === tab && styles.activeTabText]}
-//             >
-//               {tab}
-//             </Text>
-//           </TouchableOpacity>
-//         ))}
-//       </View>
-
-//       <View style={styles.contentArea}>{renderContent()}</View>
-//     </ScrollView>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   container: {
-//     padding: 24,
-//     backgroundColor: '#f2f2f2',
-//     flexGrow: 1,
-//   },
-//   title: {
-//     fontSize: 28,
-//     fontWeight: 'bold',
-//     marginBottom: 24,
-//     color: '#222',
-//   },
-//   toggleRow: {
-//     gap: 12,
-//   },
-//   card: {
-//     backgroundColor: '#ffffff',
-//     padding: 20,
-//     borderRadius: 16,
-//     marginBottom: 12,
-//     shadowColor: '#000',
-//     shadowOffset: { width: 0, height: 2 },
-//     shadowOpacity: 0.1,
-//     shadowRadius: 4,
-//     elevation: 3,
-//     borderWidth: 1,
-//     borderColor: 'transparent',
-//   },
-//   cardActive: {
-//     borderColor: '#007bff',
-//   },
-//   cardContent: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     alignItems: 'center',
-//   },
-//   cardTitle: {
-//     fontSize: 20,
-//     fontWeight: '600',
-//     color: '#000',
-//   },
-//   cardSubtitle: {
-//     fontSize: 14,
-//     color: '#555',
-//     marginTop: 4,
-//   },
-//   tabRow: {
-//     flexDirection: 'row',
-//     flexWrap: 'wrap',
-//     marginTop: 20,
-//     gap: 10,
-//   },
-//   tab: {
-//     backgroundColor: '#e0e0e0',
-//     paddingVertical: 8,
-//     paddingHorizontal: 14,
-//     borderRadius: 20,
-//   },
-//   activeTab: {
-//     backgroundColor: '#007bff',
-//   },
-//   tabText: {
-//     fontSize: 14,
-//     color: '#333',
-//   },
-//   activeTabText: {
-//     color: '#fff',
-//     fontWeight: 'bold',
-//   },
-//   contentArea: {
-//     backgroundColor: '#fff',
-//     borderRadius: 12,
-//     padding: 20,
-//     elevation: 3,
-//     marginTop: 16,
-//   },
-//   contentText: {
-//     fontSize: 16,
-//     color: '#444',
-//   },
-// });
-
-// export default RecommendationScreen;
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -178,24 +15,35 @@ const RecommendationScreen = () => {
 
   const dummyData = {
     crowdsourced: [
-      { type: 'Event', title: 'Hunza Music Festival' },
-      { type: 'Event', title: 'Swat Cultural Fair' },
-      { type: 'Itinerary', title: '5-Day Hunza Trip' },
-      { type: 'Itinerary', title: 'Weekend in Skardu' },
-      { type: 'Service', title: 'Hunza Guided Tour' },
-      { type: 'Service', title: 'Skardu Hotel Stay' },
-      { type: 'Destination', title: 'Hunza Valley' },
-      { type: 'Destination', title: 'Skardu Mountains' },
-      { type: 'Restaurant', title: 'Shinwari BBQ' },
-      { type: 'Restaurant', title: 'Mountain Café' }
+      { type: 'Itinerary', title: 'Backpacking through Fairy Meadows' },
+      { type: 'Itinerary', title: '5 Days in Skardu – Nature & Culture' },
+      { type: 'Itinerary', title: 'Chill Weekend in Murree & Patriata' },
+      { type: 'Event', title: 'Hunza Valley Summer Festival' },
+      { type: 'Event', title: 'Cultural Parade – Neelum Valley' },
+      { type: 'Event', title: 'Traditional Bonfire Night in Swat' },
+      { type: 'Service', title: 'Skardu Jeep Tour Service' },
+      { type: 'Service', title: 'Guided Hiking in Fairy Meadows' },
+      { type: 'Service', title: 'Naran Valley Photography Tour' },
+      { type: 'Destination', title: 'Fairy Meadows' },
+      { type: 'Destination', title: 'Skardu Lakes Region' },
+      { type: 'Destination', title: 'Shogran & Siri Paye Meadows' },
+      { type: 'Restaurant', title: 'Karakoram View Café' },
+      { type: 'Restaurant', title: 'The Glacier Bites, Skardu' },
+      { type: 'Restaurant', title: 'Pakhtoon Traditional Dine-In' },
     ],
     ai: [
-      { type: 'Event', title: 'AI Festival Matcher: Swat Edition' },
-      { type: 'Itinerary', title: 'AI-Picked Hunza Family Plan' },
-      { type: 'Service', title: 'Smart Skardu Tour Assistant' },
-      { type: 'Destination', title: 'AI Destination Pick: Hunza Lake' },
-      { type: 'Restaurant', title: 'AI Recommended BBQ Point' }
-    ]
+      { type: 'Itinerary', title: 'AI-Optimized 3-Day Hunza Nature Retreat' },
+      { type: 'Itinerary', title: 'Smart Trek Planner – Swat Adventure' },
+      { type: 'Itinerary', title: 'AI Customized Heritage & Food Itinerary' },
+      { type: 'Event', title: 'AI Match: Polo Tournament in Gilgit' },
+      { type: 'Event', title: 'Suggested Cultural Music Night in Chitral' },
+      { type: 'Service', title: 'AI Recommended Driver & Tour Guide' },
+      { type: 'Service', title: 'Instant Hotel Booking - Hunza Heights' },
+      { type: 'Destination', title: 'AI Suggests: Rama Meadows' },
+      { type: 'Destination', title: 'Top Pick: Gojal Valley' },
+      { type: 'Restaurant', title: 'AI-Picked: Local Grill House, Gilgit' },
+      { type: 'Restaurant', title: 'Smart Select: Taste of Baltistan Restaurant' },
+    ],
   };
 
   const getIcon = (type) => {

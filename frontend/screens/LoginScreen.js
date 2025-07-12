@@ -1,5 +1,4 @@
 
-
 // import React, { useState } from 'react';
 // import {
 //   View,
@@ -9,11 +8,13 @@
 //   StyleSheet,
 //   ScrollView,
 //   Alert,
-//   Dimensions
+//   Dimensions,
+//   Platform
 // } from 'react-native';
 // import { useNavigation, useRoute } from '@react-navigation/native';
 // import AsyncStorage from '@react-native-async-storage/async-storage';
 // import api from '../api';
+// import { FontAwesome } from '@expo/vector-icons';
 
 // const { width } = Dimensions.get('window');
 
@@ -25,34 +26,81 @@
 //   const [email, setEmail] = useState('');
 //   const [password, setPassword] = useState('');
 
+//   // const handleLogin = async () => {
+//   //   if (!email || !password) {
+//   //     Alert.alert('Error', 'Please enter both email and password.');
+//   //     return;
+//   //   }
+
+//   //   try {
+//   //     const res = await api.post('/login', {
+//   //       email,
+//   //       password,
+//   //       role: selectedRole || 'traveler',
+//   //     });
+
+//   //     const { token, role, name } = res.data;
+
+//   //     await AsyncStorage.setItem('token', token);
+
+//   //     Alert.alert('✅ Success', `Welcome back, ${name}!`);
+
+//   //     if (role === 'vendor') {
+//   //       navigation.navigate('VendorTypeSelectionScreen', { name, email });
+//   //     } else {
+//   //       navigation.navigate('TravelerDashboard', { name });
+//   //     }
+//   //   } catch (err) {
+//   //     Alert.alert('❌ Login failed', err.response?.data?.error || err.message);
+//   //   }
+//   // };
 //   const handleLogin = async () => {
 //     if (!email || !password) {
-//       Alert.alert('Error', 'Please enter both email and password.');
+//       if (Platform.OS === 'web') {
+//         alert('❗ Error: Please enter both email and password.');
+//       } else {
+//         Alert.alert('❗ Error', 'Please enter both email and password.');
+//       }
 //       return;
 //     }
-
+  
 //     try {
+//       console.log("📤 Sending login request with:", { email, password, role: selectedRole });
+  
 //       const res = await api.post('/login', {
 //         email,
 //         password,
 //         role: selectedRole || 'traveler',
 //       });
-
+  
 //       const { token, role, name } = res.data;
-
+  
 //       await AsyncStorage.setItem('token', token);
-
-//       Alert.alert('✅ Success', `Welcome back, ${name}!`);
-
+  
+//       if (Platform.OS === 'web') {
+//         alert(`✅ Welcome back, ${name || 'User'}!`);
+//       } else {
+//         Alert.alert('✅ Success', `Welcome back, ${name || 'User'}!`);
+//       }
+  
 //       if (role === 'vendor') {
 //         navigation.navigate('VendorTypeSelectionScreen', { name, email });
 //       } else {
 //         navigation.navigate('TravelerDashboard', { name });
 //       }
+  
 //     } catch (err) {
-//       Alert.alert('❌ Login failed', err.response?.data?.error || err.message);
+//       const errorMessage = err.response?.data?.error || err.message || 'Unexpected error';
+//       console.log("❌ Login failed:", errorMessage);
+  
+//       if (Platform.OS === 'web') {
+//         alert('❌ Login failed: ' + errorMessage);
+//       } else {
+//         Alert.alert('❌ Login failed', errorMessage);
+//       }
 //     }
 //   };
+  
 
 //   return (
 //     <ScrollView contentContainerStyle={styles.container}>
@@ -60,11 +108,11 @@
 //         <Text style={styles.headerTitle}>
 //           <Text style={styles.boldText}>Welcome Back 👋</Text>
 //         </Text>
-  
+
 //         <Text style={styles.subtitleText}>
 //           Log in to <Text style={styles.brandText}>TravelMate</Text> and continue your journey 🌍
 //         </Text>
-  
+
 //         <TextInput
 //           style={styles.input}
 //           placeholder="Email"
@@ -73,7 +121,7 @@
 //           onChangeText={setEmail}
 //           keyboardType="email-address"
 //         />
-  
+
 //         <TextInput
 //           style={styles.input}
 //           placeholder="Password"
@@ -82,34 +130,32 @@
 //           value={password}
 //           onChangeText={setPassword}
 //         />
-  
+
 //         <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
 //           <Text style={styles.buttonText}>Login</Text>
 //         </TouchableOpacity>
-  
+
 //         {/* Divider */}
 //         <View style={styles.dividerContainer}>
 //           <View style={styles.divider} />
 //           <Text style={styles.dividerText}>or</Text>
 //           <View style={styles.divider} />
 //         </View>
-  
-//         {/* Social Buttons */}
-//         <View style={styles.socialButtons}>
-//           <TouchableOpacity style={[styles.socialButton, styles.google]}>
-//             <Text style={styles.socialText}>Continue with Google</Text>
+
+//         {/* Social Icons */}
+//         <View style={styles.iconRow}>
+//           <TouchableOpacity style={styles.iconButton}>
+//             <FontAwesome name="google" size={22} color="#EA4335" />
 //           </TouchableOpacity>
-  
-//           <TouchableOpacity style={[styles.socialButton, styles.facebook]}>
-//             <Text style={styles.socialText}>Continue with Facebook</Text>
+//           <TouchableOpacity style={styles.iconButton}>
+//             <FontAwesome name="facebook" size={22} color="#3b5998" />
 //           </TouchableOpacity>
-  
-//           <TouchableOpacity style={[styles.socialButton, styles.apple]}>
-//             <Text style={styles.socialText}>Continue with Apple</Text>
+//           <TouchableOpacity style={styles.iconButton}>
+//             <FontAwesome name="apple" size={22} color="#000" />
 //           </TouchableOpacity>
 //         </View>
-  
-//         {/* Account Links - now properly spaced */}
+
+//         {/* Account Links */}
 //         <View style={styles.bottomLinks}>
 //           <Text style={styles.registerLink}>
 //             Don’t have an account?{' '}
@@ -120,7 +166,7 @@
 //               Create Account
 //             </Text>
 //           </Text>
-  
+
 //           <TouchableOpacity onPress={() => navigation.navigate('ResetPassword')}>
 //             <Text style={styles.forgotText}>Forgot Password?</Text>
 //           </TouchableOpacity>
@@ -128,8 +174,6 @@
 //       </View>
 //     </ScrollView>
 //   );
-  
-  
 // };
 
 // const styles = StyleSheet.create({
@@ -226,43 +270,29 @@
 //     color: '#888',
 //     fontSize: 14,
 //   },
-  
-//   socialButtons: {
+//   iconRow: {
+//     flexDirection: 'row',
+//     justifyContent: 'space-around',
 //     width: '100%',
 //     marginBottom: 20,
-//     gap: 12,
 //   },
-//   socialButton: {
-//     borderRadius: 10,
-//     paddingVertical: 12,
+//   iconButton: {
+//     backgroundColor: '#fff',
+//     width: 50,
+//     height: 50,
+//     borderRadius: 25,
+//     justifyContent: 'center',
 //     alignItems: 'center',
+//     elevation: 2,
 //   },
-//   socialText: {
-//     color: '#fff',
-//     fontWeight: '600',
-//     fontSize: 15,
-//   },
-//   google: {
-//     backgroundColor: '#EA4335',
-//   },
-//   facebook: {
-//     backgroundColor: '#3b5998',
-//   },
-//   apple: {
-//     backgroundColor: '#000',
-//   },
-  
 //   bottomLinks: {
 //     marginTop: 16,
 //     alignItems: 'center',
 //     gap: 6,
 //   },
-  
-  
 // });
 
 // export default LoginScreen;
-
 
 import React, { useState } from 'react';
 import {
@@ -273,12 +303,13 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
-  Dimensions
+  Dimensions,
+  Platform
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../api';
-import { FontAwesome } from '@expo/vector-icons';
+import { FontAwesome, Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
@@ -292,11 +323,17 @@ const LoginScreen = () => {
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Error', 'Please enter both email and password.');
+      if (Platform.OS === 'web') {
+        alert('❗ Error: Please enter both email and password.');
+      } else {
+        Alert.alert('❗ Error', 'Please enter both email and password.');
+      }
       return;
     }
 
     try {
+      console.log("📤 Sending login request with:", { email, password, role: selectedRole });
+
       const res = await api.post('/login', {
         email,
         password,
@@ -307,20 +344,41 @@ const LoginScreen = () => {
 
       await AsyncStorage.setItem('token', token);
 
-      Alert.alert('✅ Success', `Welcome back, ${name}!`);
+      if (Platform.OS === 'web') {
+        alert(`✅ Welcome back, ${name || 'User'}!`);
+      } else {
+        Alert.alert('✅ Success', `Welcome back, ${name || 'User'}!`);
+      }
 
       if (role === 'vendor') {
         navigation.navigate('VendorTypeSelectionScreen', { name, email });
       } else {
         navigation.navigate('TravelerDashboard', { name });
       }
+
     } catch (err) {
-      Alert.alert('❌ Login failed', err.response?.data?.error || err.message);
+      const errorMessage = err.response?.data?.error || err.message || 'Unexpected error';
+      console.log("❌ Login failed:", errorMessage);
+
+      if (Platform.OS === 'web') {
+        alert('❌ Login failed: ' + errorMessage);
+      } else {
+        Alert.alert('❌ Login failed', errorMessage);
+      }
     }
   };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      {Platform.OS === 'web' && (
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backArrow}
+        >
+          <Ionicons name="arrow-back" size={24} color="#0077b6" />
+        </TouchableOpacity>
+      )}
+
       <View style={styles.card}>
         <Text style={styles.headerTitle}>
           <Text style={styles.boldText}>Welcome Back 👋</Text>
@@ -352,14 +410,12 @@ const LoginScreen = () => {
           <Text style={styles.buttonText}>Login</Text>
         </TouchableOpacity>
 
-        {/* Divider */}
         <View style={styles.dividerContainer}>
           <View style={styles.divider} />
           <Text style={styles.dividerText}>or</Text>
           <View style={styles.divider} />
         </View>
 
-        {/* Social Icons */}
         <View style={styles.iconRow}>
           <TouchableOpacity style={styles.iconButton}>
             <FontAwesome name="google" size={22} color="#EA4335" />
@@ -372,7 +428,6 @@ const LoginScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Account Links */}
         <View style={styles.bottomLinks}>
           <Text style={styles.registerLink}>
             Don’t have an account?{' '}
@@ -400,6 +455,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: width < 360 ? 15 : 20,
     backgroundColor: '#f5f8fa'
+  },
+  backArrow: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    zIndex: 999,
   },
   card: {
     width: '95%',
