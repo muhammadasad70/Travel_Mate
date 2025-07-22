@@ -1,85 +1,62 @@
-
-
 import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
-  Image,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
+  Image,
+  ScrollView,
   useWindowDimensions,
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-const travelers = [
+const vendors = [
   {
-    name: 'Sarah M.',
-    title: 'Local Expert',
-    subtitle: 'Shared 25 itineraries',
-    tagColor: '#43a047',
+    name: 'TourNest Pvt Ltd',
+    category: 'Accommodation Provider',
+    services: '120 bookings/month',
     image: require('../../assets/boy_1.webp'),
   },
   {
-    name: 'James T.',
-    title: 'Top Reviewer',
-    subtitle: '95 contributions',
-    tagColor: '#fb8c00',
+    name: 'Cultura Exchange Hub',
+    category: 'Cultural Exchanger',
+    services: '65 sessions/month',
     image: require('../../assets/boy_2.jpg'),
   },
   {
-    name: 'Emma R.',
-    title: 'Cultural Explorer',
-    subtitle: '12 contributions',
-    tagColor: '#1e88e5',
+    name: 'Handmade Treasures',
+    category: 'Product Seller',
+    services: '40 items sold/week',
     image: require('../../assets/boy_3.jpg'),
   },
   {
-    name: 'Sarah M.',
-    title: 'Local Expert',
-    subtitle: 'Shared 25 itineraries',
-    tagColor: '#43a047',
+    name: 'Pak Tours',
+    category: 'Tour Guider',
+    services: '35 guided tours/month',
     image: require('../../assets/boy_1.webp'),
   },
   {
-    name: 'James T.',
-    title: 'Top Reviewer',
-    subtitle: '95 contributions',
-    tagColor: '#fb8c00',
+    name: 'RideOn Wheels',
+    category: 'Transport Provider',
+    services: '75 rides/week',
     image: require('../../assets/boy_2.jpg'),
   },
   {
-    name: 'Emma R.',
-    title: 'Cultural Explorer',
-    subtitle: '12 contributions',
-    tagColor: '#1e88e5',
+    name: 'Handmade Treasures',
+    category: 'Product Seller',
+    services: '40 items sold/week',
     image: require('../../assets/boy_3.jpg'),
   },
   {
-    name: 'Sarah M.',
-    title: 'Local Expert',
-    subtitle: 'Shared 25 itineraries',
-    tagColor: '#43a047',
+    name: 'Pak Tours',
+    category: 'Tour Guider',
+    services: '35 guided tours/month',
     image: require('../../assets/boy_1.webp'),
-  },
-  {
-    name: 'James T.',
-    title: 'Top Reviewer',
-    subtitle: '95 contributions',
-    tagColor: '#fb8c00',
-    image: require('../../assets/boy_2.jpg'),
-  },
-  {
-    name: 'Emma R.',
-    title: 'Cultural Explorer',
-    subtitle: '12 contributions',
-    tagColor: '#1e88e5',
-    image: require('../../assets/boy_3.jpg'),
   },
 ];
 
-const TopTravelers = () => {
+const TopServiceProviders = () => {
   const scrollRef = useRef();
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
@@ -110,7 +87,7 @@ const TopTravelers = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>Our Top Travelers</Text>
+      <Text style={styles.heading}>Traveler-Approved Services</Text>
 
       <View style={styles.rowContainer}>
         {!isMobile && showLeftArrow && (
@@ -128,15 +105,13 @@ const TopTravelers = () => {
           contentContainerStyle={styles.scrollContent}
           onContentSizeChange={(w) => setContentWidth(w)}
         >
-          {travelers.map((traveler, index) => (
+          {vendors.map((vendor, index) => (
             <View key={index} style={styles.card}>
-              <Image source={traveler.image} style={styles.image} />
+              <Image source={vendor.image} style={styles.image} />
               <View style={styles.infoBox}>
-                <Text style={styles.name}>{traveler.name}</Text>
-                <Text style={[styles.title, { backgroundColor: traveler.tagColor }]}>
-                  {traveler.title}
-                </Text>
-                <Text style={styles.subtitle}>{traveler.subtitle}</Text>
+                <Text style={styles.name}>{vendor.name}</Text>
+                <Text style={styles.category}>{vendor.category}</Text>
+                <Text style={styles.services}>{vendor.services}</Text>
               </View>
             </View>
           ))}
@@ -192,20 +167,16 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 6,
+    marginBottom: 4,
     color: '#222',
+    textAlign: 'center',
   },
-  title: {
-    fontSize: 12,
-    color: '#fff',
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 20,
-    overflow: 'hidden',
-    fontWeight: '500',
+  category: {
+    fontSize: 13,
+    color: '#4a90e2',
     marginBottom: 4,
   },
-  subtitle: {
+  services: {
     fontSize: 12,
     color: '#777',
   },
@@ -231,4 +202,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default TopTravelers;
+export default TopServiceProviders;

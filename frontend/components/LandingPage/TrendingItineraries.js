@@ -1,6 +1,5 @@
 
-
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -9,105 +8,121 @@ import {
   ScrollView,
   TouchableOpacity,
   useWindowDimensions,
+  Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 
 const itineraries = [
-  {
-    title: 'Hunza Valley',
-    author: 'Sarah M.',
-    rating: '4.8',
-    image: require('../../assets/hunza_2.jpg'),
-  },
-  {
-    title: 'Skardu',
-    author: 'Sarah M.',
-    rating: '4.7',
-    image: require('../../assets/skardu.jpg'),
-  },
-  {
-    title: 'Fairy Meadows',
-    author: 'Sarah M.',
-    rating: '4.8',
-    image: require('../../assets/fari_mados.jpg'),
-  },
-  {
-    title: 'Swat Valley',
-    author: 'Sarah M.',
-    rating: '4.6',
-    image: require('../../assets/swat.jpg'),
-  },
-  {
-    title: 'Naran & Kaghan',
-    author: 'Sarah M.',
-    rating: '4.7',
-    image: require('../../assets/naran_kagan.jpg'),
-  },
-  {
-    title: 'Neelum Valley',
-    author: 'Sarah M.',
-    rating: '4.6',
-    image: require('../../assets/nelam.jpg'),
-  },
+  { title: 'Hunza Valley', author: 'Sarah M.', rating: '4.8', image: require('../../assets/hunza_2.jpg') },
+  { title: 'Skardu', author: 'Sarah M.', rating: '4.7', image: require('../../assets/skardu.jpg') },
+  { title: 'Fairy Meadows', author: 'Sarah M.', rating: '4.8', image: require('../../assets/fari_mados.jpg') },
+  { title: 'Swat Valley', author: 'Sarah M.', rating: '4.6', image: require('../../assets/swat.jpg') },
+  { title: 'Naran & Kaghan', author: 'Sarah M.', rating: '4.7', image: require('../../assets/naran_kagan.jpg') },
+  { title: 'Neelum Valley', author: 'Sarah M.', rating: '4.6', image: require('../../assets/nelam.jpg') },
 ];
 
 const TrendingItineraries = () => {
   const navigation = useNavigation();
+  const scrollRef = useRef();
   const { width } = useWindowDimensions();
-  const isMobile = width < 600;
+  const isMobile = width < 768;
+  const [scrollX, setScrollX] = useState(0);
+  const [contentWidth, setContentWidth] = useState(0);
+  const [showLeftArrow, setShowLeftArrow] = useState(false);
+  const [showRightArrow, setShowRightArrow] = useState(true);
+
+  const SCROLL_AMOUNT = 300;
+
+  const updateArrowVisibility = (x) => {
+    setScrollX(x);
+    setShowLeftArrow(x > 0);
+    setShowRightArrow(x < contentWidth - width);
+  };
+
+  const scrollBy = (direction) => {
+    const newX = direction === 'left' ? scrollX - SCROLL_AMOUNT : scrollX + SCROLL_AMOUNT;
+    scrollRef.current.scrollTo({ x: newX, animated: true });
+    updateArrowVisibility(newX);
+  };
+
+  const handleScroll = (event) => {
+    const x = event.nativeEvent.contentOffset.x;
+    updateArrowVisibility(x);
+  };
 
   const handlePress = (item) => {
     navigation.navigate('ItineraryDetail', { itinerary: item });
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <View style={styles.container}>
       <Text style={styles.heading}>Trending Itineraries</Text>
-      <View style={styles.wrapper}>
-        <View style={[styles.grid, { justifyContent: isMobile ? 'center' : 'space-between' }]}>
+
+      <View style={styles.rowContainer}>
+        {!isMobile && showLeftArrow && (
+          <TouchableOpacity onPress={() => scrollBy('left')} style={styles.arrowLeft}>
+            <Ionicons name="chevron-back" size={24} color="#444" />
+          </TouchableOpacity>
+        )}
+
+        <ScrollView
+          horizontal
+          ref={scrollRef}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          onContentSizeChange={(w) => setContentWidth(w)}
+        >
           {itineraries.map((item, index) => (
             <TouchableOpacity
               key={index}
-              style={[
-                styles.card,
-                { width: isMobile ? '100%' : '48%' },
-              ]}
+              style={styles.card}
               onPress={() => handlePress(item)}
             >
               <Image source={item.image} style={styles.image} />
-              <Text style={styles.title}>{item.title}</Text>
-              <Text style={styles.author}>by {item.author}</Text>
-              <Text style={styles.rating}>⭐ {item.rating}</Text>
+              <View style={styles.infoBox}>
+                <Text style={styles.title}>{item.title}</Text>
+                <Text style={styles.author}>by {item.author}</Text>
+                <Text style={styles.rating}>⭐ {item.rating}</Text>
+              </View>
             </TouchableOpacity>
           ))}
-        </View>
+        </ScrollView>
+
+        {!isMobile && showRightArrow && (
+          <TouchableOpacity onPress={() => scrollBy('right')} style={styles.arrowRight}>
+            <Ionicons name="chevron-forward" size={24} color="#444" />
+          </TouchableOpacity>
+        )}
       </View>
-    </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     paddingVertical: 20,
-    alignItems: 'center',
     backgroundColor: '#fff',
+    alignItems: 'center',
   },
   heading: {
     fontSize: 26,
     fontWeight: 'bold',
     marginBottom: 20,
   },
-  wrapper: {
-    maxWidth: 1000,
+  rowContainer: {
+    position: 'relative',
     width: '100%',
+    justifyContent: 'center',
+  },
+  scrollContent: {
     paddingHorizontal: 16,
   },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
   card: {
-    marginBottom: 20,
+    width: 260,
+    marginHorizontal: 8,
     backgroundColor: '#f9f9f9',
     borderRadius: 12,
     overflow: 'hidden',
@@ -115,26 +130,47 @@ const styles = StyleSheet.create({
   },
   image: {
     width: '100%',
-    height: 120,
+    height: 140,
     resizeMode: 'cover',
+  },
+  infoBox: {
+    padding: 10,
   },
   title: {
     fontSize: 16,
     fontWeight: '600',
-    marginTop: 8,
-    marginHorizontal: 10,
+    marginBottom: 4,
+    color: '#222',
   },
   author: {
     fontSize: 12,
     color: '#666',
-    marginHorizontal: 10,
+    marginBottom: 4,
   },
   rating: {
     fontSize: 14,
     fontWeight: '500',
-    marginVertical: 8,
-    marginHorizontal: 10,
     color: '#ffa500',
+  },
+  arrowLeft: {
+    position: 'absolute',
+    left: 4,
+    top: '35%',
+    zIndex: 10,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    borderRadius: 16,
+    padding: 4,
+    elevation: 3,
+  },
+  arrowRight: {
+    position: 'absolute',
+    right: 4,
+    top: '35%',
+    zIndex: 10,
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    borderRadius: 16,
+    padding: 4,
+    elevation: 3,
   },
 });
 

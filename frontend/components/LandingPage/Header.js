@@ -1,351 +1,3 @@
-// import React, { useState } from 'react';
-// import {
-//   View,
-//   Text,
-//   TouchableOpacity,
-//   StyleSheet,
-//   Modal,
-//   useWindowDimensions,
-// } from 'react-native';
-// import { useNavigation } from '@react-navigation/native';
-
-// const Header = () => {
-//   const [menuVisible, setMenuVisible] = useState(false);
-//   const { width } = useWindowDimensions();
-//   const isMobile = width < 600;
-//   const navigation = useNavigation();
-
-//   const handleSignInPress = () => {
-//     setMenuVisible(false); // Close modal if open
-//     navigation.navigate('RoleSelection');
-//   };
-
-//   const menuItems = [
-//     { label: 'Home', onPress: () => {} },
-//     { label: 'About', onPress: () => {} },
-//     { label: 'Contact', onPress: () => {} },
-//     { label: 'Sign In', onPress: handleSignInPress },
-//     { label: 'EN ⌄', onPress: () => {} },
-//   ];
-
-//   return (
-//     <View style={styles.headerWrapper}>
-//       <View style={[styles.header, { width: width < 768 ? '100%' : '85%' }]}>
-//         {/* Left Section: Logo and Title */}
-//         <View style={styles.titleSection}>
-//           <Text style={styles.logo}>✈️</Text>
-//           <View>
-//             <Text style={styles.appTitle}>TravelMate</Text>
-//             <Text style={styles.tagline}>Let the Crowd Be Your Guide</Text>
-//           </View>
-//         </View>
-
-//         {/* Right Section */}
-//         {isMobile ? (
-//           <>
-//             <TouchableOpacity onPress={() => setMenuVisible(true)}>
-//               <Text style={styles.menuIcon}>☰</Text>
-//             </TouchableOpacity>
-
-//             {/* Modal menu */}
-//             <Modal
-//               visible={menuVisible}
-//               animationType="slide"
-//               transparent
-//               onRequestClose={() => setMenuVisible(false)}
-//             >
-//               <View style={styles.modalOverlay}>
-//                 <View style={styles.modalMenu}>
-//                   <TouchableOpacity onPress={() => setMenuVisible(false)}>
-//                     <Text style={styles.closeBtn}>✕ Close</Text>
-//                   </TouchableOpacity>
-//                   {menuItems.map((item, idx) => (
-//                     <TouchableOpacity key={idx} style={styles.menuItem} onPress={item.onPress}>
-//                       <Text style={styles.menuText}>{item.label}</Text>
-//                     </TouchableOpacity>
-//                   ))}
-//                 </View>
-//               </View>
-//             </Modal>
-//           </>
-//         ) : (
-//           <View style={styles.navLinks}>
-//             {menuItems.map((item, idx) => (
-//               <TouchableOpacity key={idx} onPress={item.onPress}>
-//                 <Text style={styles.navText}>{item.label}</Text>
-//               </TouchableOpacity>
-//             ))}
-//           </View>
-//         )}
-//       </View>
-//     </View>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   headerWrapper: {
-//     backgroundColor: '#fff',
-//     paddingTop: 40,
-//     paddingBottom: 24,
-//     paddingHorizontal: 24,
-//     alignItems: 'center',
-//     elevation: 4,
-//     shadowColor: '#000',
-//     shadowOffset: { width: 0, height: 2 },
-//     shadowOpacity: 0.08,
-//     shadowRadius: 3,
-//   },
-//   header: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     alignItems: 'center',
-//   },
-//   titleSection: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//   },
-//   logo: {
-//     fontSize: 40,
-//     marginRight: 14,
-//   },
-//   appTitle: {
-//     fontSize: 32,
-//     fontWeight: 'bold',
-//     color: '#003366',
-//   },
-//   tagline: {
-//     fontSize: 18,
-//     color: '#333',
-//     fontWeight: '500',
-//     marginTop: 2,
-//   },
-//   navLinks: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//   },
-//   navText: {
-//     fontSize: 16,
-//     color: '#003366',
-//     marginLeft: 20,
-//     fontWeight: '600',
-//   },
-//   menuIcon: {
-//     fontSize: 28,
-//     color: '#003366',
-//     fontWeight: 'bold',
-//     padding: 10,
-//   },
-//   modalOverlay: {
-//     flex: 1,
-//     backgroundColor: '#00000099',
-//     justifyContent: 'flex-end',
-//   },
-//   modalMenu: {
-//     backgroundColor: '#fff',
-//     padding: 20,
-//     borderTopLeftRadius: 20,
-//     borderTopRightRadius: 20,
-//   },
-//   closeBtn: {
-//     fontSize: 18,
-//     fontWeight: 'bold',
-//     color: '#007AFF',
-//     textAlign: 'right',
-//     marginBottom: 20,
-//   },
-//   menuItem: {
-//     paddingVertical: 12,
-//   },
-//   menuText: {
-//     fontSize: 16,
-//     fontWeight: '500',
-//     color: '#003366',
-//   },
-// });
-
-// export default Header;
-
-
-// Header.js
-
-
-
-// import React, { useState } from 'react';
-// import {
-//   View,
-//   Text,
-//   TouchableOpacity,
-//   StyleSheet,
-//   Modal,
-//   useWindowDimensions,
-// } from 'react-native';
-
-// const Header = ({ onNavigate }) => {
-//   const [menuVisible, setMenuVisible] = useState(false);
-//   const { width } = useWindowDimensions();
-//   const isMobile = width < 600;
-
-//   const menuItems = [
-//     { label: 'Home', key: 'home' },
-//     { label: 'About', key: 'about' },
-//     { label: 'Contact', key: 'contact' },
-//     { label: 'Sign In', key: 'signin' },
-//     { label: 'EN ⌄', key: 'lang' },
-//   ];
-
-//   const handleItemPress = (key) => {
-//     setMenuVisible(false);
-//     onNavigate?.(key);
-//   };
-
-//   return (
-//     <View style={styles.headerWrapper}>
-//       <View style={[styles.header, { width: width < 768 ? '100%' : '85%' }]}>
-//         {/* Logo and title */}
-//         <View style={styles.titleSection}>
-//           <Text style={styles.logo}>✈️</Text>
-//           <View>
-//             <Text style={styles.appTitle}>TravelMate</Text>
-//             <Text style={styles.tagline}>Let the Crowd Be Your Guide</Text>
-//           </View>
-//         </View>
-
-//         {/* Menu */}
-//         {isMobile ? (
-//           <>
-//             <TouchableOpacity onPress={() => setMenuVisible(true)}>
-//               <Text style={styles.menuIcon}>☰</Text>
-//             </TouchableOpacity>
-
-//             <Modal
-//               visible={menuVisible}
-//               animationType="slide"
-//               transparent
-//               onRequestClose={() => setMenuVisible(false)}
-//             >
-//               <View style={styles.modalOverlay}>
-//                 <View style={styles.modalMenu}>
-//                   <TouchableOpacity onPress={() => setMenuVisible(false)}>
-//                     <Text style={styles.closeBtn}>✕ Close</Text>
-//                   </TouchableOpacity>
-//                   {menuItems.map((item, idx) => (
-//                     <TouchableOpacity
-//                       key={idx}
-//                       style={styles.menuItem}
-//                       onPress={() => handleItemPress(item.key)}
-//                     >
-//                       <Text style={styles.menuText}>{item.label}</Text>
-//                     </TouchableOpacity>
-//                   ))}
-//                 </View>
-//               </View>
-//             </Modal>
-//           </>
-//         ) : (
-//           <View style={styles.navLinks}>
-//             {menuItems.map((item, idx) => (
-//               <TouchableOpacity key={idx} onPress={() => handleItemPress(item.key)}>
-//                 <Text
-//                   style={[styles.navText, item.key === 'home' ? styles.activeLink : null]}
-//                 >
-//                   {item.label}
-//                 </Text>
-//               </TouchableOpacity>
-//             ))}
-//           </View>
-//         )}
-//       </View>
-//     </View>
-//   );
-// };
-
-// const styles = StyleSheet.create({
-//   headerWrapper: {
-//     backgroundColor: '#fff',
-//     paddingTop: 40,
-//     paddingBottom: 24,
-//     paddingHorizontal: 24,
-//     alignItems: 'center',
-//     elevation: 4,
-//     shadowColor: '#000',
-//     shadowOffset: { width: 0, height: 2 },
-//     shadowOpacity: 0.08,
-//     shadowRadius: 3,
-//   },
-//   header: {
-//     flexDirection: 'row',
-//     justifyContent: 'space-between',
-//     alignItems: 'center',
-//   },
-//   titleSection: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//   },
-//   logo: {
-//     fontSize: 40,
-//     marginRight: 14,
-//   },
-//   appTitle: {
-//     fontSize: 32,
-//     fontWeight: 'bold',
-//     color: '#003366',
-//   },
-//   tagline: {
-//     fontSize: 18,
-//     color: '#333',
-//     fontWeight: '500',
-//     marginTop: 2,
-//   },
-//   navLinks: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//   },
-//   navText: {
-//     fontSize: 16,
-//     color: '#003366',
-//     marginLeft: 20,
-//     fontWeight: '600',
-//   },
-//   activeLink: {
-//     textDecorationLine: 'underline',
-//     color: '#0077b6',
-//   },
-//   menuIcon: {
-//     fontSize: 28,
-//     color: '#003366',
-//     fontWeight: 'bold',
-//     padding: 10,
-//   },
-//   modalOverlay: {
-//     flex: 1,
-//     backgroundColor: '#00000099',
-//     justifyContent: 'flex-end',
-//   },
-//   modalMenu: {
-//     backgroundColor: '#fff',
-//     padding: 20,
-//     borderTopLeftRadius: 20,
-//     borderTopRightRadius: 20,
-//   },
-//   closeBtn: {
-//     fontSize: 18,
-//     fontWeight: 'bold',
-//     color: '#007AFF',
-//     textAlign: 'right',
-//     marginBottom: 20,
-//   },
-//   menuItem: {
-//     paddingVertical: 12,
-//   },
-//   menuText: {
-//     fontSize: 16,
-//     fontWeight: '500',
-//     color: '#003366',
-//   },
-// });
-
-// export default Header;
-
 
 
 // import React, { useState } from 'react';
@@ -369,39 +21,43 @@
 //   const handleItemPress = (key) => {
 //     setMenuVisible(false);
 
-//     // ✅ Web-specific anchor scrolling
 //     if (Platform.OS === 'web') {
-//       let targetId = null;
-
-//       if (key === 'home') targetId = 'top';
-//       else if (key === 'about') targetId = 'about-section';
-//       else if (key === 'contact') targetId = 'footer-section';
-
+//       const targetIdMap = {
+//         home: 'top',
+//         itineraries: 'itineraries',
+//         events: 'events',
+//         travelers: 'travelers',
+//         culture: 'culture',
+//         contact: 'footer-section',
+//       };
+//       const targetId = targetIdMap[key];
 //       if (targetId) {
 //         const el = document.getElementById(targetId);
 //         if (el) el.scrollIntoView({ behavior: 'smooth' });
 //       }
 //     }
 
-//     // ✅ Navigation for Sign In
 //     if (key === 'signin') {
 //       navigation.navigate('RoleSelection');
+//     }
+
+//     if (key === 'vendor') {
+//       navigation.navigate('VendorTypeSelection');
 //     }
 //   };
 
 //   const menuItems = [
-//     { label: 'Home', key: 'home' },
-//     { label: 'About', key: 'about' },
-//     { label: 'Contact', key: 'contact' },
-//     { label: 'Sign In', key: 'signin' },
-//     { label: 'EN ⌄', key: 'lang' },
+//     { label: '🏠 Home', key: 'home' },
+//     { label: '📞 Contact', key: 'contact' },
+//     { label: '💼 Become a Vendor', key: 'vendor' },
+//     { label: '🔐 Sign In', key: 'signin' },
+//     { label: '🌐 EN ', key: 'lang' },
 //   ];
 
 //   return (
 //     <View style={styles.headerWrapper}>
-//       <View style={[styles.header, { width: width < 768 ? '100%' : '85%' }]}>
-//         {/* Logo and title */}
-//         <View style={styles.titleSection}>
+//       <View style={[styles.headerInner, { width: width < 900 ? '95%' : '85%' }]}>
+//         <View style={styles.brand}>
 //           <Text style={styles.logo}>✈️</Text>
 //           <View>
 //             <Text style={styles.appTitle}>TravelMate</Text>
@@ -409,7 +65,6 @@
 //           </View>
 //         </View>
 
-//         {/* Menu */}
 //         {isMobile ? (
 //           <>
 //             <TouchableOpacity onPress={() => setMenuVisible(true)}>
@@ -423,17 +78,17 @@
 //               onRequestClose={() => setMenuVisible(false)}
 //             >
 //               <View style={styles.modalOverlay}>
-//                 <View style={styles.modalMenu}>
+//                 <View style={styles.modalSheet}>
 //                   <TouchableOpacity onPress={() => setMenuVisible(false)}>
 //                     <Text style={styles.closeBtn}>✕ Close</Text>
 //                   </TouchableOpacity>
-//                   {menuItems.map((item, idx) => (
+//                   {menuItems.map((item) => (
 //                     <TouchableOpacity
-//                       key={idx}
-//                       style={styles.menuItem}
+//                       key={item.key}
+//                       style={styles.modalItem}
 //                       onPress={() => handleItemPress(item.key)}
 //                     >
-//                       <Text style={styles.menuText}>{item.label}</Text>
+//                       <Text style={styles.modalItemText}>{item.label}</Text>
 //                     </TouchableOpacity>
 //                   ))}
 //                 </View>
@@ -441,14 +96,10 @@
 //             </Modal>
 //           </>
 //         ) : (
-//           <View style={styles.navLinks}>
-//             {menuItems.map((item, idx) => (
-//               <TouchableOpacity key={idx} onPress={() => handleItemPress(item.key)}>
-//                 <Text
-//                   style={[styles.navText, item.key === 'home' ? styles.activeLink : null]}
-//                 >
-//                   {item.label}
-//                 </Text>
+//           <View style={styles.navRow}>
+//             {menuItems.map((item) => (
+//               <TouchableOpacity key={item.key} onPress={() => handleItemPress(item.key)}>
+//                 <Text style={styles.navLink}>{item.label}</Text>
 //               </TouchableOpacity>
 //             ))}
 //           </View>
@@ -460,92 +111,70 @@
 
 // const styles = StyleSheet.create({
 //   headerWrapper: {
-//     backgroundColor: '#fff',
-//     paddingTop: 40,
-//     paddingBottom: 24,
+//     backgroundColor: '#ffffff',
+//     paddingTop: 28,
+//     paddingBottom: 6,
 //     paddingHorizontal: 24,
 //     alignItems: 'center',
-//     elevation: 4,
 //     shadowColor: '#000',
 //     shadowOffset: { width: 0, height: 2 },
 //     shadowOpacity: 0.08,
-//     shadowRadius: 3,
+//     shadowRadius: 4,
+//     elevation: 4,
+//     ...(Platform.OS === 'web' && {
+//       position: 'fixed',
+//       top: 0,
+//       left: 0,
+//       right: 0,
+//       zIndex: 999,
+//       width: '100%',
+//     }),
 //   },
-//   header: {
+//   headerInner: {
 //     flexDirection: 'row',
 //     justifyContent: 'space-between',
 //     alignItems: 'center',
 //   },
-//   titleSection: {
+//   brand: {
 //     flexDirection: 'row',
 //     alignItems: 'center',
 //   },
-//   logo: {
-//     fontSize: 40,
-//     marginRight: 14,
-//   },
-//   appTitle: {
-//     fontSize: 32,
-//     fontWeight: 'bold',
+//   logo: { fontSize: 38, marginRight: 12 },
+//   appTitle: { fontSize: 30, fontWeight: '700', color: '#003366', lineHeight: 32 },
+//   tagline: { fontSize: 14, color: '#555', marginTop: 2, fontWeight: '500' },
+//   navRow: { flexDirection: 'row', alignItems: 'center' },
+//   navLink: {
+//     fontSize: 15,
 //     color: '#003366',
-//   },
-//   tagline: {
-//     fontSize: 18,
-//     color: '#333',
-//     fontWeight: '500',
-//     marginTop: 2,
-//   },
-//   navLinks: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//   },
-//   navText: {
-//     fontSize: 16,
-//     color: '#003366',
-//     marginLeft: 20,
+//     marginLeft: 22,
 //     fontWeight: '600',
 //   },
-//   activeLink: {
-//     textDecorationLine: 'underline',
-//     color: '#0077b6',
-//   },
-//   menuIcon: {
-//     fontSize: 28,
-//     color: '#003366',
-//     fontWeight: 'bold',
-//     padding: 10,
-//   },
+//   menuIcon: { fontSize: 30, color: '#003366', fontWeight: '700', padding: 8 },
 //   modalOverlay: {
 //     flex: 1,
-//     backgroundColor: '#00000099',
+//     backgroundColor: '#00000088',
 //     justifyContent: 'flex-end',
 //   },
-//   modalMenu: {
+//   modalSheet: {
 //     backgroundColor: '#fff',
-//     padding: 20,
-//     borderTopLeftRadius: 20,
-//     borderTopRightRadius: 20,
+//     padding: 24,
+//     borderTopLeftRadius: 22,
+//     borderTopRightRadius: 22,
 //   },
 //   closeBtn: {
 //     fontSize: 18,
-//     fontWeight: 'bold',
-//     color: '#007AFF',
+//     fontWeight: '700',
+//     color: '#0077b6',
 //     textAlign: 'right',
-//     marginBottom: 20,
+//     marginBottom: 16,
 //   },
-//   menuItem: {
-//     paddingVertical: 12,
-//   },
-//   menuText: {
-//     fontSize: 16,
-//     fontWeight: '500',
-//     color: '#003366',
-//   },
+//   modalItem: { paddingVertical: 12 },
+//   modalItemText: { fontSize: 16, fontWeight: '500', color: '#003366' },
 // });
 
 // export default Header;
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -554,6 +183,7 @@ import {
   Modal,
   useWindowDimensions,
   Platform,
+  Animated,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
@@ -563,15 +193,45 @@ const Header = () => {
   const isMobile = width < 600;
   const navigation = useNavigation();
 
+  const underlineLeft = useRef(new Animated.Value(0)).current;
+  const underlineWidth = useRef(new Animated.Value(0)).current;
+
+  const positions = useRef({}); // Track layout of each menu item
+  const [selectedItem, setSelectedItem] = useState('home');
+
+  const animateUnderline = (key) => {
+    const pos = positions.current[key];
+    if (!pos) return;
+
+    Animated.parallel([
+      Animated.timing(underlineLeft, {
+        toValue: pos.x,
+        duration: 200,
+        useNativeDriver: false,
+      }),
+      Animated.timing(underlineWidth, {
+        toValue: pos.width,
+        duration: 200,
+        useNativeDriver: false,
+      }),
+    ]).start();
+  };
+
   const handleItemPress = (key) => {
+    setSelectedItem(key);
+    animateUnderline(key);
     setMenuVisible(false);
 
     if (Platform.OS === 'web') {
-      let targetId = null;
-      if (key === 'home') targetId = 'top';
-      else if (key === 'about') targetId = 'about-section';
-      else if (key === 'contact') targetId = 'footer-section';
-
+      const targetIdMap = {
+        home: 'top',
+        itineraries: 'itineraries',
+        events: 'events',
+        travelers: 'travelers',
+        culture: 'culture',
+        contact: 'footer-section',
+      };
+      const targetId = targetIdMap[key];
       if (targetId) {
         const el = document.getElementById(targetId);
         if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -581,20 +241,24 @@ const Header = () => {
     if (key === 'signin') {
       navigation.navigate('RoleSelection');
     }
+
+    if (key === 'vendor') {
+      navigation.navigate('VendorTypeSelection');
+    }
   };
 
   const menuItems = [
-    { label: '🏡 Home', key: 'home' },
-    { label: 'ℹ️ About', key: 'about' },
+    { label: '🏠 Home', key: 'home' },
     { label: '📞 Contact', key: 'contact' },
+    { label: '💼 Become a Vendor', key: 'vendor' },
     { label: '🔐 Sign In', key: 'signin' },
-    { label: '🌐 EN ⌄', key: 'lang' },
+    { label: '🌐 EN ', key: 'lang' },
   ];
 
   return (
     <View style={styles.headerWrapper}>
-      <View style={[styles.header, { width: width < 768 ? '100%' : '85%' }]}>
-        <View style={styles.titleSection}>
+      <View style={[styles.headerInner, { width: width < 900 ? '95%' : '85%' }]}>
+        <View style={styles.brand}>
           <Text style={styles.logo}>✈️</Text>
           <View>
             <Text style={styles.appTitle}>TravelMate</Text>
@@ -615,17 +279,17 @@ const Header = () => {
               onRequestClose={() => setMenuVisible(false)}
             >
               <View style={styles.modalOverlay}>
-                <View style={styles.modalMenu}>
+                <View style={styles.modalSheet}>
                   <TouchableOpacity onPress={() => setMenuVisible(false)}>
                     <Text style={styles.closeBtn}>✕ Close</Text>
                   </TouchableOpacity>
-                  {menuItems.map((item, idx) => (
+                  {menuItems.map((item) => (
                     <TouchableOpacity
-                      key={idx}
-                      style={styles.menuItem}
+                      key={item.key}
+                      style={styles.modalItem}
                       onPress={() => handleItemPress(item.key)}
                     >
-                      <Text style={styles.menuText}>{item.label}</Text>
+                      <Text style={styles.modalItemText}>{item.label}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -633,14 +297,35 @@ const Header = () => {
             </Modal>
           </>
         ) : (
-          <View style={styles.navLinks}>
-            {menuItems.map((item, idx) => (
-              <TouchableOpacity key={idx} onPress={() => handleItemPress(item.key)}>
-                <Text style={[styles.navText, item.key === 'home' ? styles.activeLink : null]}>
+          <View style={styles.navRow}>
+            {menuItems.map((item) => (
+              <TouchableOpacity
+                key={item.key}
+                onPress={() => handleItemPress(item.key)}
+                onLayout={(e) => {
+                  const { x, width } = e.nativeEvent.layout;
+                  positions.current[item.key] = { x, width };
+                  if (item.key === selectedItem) {
+                    animateUnderline(item.key);
+                  }
+                }}
+              >
+                <Text
+                  style={[
+                    styles.navLink,
+                    selectedItem === item.key && styles.activeLink,
+                  ]}
+                >
                   {item.label}
                 </Text>
               </TouchableOpacity>
             ))}
+            <Animated.View
+              style={[
+                styles.animatedUnderline,
+                { left: underlineLeft, width: underlineWidth },
+              ]}
+            />
           </View>
         )}
       </View>
@@ -650,83 +335,94 @@ const Header = () => {
 
 const styles = StyleSheet.create({
   headerWrapper: {
-    backgroundColor: '#fff',
-    paddingTop: 40,
-    paddingBottom: 24,
+    backgroundColor: '#ffffff',
+    paddingTop: 28,
+    paddingBottom: 6,
     paddingHorizontal: 24,
     alignItems: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
+    ...(Platform.OS === 'web' && {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 999,
+      width: '100%',
+    }),
   },
-  header: {
+  headerInner: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  titleSection: {
+  brand: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   logo: {
-    fontSize: 40,
-    marginRight: 14,
+    fontSize: 38,
+    marginRight: 12,
   },
   appTitle: {
-    fontSize: 32,
-    fontWeight: 'bold',
+    fontSize: 30,
+    fontWeight: '700',
     color: '#003366',
+    lineHeight: 32,
   },
   tagline: {
-    fontSize: 18,
-    color: '#333',
-    fontWeight: '500',
+    fontSize: 14,
+    color: '#555',
     marginTop: 2,
+    fontWeight: '500',
   },
-  navLinks: {
+  navRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    position: 'relative',
   },
-  navText: {
-    fontSize: 16,
+  navLink: {
+    fontSize: 15,
     color: '#003366',
-    marginLeft: 20,
+    marginHorizontal: 14,
     fontWeight: '600',
+    paddingBottom: 4,
   },
   activeLink: {
-    textDecorationLine: 'underline',
     color: '#0077b6',
   },
+  animatedUnderline: {
+    position: 'absolute',
+    bottom: 0,
+    height: 2,
+    backgroundColor: '#0077b6',
+  },
   menuIcon: {
-    fontSize: 28,
+    fontSize: 30,
     color: '#003366',
-    fontWeight: 'bold',
-    padding: 10,
+    fontWeight: '700',
+    padding: 8,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: '#00000099',
+    backgroundColor: '#00000088',
     justifyContent: 'flex-end',
   },
-  modalMenu: {
+  modalSheet: {
     backgroundColor: '#fff',
-    padding: 20,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    padding: 24,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
   },
   closeBtn: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#007AFF',
+    fontWeight: '700',
+    color: '#0077b6',
     textAlign: 'right',
-    marginBottom: 20,
+    marginBottom: 16,
   },
-  menuItem: {
+  modalItem: {
     paddingVertical: 12,
   },
-  menuText: {
+  modalItemText: {
     fontSize: 16,
     fontWeight: '500',
     color: '#003366',
@@ -734,4 +430,3 @@ const styles = StyleSheet.create({
 });
 
 export default Header;
-
