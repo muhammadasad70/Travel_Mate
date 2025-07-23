@@ -78,22 +78,6 @@ const events = [
     tagColor: '#4fc3f7',
     image: require('../../assets/lok_mela.jpg'),
   },
-  {
-    title: 'Pakistan Fashion Week',
-    location: 'Karachi, Pakistan',
-    date: 'November 10, 2025',
-    type: 'Fashion',
-    tagColor: '#ef9a9a',
-    image: require('../../assets/fashion.jpg'),
-  },
-  {
-    title: 'Repeat - Shandur Polo Festival',
-    location: 'Chitral, Pakistan',
-    date: 'July 5, 2025',
-    type: 'Sports',
-    tagColor: '#fbbc04',
-    image: require('../../assets/sandu.jpg'),
-  },
 ];
 
 const TopEvents = () => {

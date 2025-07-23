@@ -70,13 +70,6 @@ const travelers = [
     tagColor: '#fb8c00',
     image: require('../../assets/boy_2.jpg'),
   },
-  {
-    name: 'Emma R.',
-    title: 'Cultural Explorer',
-    subtitle: '12 contributions',
-    tagColor: '#1e88e5',
-    image: require('../../assets/boy_3.jpg'),
-  },
 ];
 
 const TopTravelers = () => {

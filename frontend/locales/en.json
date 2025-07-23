@@ -1,0 +1,38 @@
+{
+  "home": "Home",
+  "contact": "Contact",
+  "become_vendor": "Become a Vendor",
+  "sign_in": "Sign In",
+
+  "select_language": "Select Language",
+
+
+  "search_placeholder": "Search destinations, events, cultures...",
+
+
+  "top_itineraries": "Top Itineraries",
+  "top_events": "Top Events",
+  "top_services": "Top Services",
+  "top_travelers": "Top Travelers",
+  "top_cultural": "Top Cultural Exchange",
+
+
+  "about_heading": "What is TravelMate?",
+  "about_description": "TravelMate helps travelers explore Pakistan like locals—by sharing and discovering real itineraries created by the community. Our goal is simple: Let the crowd be your guide. Plan smarter, experience more, and connect with real people.",
+  "about_learn_more": "Learn More",
+
+
+  "footer_about": "About",
+  "footer_about_travelmate": "About TravelMate",
+  "footer_contact_us": "Contact Us",
+  "footer_legal": "Legal",
+  "footer_terms": "Terms of Service",
+  "footer_privacy": "Privacy Policy",
+  "footer_cookies": "Cookies",
+  "footer_newsletter_heading": "Stay in the Loop",
+  "footer_newsletter_placeholder": "Enter your email",
+  "footer_subscribe": "Subscribe",
+  "footer_copyright": "© 2024 TravelMate. All rights reserved.",
+  "footer_language": "English (US)",
+  "footer_back_to_top": "Back to Top"
+}
