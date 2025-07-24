@@ -1,3 +1,4 @@
+
 // import React, { useRef, useState } from 'react';
 // import {
 //   View,
@@ -58,6 +59,7 @@
 //   const navigation = useNavigation();
 //   const scrollRef = useRef();
 //   const { width } = useWindowDimensions();
+//   const isMobile = width < 768;
 
 //   const [scrollX, setScrollX] = useState(0);
 //   const [contentWidth, setContentWidth] = useState(0);
@@ -89,10 +91,10 @@
 
 //   return (
 //     <View style={styles.container}>
-//       <Text style={styles.heading}>Cultural Exchange</Text>
+//       <Text style={styles.heading}>Cultural Connect</Text>
 
 //       <View style={styles.rowContainer}>
-//         {showLeftArrow && (
+//         {!isMobile && showLeftArrow && (
 //           <TouchableOpacity onPress={() => scrollBy('left')} style={styles.arrowLeft}>
 //             <Ionicons name="chevron-back" size={24} color="#444" />
 //           </TouchableOpacity>
@@ -124,7 +126,7 @@
 //           ))}
 //         </ScrollView>
 
-//         {showRightArrow && (
+//         {!isMobile && showRightArrow && (
 //           <TouchableOpacity onPress={() => scrollBy('right')} style={styles.arrowRight}>
 //             <Ionicons name="chevron-forward" size={24} color="#444" />
 //           </TouchableOpacity>
@@ -143,7 +145,7 @@
 //   heading: {
 //     fontSize: 26,
 //     fontWeight: 'bold',
-//     marginBottom: 10,
+//     marginBottom: 20,
 //     textAlign: 'center',
 //   },
 //   rowContainer: {
@@ -213,6 +215,7 @@
 
 // export default CulturalExchange;
 
+
 import React, { useRef, useState } from 'react';
 import {
   View,
@@ -225,6 +228,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import AuthPromptModal from './AuthPromptModal'; // ✅ Import modal
 
 const stories = [
   {
@@ -279,6 +283,7 @@ const CulturalExchange = () => {
   const [contentWidth, setContentWidth] = useState(0);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
+  const [showModal, setShowModal] = useState(false); // ✅
 
   const SCROLL_AMOUNT = 300;
 
@@ -299,8 +304,8 @@ const CulturalExchange = () => {
     updateArrowVisibility(x);
   };
 
-  const handlePress = (story) => {
-    navigation.navigate('CulturalDetail', { story });
+  const handlePress = () => {
+    setShowModal(true); // ✅ Show modal instead of direct navigation
   };
 
   return (
@@ -327,7 +332,7 @@ const CulturalExchange = () => {
             <TouchableOpacity
               key={index}
               style={styles.card}
-              onPress={() => handlePress(story)}
+              onPress={handlePress} // ✅ Show auth modal
             >
               <Image source={story.icon} style={styles.image} />
               <View style={styles.content}>
@@ -346,6 +351,16 @@ const CulturalExchange = () => {
           </TouchableOpacity>
         )}
       </View>
+
+      {/* ✅ Auth Modal */}
+      <AuthPromptModal
+        visible={showModal}
+        onClose={() => setShowModal(false)}
+        onContinue={() => {
+          setShowModal(false);
+          navigation.navigate('RoleSelection');
+        }}
+      />
     </View>
   );
 };
