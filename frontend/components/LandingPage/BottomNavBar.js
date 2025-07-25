@@ -1,4 +1,5 @@
 
+
 // import React from 'react';
 // import {
 //   View,
@@ -34,8 +35,10 @@
 //     }
 
 //     if (key === 'vendor') {
-//       navigation.navigate('RoleSelection');
+//       // Set role to vendor and navigate to Login directly
+//       navigation.navigate('Login', { selectedRole: 'vendor' });
 //     } else if (key === 'signin') {
+//       // Navigate to role selection screen
 //       navigation.navigate('RoleSelection');
 //     }
 //   };
@@ -83,6 +86,8 @@
 // export default BottomNavBar;
 
 
+
+
 import React from 'react';
 import {
   View,
@@ -104,6 +109,7 @@ const BottomNavBar = () => {
 
   const navItems = [
     { label: 'Be a Vendor', icon: 'storefront-outline', key: 'vendor' },
+    { label: 'About Us', icon: 'information-circle-outline', key: 'about' },
     { label: 'Sign In', icon: 'person-circle-outline', key: 'signin' },
   ];
 
@@ -112,29 +118,28 @@ const BottomNavBar = () => {
       const targetIdMap = {
         home: 'top',
         contact: 'footer-section',
+        about: 'about-section',
       };
       const el = document.getElementById(targetIdMap[key]);
       if (el) return el.scrollIntoView({ behavior: 'smooth' });
     }
 
     if (key === 'vendor') {
-      // Set role to vendor and navigate to Login directly
       navigation.navigate('Login', { selectedRole: 'vendor' });
     } else if (key === 'signin') {
-      // Navigate to role selection screen
       navigation.navigate('RoleSelection');
+    } else if (key === 'about') {
+      navigation.navigate('AboutTravelMatePage');
     }
   };
 
   return (
     <View style={styles.container}>
       {navItems.map((item) => (
-        <TouchableOpacity
-          key={item.key}
-          onPress={() => handlePress(item.key)}
-          style={styles.item}
-        >
-          <Ionicons name={item.icon} size={24} color="#003366" />
+        <TouchableOpacity key={item.key} onPress={() => handlePress(item.key)} style={styles.navItem}>
+          <View style={styles.iconWrapper}>
+            <Ionicons name={item.icon} size={20} color="#0077b6" />
+          </View>
           <Text style={styles.label}>{item.label}</Text>
         </TouchableOpacity>
       ))}
@@ -145,25 +150,39 @@ const BottomNavBar = () => {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: 0,
-    height: 60,
+    bottom: 10,
     width: '100%',
-    backgroundColor: '#fff',
-    borderTopColor: '#ddd',
+    height: 70,
+    backgroundColor: '#ffffffee',
     borderTopWidth: 1,
+    borderTopColor: '#ccc',
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: -2 },
+    shadowRadius: 4,
+    elevation: 4,
     zIndex: 999,
   },
-  item: {
+  navItem: {
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconWrapper: {
+    backgroundColor: '#e6f2ff',
+    padding: 10,
+    borderRadius: 30,
+    marginBottom: 4,
   },
   label: {
-    fontSize: 11,
+    fontSize: 12,
+    fontWeight: '500',
     color: '#003366',
-    marginTop: 2,
   },
 });
 
 export default BottomNavBar;
+
+
