@@ -927,12 +927,14 @@ const LoginScreen = () => {
       const { token, role, name } = res.data;
 
       await AsyncStorage.setItem('token', token);
+      await AsyncStorage.setItem('isLoggedIn', 'true'); // ✅ Save login status
 
       Alert.alert('✅ Success', `Welcome back, ${name}!`);
 
       if (role === 'vendor') {
         navigation.navigate('VendorTypeSelectionScreen', { name, email });
       } else {
+        // navigation.navigate('TravelerDashboard', { name });
         navigation.navigate('TravelerDashboard', { name });
       }
     } catch (err) {

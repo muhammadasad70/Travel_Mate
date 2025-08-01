@@ -7,12 +7,12 @@ import { RoleProvider } from './RoleContext';
 
 // Core Screens
 import LandingScreen from './screens/LandingScreen';
-import AboutTravelMatePage from './screens/AboutTravelMatePage'; // adjust path if needed
+import AboutTravelMatePage from './components/LandingPage/AboutTravelMatePage';
+import TravelerDashboard from './screens/TravelerDashboard';
 
 import RoleSelectionScreen from './screens/RoleSelectionScreen';
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
-import TravelerDashboard from './screens/TravelerDashboardScreen';
 import VendorDashboardScreen from './screens/VendorDashboardScreen';
 import PostLoginCheckScreen from './screens/PostLoginCheckScreen';
 import VendorVerificationScreen from './screens/VendorVerificationScreen';
@@ -82,20 +82,22 @@ export default function App() {
       <NavigationContainer>
         <Stack.Navigator
           initialRouteName="Landing Page"
+          // initialRouteName="TravelerDashboard"
           screenOptions={{ headerShown: false }}
         >
           {/* Core Navigation */}
           <Stack.Screen name="Landing Page" component={LandingScreen} />
+          <Stack.Screen name="AboutTravelMatePage" component={AboutTravelMatePage} />
+          <Stack.Screen name="TravelerDashboard" component={TravelerDashboard} />
+
           <Stack.Screen name="RoleSelection" component={RoleSelectionScreen} />
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
           <Stack.Screen name="PostLoginCheckScreen" component={PostLoginCheckScreen} />
           <Stack.Screen name="ItineraryDetailScreen" component={ItineraryDetailScreen} />
-          <Stack.Screen name="AboutTravelMatePage" component={AboutTravelMatePage} />
 
 
           {/* Dashboards */}
-          <Stack.Screen name="TravelerDashboard" component={TravelerDashboard} />
           <Stack.Screen name="RealTimeAlerts" component={RealTimeAlertsScreen} />
           <Stack.Screen name="VendorDashboardScreen" component={VendorDashboardScreen} />
           <Stack.Screen name="VendorVerificationScreen" component={VendorVerificationScreen} />

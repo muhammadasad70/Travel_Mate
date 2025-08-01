@@ -93,6 +93,7 @@ import {
 import Header from '../components/LandingPage/Header';
 import SearchBar from '../components/LandingPage/SearchBar';
 import AboutTravelMate from '../components/LandingPage/AboutTravelMate';
+import AboutTravelMatePage from '../components/LandingPage/AboutTravelMatePage';
 import TrendingItineraries from '../components/LandingPage/TrendingItineraries';
 import TopEvents from '../components/LandingPage/TopEvents';
 import TopTravelers from '../components/LandingPage/TopTravelers';
@@ -100,6 +101,9 @@ import CulturalExchange from '../components/LandingPage/CulturalExchange';
 import TopServiceProviders from '../components/LandingPage/TopServiceProviders';
 import Footer from '../components/LandingPage/Footer';
 import BottomNavBar from '../components/LandingPage/BottomNavBar';
+
+
+
 
 const LandingScreen = () => {
   const scrollRef = useRef();
