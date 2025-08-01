@@ -44,7 +44,8 @@
     "react-native-svg": "^15.12.0",
     "react-native-web": "^0.20.0",
     "undefined": "react-native-masked-view/masked-view",
-    "expo-linear-gradient": "~14.1.5"
+    "expo-linear-gradient": "~14.1.5",
+    "expo-blur": "~14.1.5"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"

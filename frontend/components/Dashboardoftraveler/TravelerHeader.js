@@ -732,14 +732,19 @@ const Header = () => {
 
   const mobileDropdownItems = [
     { label: '💼 Become a Vendor', key: 'vendor' },
-    { label: '👨‍👩‍👧 Groups', key: 'groups' },
     { label: '🔔 Notifications', key: 'alerts' },
     { label: '⚙️ Settings', key: 'settings' },
     { label: '🚪 Logout', key: 'logout' },
     
   ];
 
-  const dropdownItems = isMobile ? mobileDropdownItems : webDropdownItems;
+  const dropdownItems = isMobile
+  ? mobileDropdownItems
+  : webDropdownItems.filter(
+      (item) =>
+        !['explore', 'tripplanner', 'events', 'services'].includes(item.key)
+    );
+
 
   return (
     <View style={styles.headerWrapper}>
