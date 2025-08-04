@@ -1,5 +1,3 @@
-
-
 // import React from 'react';
 // import {
 //   View,
@@ -21,7 +19,7 @@
 //   if (!isMobile) return null;
 
 //   const navItems = [
-//     { label: 'Profile', icon: 'person-circle-outline', key: 'profile' },
+//     { label: 'Explore', icon: 'compass-outline', key: 'explore' },
 //     { label: 'Planner', icon: 'calendar-outline', key: 'tripplanner' },
 //     { label: 'Events', icon: 'sparkles-outline', key: 'events' },
 //     { label: 'Services', icon: 'briefcase-outline', key: 'services' },
@@ -30,27 +28,20 @@
 //   ];
 
 //   const handlePress = (key) => {
-//     switch (key) {
-//       case 'profile':
-//         navigation.navigate('TravelerProfile');
-//         break;
-//       case 'tripplanner':
-//         navigation.navigate('CrowdsourceItineraries');
-//         break;
-//       case 'events':
-//         navigation.navigate('EventIntegration');
-//         break;
-//       case 'services':
-//         navigation.navigate('TravelerServicesScreen');
-//         break;
-//       case 'community':
-//         navigation.navigate('CommunityScreen');
-//         break;
-//       case 'groups':
-//         navigation.navigate('GroupScreen');
-//         break;
-//       default:
-//         break;
+//     if (['explore', 'tripplanner', 'events', 'services'].includes(key)) {
+//       const event = new CustomEvent('tabChange', { detail: { tabKey: key } });
+//       window.dispatchEvent(event);
+//     } else {
+//       switch (key) {
+//         case 'community':
+//           navigation.navigate('CommunityScreen');
+//           break;
+//         case 'groups':
+//           navigation.navigate('GroupScreen');
+//           break;
+//         default:
+//           break;
+//       }
 //     }
 //   };
 
@@ -82,9 +73,7 @@
 //     alignItems: 'center',
 //     paddingBottom: Platform.OS === 'android' ? 10 : 0,
 //     zIndex: 999,
-//     backgroundColor: '#801010ff', // fallback if gradient not applied
-//     background: 'linear-gradient(to right, #ff758c, #ff7eb3, #667eea)', // not supported directly in RN
-//     backgroundColor: '#ffffffff',
+//     backgroundColor: '#ffffff',
 //     borderTopLeftRadius: 20,
 //     borderTopRightRadius: 20,
 //     shadowColor: '#000',
@@ -117,7 +106,6 @@
 
 // export default BottomNavBar;
 
-
 import React from 'react';
 import {
   View,
@@ -149,7 +137,7 @@ const BottomNavBar = ({ onTabChange }) => {
 
   const handlePress = (key) => {
     if (['explore', 'tripplanner', 'events', 'services'].includes(key)) {
-      onTabChange?.(key);
+      if (onTabChange) onTabChange(key); // Use prop callback
     } else {
       switch (key) {
         case 'community':
@@ -157,8 +145,6 @@ const BottomNavBar = ({ onTabChange }) => {
           break;
         case 'groups':
           navigation.navigate('GroupScreen');
-          break;
-        default:
           break;
       }
     }
@@ -180,6 +166,7 @@ const BottomNavBar = ({ onTabChange }) => {
   );
 };
 
+
 const styles = StyleSheet.create({
   safeContainer: {
     backgroundColor: 'transparent',
@@ -192,7 +179,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingBottom: Platform.OS === 'android' ? 10 : 0,
     zIndex: 999,
-    backgroundColor: '#ffffffff',
+    backgroundColor: '#ffffff',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     shadowColor: '#000',
@@ -224,4 +211,3 @@ const styles = StyleSheet.create({
 });
 
 export default BottomNavBar;
-

@@ -3,84 +3,60 @@ import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
-  Image,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
+  Image,
+  ScrollView,
   useWindowDimensions,
-  Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+// import AuthPromptModal from './AuthPromptModal'; // ✅ Import modal
 
-const events = [
+const stories = [
   {
-    title: 'Shandur Polo Festival',
-    location: 'Chitral, Pakistan',
-    date: 'July 5, 2025',
-    type: 'Sports',
-    tagColor: '#fbbc04',
-    image: require('../../assets/sandu.jpg'),
+    title: 'Learn Pottery in Multan',
+    button: 'Discover More Cultural Stories',
+    icon: require('../../assets/pottery_1.jpg'),
   },
   {
-    title: 'Lahore Literary Festival',
-    location: 'Lahore, Pakistan',
-    date: 'March 15, 2025',
-    type: 'Literary',
-    tagColor: '#b39ddb',
-    image: require('../../assets/lahore_event.jpg'),
+    title: 'Explore Calligraphy in Lahore',
+    button: 'Uncover Artistic Heritage',
+    icon: require('../../assets/calligraphy.jpg'),
   },
   {
-    title: 'Lok Mela',
-    location: 'Islamabad, Pakistan',
-    date: 'October 20, 2025',
-    type: 'Cultural',
-    tagColor: '#4fc3f7',
-    image: require('../../assets/lok_mela.jpg'),
+    title: 'Truck Art in Karachi',
+    button: 'Dive Into Colors of Culture',
+    icon: require('../../assets/pottery_1.jpg'),
   },
   {
-    title: 'Pakistan Fashion Week',
-    location: 'Karachi, Pakistan',
-    date: 'November 10, 2025',
-    type: 'Fashion',
-    tagColor: '#ef9a9a',
-    image: require('../../assets/fashion.jpg'),
+    title: 'Folk Music of Sindh',
+    button: 'Feel the Rhythms',
+    icon: require('../../assets/calligraphy.jpg'),
   },
   {
-    title: 'Repeat - Shandur Polo Festival',
-    location: 'Chitral, Pakistan',
-    date: 'July 5, 2025',
-    type: 'Sports',
-    tagColor: '#fbbc04',
-    image: require('../../assets/sandu.jpg'),
+    title: 'Learn Pottery in Multan',
+    button: 'Discover More Cultural Stories',
+    icon: require('../../assets/pottery_1.jpg'),
   },
   {
-    title: 'Shandur Polo Festival',
-    location: 'Chitral, Pakistan',
-    date: 'July 5, 2025',
-    type: 'Sports',
-    tagColor: '#fbbc04',
-    image: require('../../assets/sandu.jpg'),
+    title: 'Explore Calligraphy in Lahore',
+    button: 'Uncover Artistic Heritage',
+    icon: require('../../assets/calligraphy.jpg'),
   },
   {
-    title: 'Lahore Literary Festival',
-    location: 'Lahore, Pakistan',
-    date: 'March 15, 2025',
-    type: 'Literary',
-    tagColor: '#b39ddb',
-    image: require('../../assets/lahore_event.jpg'),
+    title: 'Truck Art in Karachi',
+    button: 'Dive Into Colors of Culture',
+    icon: require('../../assets/pottery_1.jpg'),
   },
   {
-    title: 'Lok Mela',
-    location: 'Islamabad, Pakistan',
-    date: 'October 20, 2025',
-    type: 'Cultural',
-    tagColor: '#4fc3f7',
-    image: require('../../assets/lok_mela.jpg'),
+    title: 'Folk Music of Sindh',
+    button: 'Feel the Rhythms',
+    icon: require('../../assets/calligraphy.jpg'),
   },
 ];
 
-const TopEvents = () => {
+const CulturalExchange = () => {
   const navigation = useNavigation();
   const scrollRef = useRef();
   const { width } = useWindowDimensions();
@@ -90,7 +66,7 @@ const TopEvents = () => {
   const [contentWidth, setContentWidth] = useState(0);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
-  const [showModal, setShowModal] = useState(false);
+  const [showModal, setShowModal] = useState(false); // ✅
 
   const SCROLL_AMOUNT = 300;
 
@@ -112,12 +88,12 @@ const TopEvents = () => {
   };
 
   const handlePress = () => {
-    setShowModal(true);
+    setShowModal(true); // ✅ Show modal instead of direct navigation
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>Buzzing Events</Text>
+      <Text style={styles.heading}>Cultural Connect</Text>
 
       <View style={styles.rowContainer}>
         {!isMobile && showLeftArrow && (
@@ -135,22 +111,18 @@ const TopEvents = () => {
           contentContainerStyle={styles.scrollContent}
           onContentSizeChange={(w) => setContentWidth(w)}
         >
-          {events.map((event, index) => (
+          {stories.map((story, index) => (
             <TouchableOpacity
               key={index}
               style={styles.card}
-              onPress={() => handlePress(event)}
+              onPress={handlePress} // ✅ Show auth modal
             >
-              <Image source={event.image} style={styles.image} />
-              <View style={styles.infoBox}>
-                <Text style={styles.title}>{event.title}</Text>
-                <Text style={styles.location}>{event.location}</Text>
-                <View style={styles.metaRow}>
-                  <Text style={styles.date}>{event.date}</Text>
-                  <Text style={[styles.tagText, { backgroundColor: event.tagColor }]}> 
-                    {event.type}
-                  </Text>
-                </View>
+              <Image source={story.icon} style={styles.image} />
+              <View style={styles.content}>
+                <Text style={styles.title}>{story.title}</Text>
+                <TouchableOpacity style={styles.button}>
+                  <Text style={styles.buttonText}>{story.button}</Text>
+                </TouchableOpacity>
               </View>
             </TouchableOpacity>
           ))}
@@ -168,7 +140,7 @@ const TopEvents = () => {
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: 20,
+    paddingVertical: 30,
     backgroundColor: '#fff',
     alignItems: 'center',
   },
@@ -176,6 +148,7 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: 'bold',
     marginBottom: 20,
+    textAlign: 'center',
   },
   rowContainer: {
     position: 'relative',
@@ -188,8 +161,8 @@ const styles = StyleSheet.create({
   card: {
     width: 260,
     marginHorizontal: 8,
-    backgroundColor: '#f9f9f9',
-    borderRadius: 12,
+    backgroundColor: '#fcfcfc',
+    borderRadius: 14,
     overflow: 'hidden',
     elevation: 2,
   },
@@ -198,36 +171,26 @@ const styles = StyleSheet.create({
     height: 140,
     resizeMode: 'cover',
   },
-  infoBox: {
-    padding: 10,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-    color: '#222',
-  },
-  location: {
-    fontSize: 13,
-    color: '#666',
-    marginBottom: 6,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  content: {
+    padding: 12,
     alignItems: 'center',
   },
-  date: {
-    fontSize: 12,
-    color: '#888',
+  title: {
+    fontSize: 15,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 10,
+    color: '#333',
   },
-  tagText: {
-    fontSize: 12,
-    color: '#fff',
-    paddingVertical: 4,
-    paddingHorizontal: 10,
+  button: {
+    backgroundColor: '#1abc9c',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
     borderRadius: 20,
-    overflow: 'hidden',
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 13,
     fontWeight: '500',
   },
   arrowLeft: {
@@ -252,4 +215,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default TopEvents;
+export default CulturalExchange;

@@ -3,94 +3,72 @@ import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
-  Image,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
+  Image,
+  ScrollView,
   useWindowDimensions,
-  Platform,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 
-const events = [
+
+const vendors = [
   {
-    title: 'Shandur Polo Festival',
-    location: 'Chitral, Pakistan',
-    date: 'July 5, 2025',
-    type: 'Sports',
-    tagColor: '#fbbc04',
-    image: require('../../assets/sandu.jpg'),
+    name: 'TourNest Pvt Ltd',
+    category: 'Accommodation Provider',
+    services: '120 bookings/month',
+    image: require('../../assets/boy_1.webp'),
   },
   {
-    title: 'Lahore Literary Festival',
-    location: 'Lahore, Pakistan',
-    date: 'March 15, 2025',
-    type: 'Literary',
-    tagColor: '#b39ddb',
-    image: require('../../assets/lahore_event.jpg'),
+    name: 'Cultura Exchange Hub',
+    category: 'Cultural Exchanger',
+    services: '65 sessions/month',
+    image: require('../../assets/boy_2.jpg'),
   },
   {
-    title: 'Lok Mela',
-    location: 'Islamabad, Pakistan',
-    date: 'October 20, 2025',
-    type: 'Cultural',
-    tagColor: '#4fc3f7',
-    image: require('../../assets/lok_mela.jpg'),
+    name: 'Handmade Treasures',
+    category: 'Product Seller',
+    services: '40 items sold/week',
+    image: require('../../assets/boy_3.jpg'),
   },
   {
-    title: 'Pakistan Fashion Week',
-    location: 'Karachi, Pakistan',
-    date: 'November 10, 2025',
-    type: 'Fashion',
-    tagColor: '#ef9a9a',
-    image: require('../../assets/fashion.jpg'),
+    name: 'Pak Tours',
+    category: 'Tour Guider',
+    services: '35 guided tours/month',
+    image: require('../../assets/boy_1.webp'),
   },
   {
-    title: 'Repeat - Shandur Polo Festival',
-    location: 'Chitral, Pakistan',
-    date: 'July 5, 2025',
-    type: 'Sports',
-    tagColor: '#fbbc04',
-    image: require('../../assets/sandu.jpg'),
+    name: 'RideOn Wheels',
+    category: 'Transport Provider',
+    services: '75 rides/week',
+    image: require('../../assets/boy_2.jpg'),
   },
   {
-    title: 'Shandur Polo Festival',
-    location: 'Chitral, Pakistan',
-    date: 'July 5, 2025',
-    type: 'Sports',
-    tagColor: '#fbbc04',
-    image: require('../../assets/sandu.jpg'),
+    name: 'Handmade Treasures',
+    category: 'Product Seller',
+    services: '40 items sold/week',
+    image: require('../../assets/boy_3.jpg'),
   },
   {
-    title: 'Lahore Literary Festival',
-    location: 'Lahore, Pakistan',
-    date: 'March 15, 2025',
-    type: 'Literary',
-    tagColor: '#b39ddb',
-    image: require('../../assets/lahore_event.jpg'),
-  },
-  {
-    title: 'Lok Mela',
-    location: 'Islamabad, Pakistan',
-    date: 'October 20, 2025',
-    type: 'Cultural',
-    tagColor: '#4fc3f7',
-    image: require('../../assets/lok_mela.jpg'),
+    name: 'Pak Tours',
+    category: 'Tour Guider',
+    services: '35 guided tours/month',
+    image: require('../../assets/boy_1.webp'),
   },
 ];
 
-const TopEvents = () => {
-  const navigation = useNavigation();
+const TopServiceProviders = () => {
   const scrollRef = useRef();
   const { width } = useWindowDimensions();
+  const navigation = useNavigation();
   const isMobile = width < 768;
 
   const [scrollX, setScrollX] = useState(0);
   const [contentWidth, setContentWidth] = useState(0);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
-  const [showModal, setShowModal] = useState(false);
+  const [showModal, setShowModal] = useState(false); // ✅ Modal control
 
   const SCROLL_AMOUNT = 300;
 
@@ -112,12 +90,12 @@ const TopEvents = () => {
   };
 
   const handlePress = () => {
-    setShowModal(true);
+    setShowModal(true); // ✅ Show modal on vendor card press
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>Buzzing Events</Text>
+      <Text style={styles.heading}>Traveler-Approved Services</Text>
 
       <View style={styles.rowContainer}>
         {!isMobile && showLeftArrow && (
@@ -135,22 +113,13 @@ const TopEvents = () => {
           contentContainerStyle={styles.scrollContent}
           onContentSizeChange={(w) => setContentWidth(w)}
         >
-          {events.map((event, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.card}
-              onPress={() => handlePress(event)}
-            >
-              <Image source={event.image} style={styles.image} />
+          {vendors.map((vendor, index) => (
+            <TouchableOpacity key={index} style={styles.card} onPress={handlePress}>
+              <Image source={vendor.image} style={styles.image} />
               <View style={styles.infoBox}>
-                <Text style={styles.title}>{event.title}</Text>
-                <Text style={styles.location}>{event.location}</Text>
-                <View style={styles.metaRow}>
-                  <Text style={styles.date}>{event.date}</Text>
-                  <Text style={[styles.tagText, { backgroundColor: event.tagColor }]}> 
-                    {event.type}
-                  </Text>
-                </View>
+                <Text style={styles.name}>{vendor.name}</Text>
+                <Text style={styles.category}>{vendor.category}</Text>
+                <Text style={styles.services}>{vendor.services}</Text>
               </View>
             </TouchableOpacity>
           ))}
@@ -192,6 +161,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
     elevation: 2,
+    alignItems: 'center',
   },
   image: {
     width: '100%',
@@ -200,35 +170,23 @@ const styles = StyleSheet.create({
   },
   infoBox: {
     padding: 10,
+    alignItems: 'center',
   },
-  title: {
+  name: {
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 4,
     color: '#222',
+    textAlign: 'center',
   },
-  location: {
+  category: {
     fontSize: 13,
-    color: '#666',
-    marginBottom: 6,
+    color: '#4a90e2',
+    marginBottom: 4,
   },
-  metaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  date: {
+  services: {
     fontSize: 12,
-    color: '#888',
-  },
-  tagText: {
-    fontSize: 12,
-    color: '#fff',
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 20,
-    overflow: 'hidden',
-    fontWeight: '500',
+    color: '#777',
   },
   arrowLeft: {
     position: 'absolute',
@@ -252,4 +210,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default TopEvents;
+export default TopServiceProviders;

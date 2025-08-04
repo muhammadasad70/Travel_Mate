@@ -10,77 +10,70 @@ import {
   useWindowDimensions,
   Platform,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 
-const events = [
+
+const travelers = [
   {
-    title: 'Shandur Polo Festival',
-    location: 'Chitral, Pakistan',
-    date: 'July 5, 2025',
-    type: 'Sports',
-    tagColor: '#fbbc04',
-    image: require('../../assets/sandu.jpg'),
+    name: 'Sarah M.',
+    title: 'Local Expert',
+    subtitle: 'Shared 25 itineraries',
+    tagColor: '#43a047',
+    image: require('../../assets/boy_1.webp'),
   },
   {
-    title: 'Lahore Literary Festival',
-    location: 'Lahore, Pakistan',
-    date: 'March 15, 2025',
-    type: 'Literary',
-    tagColor: '#b39ddb',
-    image: require('../../assets/lahore_event.jpg'),
+    name: 'James T.',
+    title: 'Top Reviewer',
+    subtitle: '95 contributions',
+    tagColor: '#fb8c00',
+    image: require('../../assets/boy_2.jpg'),
   },
   {
-    title: 'Lok Mela',
-    location: 'Islamabad, Pakistan',
-    date: 'October 20, 2025',
-    type: 'Cultural',
-    tagColor: '#4fc3f7',
-    image: require('../../assets/lok_mela.jpg'),
+    name: 'Emma R.',
+    title: 'Cultural Explorer',
+    subtitle: '12 contributions',
+    tagColor: '#1e88e5',
+    image: require('../../assets/boy_3.jpg'),
   },
   {
-    title: 'Pakistan Fashion Week',
-    location: 'Karachi, Pakistan',
-    date: 'November 10, 2025',
-    type: 'Fashion',
-    tagColor: '#ef9a9a',
-    image: require('../../assets/fashion.jpg'),
+    name: 'Sarah M.',
+    title: 'Local Expert',
+    subtitle: 'Shared 25 itineraries',
+    tagColor: '#43a047',
+    image: require('../../assets/boy_1.webp'),
   },
   {
-    title: 'Repeat - Shandur Polo Festival',
-    location: 'Chitral, Pakistan',
-    date: 'July 5, 2025',
-    type: 'Sports',
-    tagColor: '#fbbc04',
-    image: require('../../assets/sandu.jpg'),
+    name: 'James T.',
+    title: 'Top Reviewer',
+    subtitle: '95 contributions',
+    tagColor: '#fb8c00',
+    image: require('../../assets/boy_2.jpg'),
   },
   {
-    title: 'Shandur Polo Festival',
-    location: 'Chitral, Pakistan',
-    date: 'July 5, 2025',
-    type: 'Sports',
-    tagColor: '#fbbc04',
-    image: require('../../assets/sandu.jpg'),
+    name: 'Emma R.',
+    title: 'Cultural Explorer',
+    subtitle: '12 contributions',
+    tagColor: '#1e88e5',
+    image: require('../../assets/boy_3.jpg'),
   },
   {
-    title: 'Lahore Literary Festival',
-    location: 'Lahore, Pakistan',
-    date: 'March 15, 2025',
-    type: 'Literary',
-    tagColor: '#b39ddb',
-    image: require('../../assets/lahore_event.jpg'),
+    name: 'Sarah M.',
+    title: 'Local Expert',
+    subtitle: 'Shared 25 itineraries',
+    tagColor: '#43a047',
+    image: require('../../assets/boy_1.webp'),
   },
   {
-    title: 'Lok Mela',
-    location: 'Islamabad, Pakistan',
-    date: 'October 20, 2025',
-    type: 'Cultural',
-    tagColor: '#4fc3f7',
-    image: require('../../assets/lok_mela.jpg'),
+    name: 'James T.',
+    title: 'Top Reviewer',
+    subtitle: '95 contributions',
+    tagColor: '#fb8c00',
+    image: require('../../assets/boy_2.jpg'),
   },
 ];
 
-const TopEvents = () => {
+const TopTravelers = () => {
   const navigation = useNavigation();
   const scrollRef = useRef();
   const { width } = useWindowDimensions();
@@ -117,7 +110,7 @@ const TopEvents = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>Buzzing Events</Text>
+      <Text style={styles.heading}>Our Top Travelers</Text>
 
       <View style={styles.rowContainer}>
         {!isMobile && showLeftArrow && (
@@ -135,22 +128,19 @@ const TopEvents = () => {
           contentContainerStyle={styles.scrollContent}
           onContentSizeChange={(w) => setContentWidth(w)}
         >
-          {events.map((event, index) => (
+          {travelers.map((traveler, index) => (
             <TouchableOpacity
               key={index}
               style={styles.card}
-              onPress={() => handlePress(event)}
+              onPress={handlePress}
             >
-              <Image source={event.image} style={styles.image} />
+              <Image source={traveler.image} style={styles.image} />
               <View style={styles.infoBox}>
-                <Text style={styles.title}>{event.title}</Text>
-                <Text style={styles.location}>{event.location}</Text>
-                <View style={styles.metaRow}>
-                  <Text style={styles.date}>{event.date}</Text>
-                  <Text style={[styles.tagText, { backgroundColor: event.tagColor }]}> 
-                    {event.type}
-                  </Text>
-                </View>
+                <Text style={styles.name}>{traveler.name}</Text>
+                <Text style={[styles.title, { backgroundColor: traveler.tagColor }]}>
+                  {traveler.title}
+                </Text>
+                <Text style={styles.subtitle}>{traveler.subtitle}</Text>
               </View>
             </TouchableOpacity>
           ))}
@@ -192,6 +182,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
     elevation: 2,
+    alignItems: 'center',
   },
   image: {
     width: '100%',
@@ -200,28 +191,15 @@ const styles = StyleSheet.create({
   },
   infoBox: {
     padding: 10,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-    color: '#222',
-  },
-  location: {
-    fontSize: 13,
-    color: '#666',
-    marginBottom: 6,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
   },
-  date: {
-    fontSize: 12,
-    color: '#888',
+  name: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 6,
+    color: '#222',
   },
-  tagText: {
+  title: {
     fontSize: 12,
     color: '#fff',
     paddingVertical: 4,
@@ -229,6 +207,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     overflow: 'hidden',
     fontWeight: '500',
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 12,
+    color: '#777',
   },
   arrowLeft: {
     position: 'absolute',
@@ -252,4 +235,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default TopEvents;
+export default TopTravelers;
