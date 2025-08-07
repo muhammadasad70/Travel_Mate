@@ -73,8 +73,6 @@ import Chat_With_Customers from './screens/Product/Chat_With_Customers';
 import Customer_Feedback from './screens/Product/Customer_Feedback';
 import Product_Sales_Analytics from './screens/Product/Product_Sales_Analytics';
 import Upload_Product_Gallery from './screens/Product/Upload_Product_Gallery';
-import TravelerDashboardScreen from './screens/TravelerDashboardScreen';
-
 const Stack = createNativeStackNavigator();
 
 export default function App() {
