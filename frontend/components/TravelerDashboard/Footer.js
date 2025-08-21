@@ -92,7 +92,7 @@ const Footer = ({ onScrollToTop }) => {
 
 const styles = StyleSheet.create({
   footerWrapper: {
-    backgroundColor: '#f6fbff',
+    backgroundColor: '#F7F7F7',
     paddingVertical: 20,
     paddingHorizontal: 20,
     position: 'relative',

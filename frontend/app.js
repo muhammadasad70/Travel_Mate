@@ -20,7 +20,7 @@ import RealTimeAlertsScreen from './screens/RealTimeAlertsScreen';
 import EventIntegrationScreen from './screens/EventIntegrationScreen';
 
 // Traveler Screens
-import TravelerProfileScreen from './screens/traveler/TravelerProfileScreen';
+import TravelerProfile from './screens/TravelerProfile';
 import ManageTravelerProfileScreen from './screens/traveler/ManageTravelerProfileScreen';
 import VendorProfileScreen from './screens/vendor/VendorProfileScreen';
 import ManageVendorProfileScreen from './screens/vendor/ManageVendorProfileScreen';
@@ -80,8 +80,10 @@ export default function App() {
     <RoleProvider>
       <NavigationContainer>
         <Stack.Navigator
-          initialRouteName="Landing Page"
-          // initialRouteName="TravelerDashboard"
+          // initialRouteName="Landing Page"
+          initialRouteName="TravelerDashboard"
+          // initialRouteName="TravelerProfile"
+
           screenOptions={{ headerShown: false }}
         >
           {/* Core Navigation */}
@@ -103,7 +105,7 @@ export default function App() {
           <Stack.Screen name="EventIntegration" component={EventIntegrationScreen} />
 
           {/* Traveler Screens */}
-          <Stack.Screen name="TravelerProfile" component={TravelerProfileScreen} />
+          <Stack.Screen name="TravelerProfile" component={TravelerProfile} /> 
           <Stack.Screen name="ManageTravelerProfile" component={ManageTravelerProfileScreen} />
           <Stack.Screen name="VendorProfile" component={VendorProfileScreen} />
           <Stack.Screen name="ManageVendorProfile" component={ManageVendorProfileScreen} />

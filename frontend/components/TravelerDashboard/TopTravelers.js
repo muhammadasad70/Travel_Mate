@@ -159,7 +159,7 @@ const TopTravelers = () => {
 const styles = StyleSheet.create({
   container: {
     paddingVertical: 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#F7F7F7',
     alignItems: 'center',
   },
   heading: {

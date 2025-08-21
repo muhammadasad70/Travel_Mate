@@ -141,7 +141,7 @@ const CulturalExchange = () => {
 const styles = StyleSheet.create({
   container: {
     paddingVertical: 30,
-    backgroundColor: '#fff',
+    backgroundColor: '#F7F7F7',
     alignItems: 'center',
   },
   heading: {

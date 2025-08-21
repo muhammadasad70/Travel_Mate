@@ -112,7 +112,7 @@ const SearchBar = () => {
 
 const styles = StyleSheet.create({
   wrapper: {
-    backgroundColor: '#f7f9fb',
+    backgroundColor: '#F7F7F7',
     paddingBottom: 60,
     alignItems: 'center',
   },
