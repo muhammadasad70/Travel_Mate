@@ -1,11 +1,9 @@
 
-
 // import React, { useState, useEffect } from 'react';
 // import {
 //   View,
 //   StyleSheet,
 //   ScrollView,
-//   Text,
 //   Platform,
 // } from 'react-native';
 
@@ -25,6 +23,8 @@
 // import EventIntegration from './EventIntegrationScreen';
 // import TravelerServicesScreen from './VendorServices/TravelerServicesScreen';
 // import TravelerNotifications from './RealTimeAlertsScreen';
+// import TravelerProfile from './TravelerProfile'; // ✅ NEW
+// import GroupScreen from './GroupScreen'; // ⬅️ import it
 
 // const TravelerDashboard = () => {
 //   const route = useRoute();
@@ -33,7 +33,7 @@
 //   // ✅ Mobile tab switching via route.params
 //   useEffect(() => {
 //     if (route.params?.tabKey) {
-//       const normalizedKey = route.params.tabKey.split('-')[0];
+//       const normalizedKey = String(route.params.tabKey).split('-')[0];
 //       setSelectedTab(normalizedKey);
 //     }
 //   }, [route.params?.tabKey]);
@@ -42,7 +42,7 @@
 //   useEffect(() => {
 //     const handleTabChange = (e) => {
 //       if (e?.detail?.tabKey) {
-//         const normalizedKey = e.detail.tabKey.split('-')[0];
+//         const normalizedKey = String(e.detail.tabKey).split('-')[0];
 //         setSelectedTab(normalizedKey);
 //       }
 //     };
@@ -54,33 +54,39 @@
 //       };
 //     }
 //   }, []);
-
 //   const renderCurrentTab = () => {
-//     switch (selectedTab) {
-//       case 'tripplanner':
-//         return <CrowdsourceItineraries />;
-//       case 'events':
-//         return <EventIntegration />;
-//       case 'services':
-//         return <TravelerServicesScreen />;
-//       case 'notification':
-//         return <TravelerNotifications />;
-//       default:
-//         return (
-//           <>
-//             <TrendingItineraries />
-//             <TopEvents />
-//             <TopTravelers />
-//             <CulturalExchange />
-//             <TopServiceProviders />
-//             <Footer />
-//           </>
-//         );
-//     }
-//   };
+//   switch (selectedTab) {
+//     case 'tripplanner':
+//       return <CrowdsourceItineraries />;
+//     case 'events':
+//       return <EventIntegration />;
+//     case 'services':
+//       return <TravelerServicesScreen />;
+//     case 'notification':
+//       return <TravelerNotifications />;
+//     case 'profile':
+//       return <TravelerProfile inPage />;
+//     case 'groups':                               // ⬅️ NEW
+//       return <GroupScreen inPage />;            // ⬅️ embed, no nested scroll
+//     default:
+//       return (
+//         <>
+//           <TrendingItineraries />
+//           <TopEvents />
+//           <TopTravelers />
+//           <CulturalExchange />
+//           <TopServiceProviders />
+//           <Footer />
+//         </>
+//       );
+//   }
+// };
+
+
 
 //   return (
 //     <View style={styles.container}>
+//       {/* Header can still call onTabChange directly if you pass it down */}
 //       <Header onTabChange={setSelectedTab} />
 //       <ScrollView contentContainerStyle={styles.contentWrapper}>
 //         {renderCurrentTab()}
@@ -108,15 +114,12 @@
 
 
 
-// frontend/screens/TravelerDashboard.jsx
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  StyleSheet,
-  ScrollView,
-  Platform,
-} from 'react-native';
 
+
+
+
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, ScrollView, Platform } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 
 import Header from '../components/TravelerDashboard/TravelerHeaderScreen';
@@ -133,13 +136,19 @@ import CrowdsourceItineraries from './CrowdsourceItineraries/CrowdsourceItinerar
 import EventIntegration from './EventIntegrationScreen';
 import TravelerServicesScreen from './VendorServices/TravelerServicesScreen';
 import TravelerNotifications from './RealTimeAlertsScreen';
-import TravelerProfile from './TravelerProfile'; // ✅ NEW
+import TravelerProfile from './TravelerProfile';
+import GroupScreen from './GroupScreen';
+import CommunityHubScreen from './CommunityHubScreen';
+import OfflineScreen from './OfflineScreen';
+// ⬇️ NEW: render these in-page too
+import CommunityScreen from './CommunityScreen';
+import MessagesScreen from './MessagesScreen';
 
 const TravelerDashboard = () => {
   const route = useRoute();
   const [selectedTab, setSelectedTab] = useState('explore');
 
-  // ✅ Mobile tab switching via route.params
+  // Mobile: tab switching via route.params
   useEffect(() => {
     if (route.params?.tabKey) {
       const normalizedKey = String(route.params.tabKey).split('-')[0];
@@ -147,7 +156,7 @@ const TravelerDashboard = () => {
     }
   }, [route.params?.tabKey]);
 
-  // ✅ Web tab switching via window event
+  // Web: tab switching via window event
   useEffect(() => {
     const handleTabChange = (e) => {
       if (e?.detail?.tabKey) {
@@ -158,9 +167,7 @@ const TravelerDashboard = () => {
 
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       window.addEventListener('tabChange', handleTabChange);
-      return () => {
-        window.removeEventListener('tabChange', handleTabChange);
-      };
+      return () => window.removeEventListener('tabChange', handleTabChange);
     }
   }, []);
 
@@ -174,8 +181,14 @@ const TravelerDashboard = () => {
         return <TravelerServicesScreen />;
       case 'notification':
         return <TravelerNotifications />;
-      case 'profile': // ✅ NEW
-        return <TravelerProfile inPage />; // in-page mode to avoid nested scroll
+      case 'profile':
+        return <TravelerProfile inPage />;
+      case 'communityHub':
+        return <CommunityHubScreen inPage />;  // ✅ merged hub
+      case 'offline':      
+        return <OfflineScreen inPage />; 
+      case 'messages':
+        return <MessagesScreen inPage />;
       default:
         return (
           <>
@@ -192,11 +205,11 @@ const TravelerDashboard = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header can still call onTabChange directly if you pass it down */}
       <Header onTabChange={setSelectedTab} />
       <ScrollView contentContainerStyle={styles.contentWrapper}>
         {renderCurrentTab()}
       </ScrollView>
+      {/* If you want the bar to highlight correctly when header changes tabs, you can pass currentTab={selectedTab} */}
       <BottomNavBar onTabChange={setSelectedTab} />
     </View>
   );
