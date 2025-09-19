@@ -1,14 +1,15 @@
-// screens/VendorDashboardScreen.js
+
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Platform, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Platform, ScrollView } from 'react-native'; // ← added Text
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 
 import VendorHeader from '../components/VendorDashboard/VendorHeader';
 import VendorBottomNavBar from '../components/VendorDashboard/VendorBottomNavBar';
-
-// 🔔 Popup prompt (checks profile after login)
 import CompleteProfilePrompt from './CompleteProfilePrompt';
+
+// Renders inside dashboard when activeTab === 'profile'
+import VendorProfile from './VendorProfile';
 
 const TAB = {
   HOME: 'home',
@@ -26,7 +27,7 @@ export default function VendorDashboardScreen() {
   const [role, setRole] = useState(null);
   const navigation = useNavigation();
 
-  // Keep header/bottom bar and screen in sync via event (web)
+  // Keep header/bottom bar and screen in sync via custom event on web
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
     const handler = (e) => {
@@ -57,21 +58,17 @@ export default function VendorDashboardScreen() {
           {activeTab === TAB.ANALYSIS && <AnalysisTab />}
           {activeTab === TAB.CHAT && <ChatTab />}
           {activeTab === TAB.NOTIFICATION && <NotificationTab />}
-          {activeTab === TAB.PROFILE && (
-            <ProfileTab onSelectService={() => { /* onboarding later */ }} />
-          )}
+          {activeTab === TAB.PROFILE && <VendorProfile />}{/* ← renders inside dashboard */}
         </ScrollView>
       </SafeAreaView>
 
-      {/* 🔔 Profile completion popup (only shows if incomplete) */}
       <CompleteProfilePrompt navigation={navigation} delayMs={5000} />
-
       <VendorBottomNavBar onTabChange={handleTabChange} currentTab={activeTab} />
     </View>
   );
 }
 
-/* ---------- Simple placeholder tab bodies ---------- */
+/* ---------- inline demo tab bodies ---------- */
 
 const Section = ({ title, children }) => (
   <View style={{ gap: 8 }}>
@@ -103,7 +100,6 @@ function HomeTab({ role, onPreviewRole }) {
         <Text>Compact cards with Approve / Decline actions…</Text>
       </Section>
 
-      {/* Dev preview toggles */}
       <View style={{ flexDirection: 'row', gap: 8 }}>
         <Text onPress={() => onPreviewRole(null)} style={styles.link}>Preview: No Role</Text>
         <Text onPress={() => onPreviewRole('Accommodation Provider')} style={styles.link}>
@@ -178,19 +174,6 @@ function NotificationTab() {
     <View style={styles.tabWrap}>
       <Section title="Notifications">
         <Text>Unified alerts list…</Text>
-      </Section>
-    </View>
-  );
-}
-
-function ProfileTab({ onSelectService }) {
-  return (
-    <View style={styles.tabWrap}>
-      <Section title="Profile & Verification">
-        <Text>Name / Phone / Address / Verification…</Text>
-        <Text onPress={onSelectService} style={[styles.link, { marginTop: 6 }]}>
-          Select/Change Service
-        </Text>
       </Section>
     </View>
   );

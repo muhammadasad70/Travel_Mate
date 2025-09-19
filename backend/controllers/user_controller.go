@@ -379,7 +379,6 @@ func UpdateProfile(c *gin.Context) {
 	})
 }
 
-// NEW: return the signed-in user's profile (used by /user/profile/me)
 func GetMyProfile(c *gin.Context) {
 	uid := c.GetInt("user_id")
 	u, err := models.GetUserByID(uid)
@@ -387,18 +386,7 @@ func GetMyProfile(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"id":          u.Id,
-		"email":       u.Email,
-		"role":        u.Role,
-		"firstName":   u.FirstName,
-		"lastName":    u.LastName,
-		"countryCode": u.CountryCode,
-		"phone":       u.Phone,
-		"country":     u.Country,
-		// if present in your model/schema
-		"completed": u.IsProfileComplete,
-	})
+	c.JSON(http.StatusOK, u)
 }
 
 func GetProfileStatus(c *gin.Context) {
