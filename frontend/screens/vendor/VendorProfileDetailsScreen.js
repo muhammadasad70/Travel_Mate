@@ -1,3 +1,5 @@
+
+
 import React, { useEffect, useState, useLayoutEffect } from 'react';
 import {
   View,
@@ -12,6 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../../api';
 import Avatar from '../../components/avatar';
 
+/* ---------- helpers ---------- */
 function getInitials(first = '', last = '') {
   const a = (first || '').trim();
   const b = (last || '').trim();
@@ -26,13 +29,30 @@ function formatPhone(code, phone) {
   return [cc || '', phone || ''].filter(Boolean).join(' ');
 }
 
+// Accepts DB/API timestamp and formats it pretty
+function normalizeDateInput(d) {
+  if (!d) return null;
+  if (d instanceof Date) return d;
+  if (typeof d === 'number') return new Date(d); // epoch ms
+  const s = String(d).trim();
+  const withT = s.replace(/^(\d{4}-\d{2}-\d{2})\s+/, '$1T');
+  const isoTZ = withT.replace(/([+-]\d{2})(\d{2})$/, '$1:$2');
+  const dt = new Date(isoTZ);
+  return isNaN(dt.getTime()) ? null : dt;
+}
+function formatDatePretty(dLike) {
+  const dt = normalizeDateInput(dLike);
+  if (!dt) return '—';
+  return dt.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+/* ---------- component ---------- */
 export default function ProfileDetailScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [error, setError] = useState('');
   const [deleting, setDeleting] = useState(false);
 
-  // Header back → TravelerDashboard
   useLayoutEffect(() => {
     navigation.setOptions({
       headerLeft: () => (
@@ -55,11 +75,9 @@ export default function ProfileDetailScreen({ navigation }) {
       try {
         const token = await AsyncStorage.getItem('token');
         if (!token) throw new Error('Not logged in');
-
         const res = await api.get('/user/profile/me', {
           headers: { Authorization: `Bearer ${token}` },
         });
-
         if (!mounted) return;
         setUser(res?.data || null);
         setError('');
@@ -69,13 +87,11 @@ export default function ProfileDetailScreen({ navigation }) {
         if (mounted) setLoading(false);
       }
     })();
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, []);
 
   const handleEdit = () => {
-    navigation.navigate('ManageTravelerProfile');
+    navigation.navigate('ManageTravelerProfile'); // if you have a vendor-specific screen, update this
   };
 
   const handleDelete = async () => {
@@ -118,11 +134,7 @@ export default function ProfileDetailScreen({ navigation }) {
 
   if (error || !user) {
     return (
-      <ScrollView
-        style={styles.page}
-        contentContainerStyle={{ flexGrow: 1, padding: 16 }}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView style={styles.page} contentContainerStyle={{ flexGrow: 1, padding: 16 }}>
         <View style={[styles.container, styles.maxWidth]}>
           <TouchableOpacity
             onPress={() => navigation.navigate('VendorDashboard')}
@@ -143,20 +155,15 @@ export default function ProfileDetailScreen({ navigation }) {
   const firstName = user.first_name ?? user.firstName;
   const lastName = user.last_name ?? user.lastName;
   const countryCode = user.country_code ?? user.countryCode;
-
-  const role = (user.role || 'traveler').toLowerCase();
+  const role = (user.role || 'vendor').toLowerCase();
   const roleLabel = role === 'vendor' ? 'Vendor' : 'Traveler';
   const name = [firstName, lastName].filter(Boolean).join(' ') || '—';
   const initials = getInitials(firstName, lastName);
 
   return (
-    <ScrollView
-      style={styles.page}
-      contentContainerStyle={{ flexGrow: 1, padding: 16 }}
-      showsVerticalScrollIndicator={false}
-    >
+    <ScrollView style={styles.page} contentContainerStyle={{ flexGrow: 1, padding: 16 }}>
       <View style={[styles.container, styles.maxWidth]}>
-        {/* in-page back pill */}
+        {/* back pill */}
         <TouchableOpacity
           onPress={() => navigation.navigate('VendorDashboard')}
           style={styles.backPill}
@@ -164,7 +171,7 @@ export default function ProfileDetailScreen({ navigation }) {
           <Text style={styles.backPillText}>‹ Back</Text>
         </TouchableOpacity>
 
-        {/* 1) Header card */}
+        {/* header card */}
         <View style={styles.card}>
           <View style={styles.headerRow}>
             <Avatar
@@ -200,45 +207,37 @@ export default function ProfileDetailScreen({ navigation }) {
           </View>
         </View>
 
-        {/* 2) Contact */}
+        {/* contact */}
         <Section title="Contact">
           <Field label="Email" value={user.email || '—'} />
           <Divider />
           <Field label="Phone" value={formatPhone(countryCode, user.phone)} />
         </Section>
 
-        {/* 3) Personal */}
+        {/* personal */}
         <Section title="Personal">
           <Field label="First name" value={firstName || '—'} />
           <Divider />
           <Field label="Last name" value={lastName || '—'} />
         </Section>
 
-        {/* 4) Location */}
+        {/* location */}
         <Section title="Location">
           <Field label="Country" value={user.country || '—'} />
         </Section>
 
-        {/* 5) Role */}
+        {/* role */}
         <Section title="Role">
           <Field label="Current role" value={roleLabel} />
           <Divider />
-          <Field
-            label="Member since"
-            value={
-              (user.created_at || user.createdAt)
-                ? new Date(user.created_at || user.createdAt).toDateString()
-                : '—'
-            }
-          />
+          <Field label="Member since" value={formatDatePretty(user.created_at ?? user.createdAt)} />
         </Section>
 
-        {/* Footer actions */}
+        {/* footer actions */}
         <View style={styles.actionsRow}>
           <TouchableOpacity style={[styles.btn, styles.btnPrimary]} onPress={handleEdit}>
             <Text style={[styles.btnText, styles.btnTextLight]}>Edit Profile</Text>
           </TouchableOpacity>
-
           <TouchableOpacity
             style={[styles.btn, styles.btnDanger]}
             onPress={handleDelete}
@@ -255,7 +254,6 @@ export default function ProfileDetailScreen({ navigation }) {
 }
 
 /* ---------- UI bits ---------- */
-
 function Section({ title, children }) {
   return (
     <View style={styles.section}>
@@ -264,7 +262,6 @@ function Section({ title, children }) {
     </View>
   );
 }
-
 function Field({ label, value }) {
   return (
     <View style={styles.fieldRow}>
@@ -273,21 +270,17 @@ function Field({ label, value }) {
     </View>
   );
 }
-
 function Divider() {
   return <View style={styles.divider} />;
 }
 
 /* ---------- styles ---------- */
-
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: '#fff' },
   container: { width: '100%' },
   maxWidth: { maxWidth: 920, alignSelf: 'center' },
-
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   muted: { marginTop: 8, color: '#6b7280' },
-
   backPill: {
     alignSelf: 'flex-start',
     backgroundColor: '#F1F5F9',
@@ -297,11 +290,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   backPillText: { fontWeight: '600', color: '#0f172a' },
-
   banner: { padding: 12, borderRadius: 10, marginBottom: 16 },
   bannerDanger: { backgroundColor: '#DC2626' },
   bannerText: { color: 'white', fontWeight: '600' },
-
   card: {
     backgroundColor: '#fff',
     borderRadius: 16,
@@ -312,10 +303,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 2,
   },
-
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   title: { fontSize: 20, fontWeight: '700', color: '#0f172a' },
-
   chipsRow: { flexDirection: 'row', gap: 8, marginTop: 8, flexWrap: 'wrap' },
   chip: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 999 },
   chipNeutral: { backgroundColor: '#e5e7eb' },
@@ -324,10 +313,8 @@ const styles = StyleSheet.create({
   chipText: { fontWeight: '600', fontSize: 12 },
   chipTextDark: { color: '#000' },
   chipTextLight: { color: '#fff' },
-
   section: { marginTop: 18 },
   sectionTitle: { marginBottom: 8, fontSize: 14, fontWeight: '700', color: '#111827' },
-
   fieldRow: {
     paddingVertical: 12,
     flexDirection: 'row',
@@ -336,9 +323,7 @@ const styles = StyleSheet.create({
   },
   fieldLabel: { color: '#6b7280', fontSize: 13, width: '40%' },
   fieldValue: { color: '#111827', fontWeight: '600', fontSize: 14, width: '60%', textAlign: 'right' },
-
   divider: { height: 1, backgroundColor: '#f1f5f9' },
-
   actionsRow: {
     marginTop: 32,
     flexDirection: 'row',

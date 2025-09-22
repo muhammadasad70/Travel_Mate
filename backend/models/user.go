@@ -4,21 +4,22 @@ import (
 	"database/sql"
 	"errors"
 	"strings"
+	"time"
 	"travel_mate/backend/database"
 )
 
 type User struct {
-	Id                int    `json:"id"`
-	Email             string `json:"email"`
-	Password          string `json:"-"`
-	FirstName         string `json:"first_name"`
-	LastName          string `json:"last_name"`
-	CountryCode       string `json:"country_code"`
-	Phone             string `json:"phone"`
-	Country           string `json:"country"`
-	Role              string `json:"role"`
-	IsProfileComplete bool   `json:"is_profile_complete"`
-	CreatedAt         string `json:"created_at"`
+	Id                int       `json:"id"`
+	Email             string    `json:"email"`
+	Password          string    `json:"-"`
+	FirstName         string    `json:"first_name"`
+	LastName          string    `json:"last_name"`
+	CountryCode       string    `json:"country_code"`
+	Phone             string    `json:"phone"`
+	Country           string    `json:"country"`
+	Role              string    `json:"role"`
+	IsProfileComplete bool      `json:"is_profile_complete"`
+	CreatedAt         time.Time `json:"created_at"`
 }
 
 func EmailExists(email string) (bool, error) {
@@ -97,10 +98,32 @@ func IsProfileCompleteByID(id int) (bool, error) {
 	return v, err
 }
 
+// func GetUserByID(id int) (User, error) {
+// 	const query = `
+// 		SELECT id, email, role, first_name, last_name, country_code, phone, country, is_profile_complete
+// 		FROM users WHERE id = $1
+// 	`
+// 	var user User
+// 	err := database.DB.QueryRow(query, id).Scan(
+// 		&user.Id,
+// 		&user.Email,
+// 		&user.Role,
+// 		&user.FirstName,
+// 		&user.LastName,
+// 		&user.CountryCode,
+// 		&user.Phone,
+// 		&user.Country,
+// 		&user.IsProfileComplete,
+// 	)
+// 	return user, err
+// }
+
 func GetUserByID(id int) (User, error) {
 	const query = `
-		SELECT id, email, role, first_name, last_name, country_code, phone, country, is_profile_complete
-		FROM users WHERE id = $1
+		SELECT id, email, role, first_name, last_name, country_code, phone, country,
+		       COALESCE(is_profile_complete,false), created_at
+		FROM users
+		WHERE id = $1
 	`
 	var user User
 	err := database.DB.QueryRow(query, id).Scan(
@@ -113,6 +136,7 @@ func GetUserByID(id int) (User, error) {
 		&user.Phone,
 		&user.Country,
 		&user.IsProfileComplete,
+		&user.CreatedAt, // <-- new
 	)
 	return user, err
 }

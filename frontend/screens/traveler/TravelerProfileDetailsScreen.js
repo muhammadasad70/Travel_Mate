@@ -1,3 +1,5 @@
+
+
 import React, { useEffect, useState, useLayoutEffect } from 'react';
 import {
   View,
@@ -12,6 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../../api';
 import Avatar from '../../components/avatar';
 
+/* ---------- helpers ---------- */
 function getInitials(first = '', last = '') {
   const a = (first || '').trim();
   const b = (last || '').trim();
@@ -26,6 +29,38 @@ function formatPhone(code, phone) {
   return [cc || '', phone || ''].filter(Boolean).join(' ');
 }
 
+// Accepts various DB/API timestamp shapes and returns a Date or null
+function normalizeDateInput(d) {
+  if (!d) return null;
+  if (d instanceof Date) return d;
+  if (typeof d === 'number') return new Date(d); // epoch ms
+  const s = String(d).trim();
+
+  // Common PG style: "YYYY-MM-DD HH:mm:ss.SSS +0500"
+  // 1) Add 'T' between date and time (first space only)
+  // 2) Insert colon in timezone: +0500 -> +05:00 (or -0700 -> -07:00)
+  const withT = s.replace(/^(\d{4}-\d{2}-\d{2})\s+/, '$1T');
+  const isoTZ = withT.replace(/([+-]\d{2})(\d{2})$/, '$1:$2');
+
+  const dt = new Date(isoTZ);
+  return isNaN(dt.getTime()) ? null : dt;
+}
+
+function formatDatePretty(dLike) {
+  const dt = normalizeDateInput(dLike);
+  if (!dt) return '—';
+  try {
+    return dt.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  } catch {
+    return '—';
+  }
+}
+
+/* ---------- component ---------- */
 export default function ProfileDetailScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
@@ -225,11 +260,7 @@ export default function ProfileDetailScreen({ navigation }) {
           <Divider />
           <Field
             label="Member since"
-            value={
-              (user.created_at || user.createdAt)
-                ? new Date(user.created_at || user.createdAt).toDateString()
-                : '—'
-            }
+            value={formatDatePretty(user.created_at ?? user.createdAt)}
           />
         </Section>
 
@@ -255,7 +286,6 @@ export default function ProfileDetailScreen({ navigation }) {
 }
 
 /* ---------- UI bits ---------- */
-
 function Section({ title, children }) {
   return (
     <View style={styles.section}>
@@ -279,7 +309,6 @@ function Divider() {
 }
 
 /* ---------- styles ---------- */
-
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: '#fff' },
   container: { width: '100%' },
@@ -335,7 +364,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   fieldLabel: { color: '#6b7280', fontSize: 13, width: '40%' },
-  fieldValue: { color: '#111827', fontWeight: '600', fontSize: 14, width: '60%', textAlign: 'right' },
+  fieldValue: {
+    color: '#111827',
+    fontWeight: '600',
+    fontSize: 14,
+    width: '60%',
+    textAlign: 'right',
+  },
 
   divider: { height: 1, backgroundColor: '#f1f5f9' },
 
