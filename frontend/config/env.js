@@ -6,7 +6,7 @@ const getBaseURL = () => {
   }
 
   // ✅ Hardcoded IP — use your actual IP here
-  return 'http://192.168.110.153:8080'; // IP from your ifconfig
+  return 'http://192.168.18.179:8080'; // IP from your ifconfig
 };
 
 export default getBaseURL;

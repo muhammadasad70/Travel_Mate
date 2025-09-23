@@ -11,43 +11,77 @@ import {
   Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
+import VendorHeader from '../../components/VendorDashboard/VendorHeader';
+import VendorBottomNavBar from '../../components/VendorDashboard/VendorBottomNavBar';
 
 const screenWidth = Dimensions.get('window').width;
 const isMobile = screenWidth < 768;
 
-const Create_Offer = () => {
+const Create_Offer = ({ onBackToServices }) => {
   const navigation = useNavigation();
 
-  return (
-    <SafeAreaView style={styles.wrapper}>
-      <ScrollView contentContainerStyle={styles.container}>
-        {/* ✅ Back arrow only on web */}
-        {Platform.OS === 'web' && (
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backArrow}>
-            <Feather name="arrow-left" size={20} />
-            <Text style={styles.backText}>Back</Text>
-          </TouchableOpacity>
-        )}
+  // If onBackToServices is provided, we're in dashboard mode (no header/bottom nav)
+  const isInDashboard = !!onBackToServices;
+  
+  if (isInDashboard) {
+    return (
+      <View style={styles.wrapper}>
+        <ScrollView contentContainerStyle={[styles.container, { paddingTop: 0 }]}>
 
-        <Text style={styles.heading}>🎁 Create Accommodation Offer</Text>
+        <View style={styles.headingContainer}>
+          <Ionicons name="gift-outline" size={24} color="#22C55E" />
+          <Text style={styles.heading}>Create Accommodation Offer</Text>
+        </View>
 
-        <TextInput placeholder="🏷️ Offer Title" style={styles.input} />
+        <TextInput placeholder="Offer Title" style={styles.input} />
         <TextInput
-          placeholder="💬 Description"
+          placeholder="Description"
           style={[styles.input, styles.textArea]}
           multiline
           numberOfLines={3}
         />
-        <TextInput placeholder="🔢 Discount (%)" style={styles.input} keyboardType="numeric" />
-        <TextInput placeholder="📆 Valid From (YYYY-MM-DD)" style={styles.input} />
-        <TextInput placeholder="📆 Valid Until (YYYY-MM-DD)" style={styles.input} />
-        <TextInput placeholder="📍 Applicable Locations (optional)" style={styles.input} />
+        <TextInput placeholder="Discount (%)" style={styles.input} keyboardType="numeric" />
+        <TextInput placeholder="Valid From (YYYY-MM-DD)" style={styles.input} />
+        <TextInput placeholder="Valid Until (YYYY-MM-DD)" style={styles.input} />
+        <TextInput placeholder="Applicable Locations (optional)" style={styles.input} />
+
+        <TouchableOpacity style={styles.button} onPress={() => alert('Offer submitted (dummy)!')}>
+          <Text style={styles.buttonText}>Submit Offer</Text>
+        </TouchableOpacity>
+        </ScrollView>
+      </View>
+    );
+  }
+
+  // Standalone mode with header and bottom nav
+  return (
+    <SafeAreaView style={styles.wrapper}>
+      <VendorHeader />
+      <ScrollView contentContainerStyle={styles.container}>
+
+        <View style={styles.headingContainer}>
+          <Ionicons name="gift-outline" size={24} color="#22C55E" />
+          <Text style={styles.heading}>Create Accommodation Offer</Text>
+        </View>
+
+        <TextInput placeholder="Offer Title" style={styles.input} />
+        <TextInput
+          placeholder="Description"
+          style={[styles.input, styles.textArea]}
+          multiline
+          numberOfLines={3}
+        />
+        <TextInput placeholder="Discount (%)" style={styles.input} keyboardType="numeric" />
+        <TextInput placeholder="Valid From (YYYY-MM-DD)" style={styles.input} />
+        <TextInput placeholder="Valid Until (YYYY-MM-DD)" style={styles.input} />
+        <TextInput placeholder="Applicable Locations (optional)" style={styles.input} />
 
         <TouchableOpacity style={styles.button} onPress={() => alert('Offer submitted (dummy)!')}>
           <Text style={styles.buttonText}>Submit Offer</Text>
         </TouchableOpacity>
       </ScrollView>
+      <VendorBottomNavBar />
     </SafeAreaView>
   );
 };
@@ -58,28 +92,25 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
   },
   container: {
-    padding: isMobile ? 16 : 32,
+    paddingHorizontal: isMobile ? 16 : 40,
+    paddingVertical: 20,
     backgroundColor: '#F9FAFB',
     width: '100%',
-    maxWidth: 600,
-    alignSelf: 'center',
     flexGrow: 1,
+    paddingTop: Platform.OS === 'web' ? 120 : 20, // Add top padding for fixed header on web
+    paddingBottom: 100, // Add bottom padding for bottom navigation bar
   },
-  backArrow: {
+  headingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-  },
-  backText: {
-    marginLeft: 6,
-    fontSize: 14,
+    justifyContent: 'center',
+    marginBottom: 20,
   },
   heading: {
     fontSize: 22,
     fontWeight: 'bold',
-    marginBottom: 20,
+    marginLeft: 8,
     color: '#111827',
-    textAlign: 'center',
   },
   input: {
     height: 44,
@@ -97,11 +128,12 @@ const styles = StyleSheet.create({
     paddingTop: 10,
   },
   button: {
-    marginTop: 10,
-    backgroundColor: '#22C55E',
-    paddingVertical: 12,
+    marginTop: 20,
+    backgroundColor: '#0077b6',
+    paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',
+    width: '100%',
   },
   buttonText: {
     color: '#FFFFFF',

@@ -54,6 +54,7 @@ const VendorHeader = ({ onTabChange }) => {
       // Tabs rendered inside dashboard
       case 'home':
       case 'services':
+      case 'add_services':
       case 'booking':
       case 'request':
       case 'analysis':

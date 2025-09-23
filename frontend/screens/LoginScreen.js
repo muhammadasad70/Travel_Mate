@@ -77,7 +77,13 @@ export default function LoginScreen() {
     // Otherwise proceed to dashboard
     showMsg('✅ Success', `Welcome back, ${displayName}!`);
     if ((role || selectedRole) === 'vendor') {
-      navigation.reset({ index: 0, routes: [{ name: 'VendorDashboard' }] });
+      navigation.reset({ 
+        index: 0, 
+        routes: [{ 
+          name: 'VendorTypeSelection', 
+          params: { name: displayName, email: email.trim() } 
+        }] 
+      });
     } else {
       navigation.reset({ index: 0, routes: [{ name: 'TravelerDashboard' }] });
     }

@@ -250,6 +250,9 @@ import OptimizeItineraryScreen from './screens/CrowdsourceItineraries/OptimizeIt
 import ProfileCompletionScreen from './screens/ProfileCompletionScreen';
 import ItinerariesHub from './screens/ItinerariesHub';
 
+/*Vendor Type Selection */
+import VendorTypeSelectionScreen from './screens/vendor/VendorTypeSelectionScreen';
+
 /* Accommodation Provider */
 import My_Services from './screens/Accommodations/My_Services';
 import Add_New_Services from './screens/Accommodations/Add_New_Services';
@@ -281,6 +284,13 @@ import Chat_With_Customers from './screens/Product/Chat_With_Customers';
 import Customer_Feedback from './screens/Product/Customer_Feedback';
 import Product_Sales_Analytics from './screens/Product/Product_Sales_Analytics';
 import Upload_Product_Gallery from './screens/Product/Upload_Product_Gallery';
+
+/* Transport Provider */
+import Add_New_Transport from './screens/Transport/Add_New_Transport';
+import My_Transport_Listings from './screens/Transport/My_Transport_Listings';
+import Transport_Analytics from './screens/Transport/Transport_Analytics';
+import Transport_Bookings from './screens/Transport/Transport_Bookings';
+import Transport_Offers from './screens/Transport/Transport_Offers';
 
 /* NEW: CommunityHub + Offline */
 import CommunityHubScreen from './screens/CommunityHubScreen';
@@ -319,6 +329,7 @@ export default function App() {
             <Stack.Screen name="Register" component={RegisterScreen} />
             <Stack.Screen name="ItineraryDetailScreen" component={ItineraryDetailScreen} />
             <Stack.Screen name="ProfileCompletion" component={ProfileCompletionScreen} />
+            <Stack.Screen name="VendorTypeSelection" component={VendorTypeSelectionScreen} />
 
             {/* Dashboards */}
             <Stack.Screen name="RealTimeAlerts" component={RealTimeAlertsScreen} />
@@ -385,6 +396,14 @@ export default function App() {
             <Stack.Screen name="Customer_Feedback" component={Customer_Feedback} />
             <Stack.Screen name="Product_Sales_Analytics" component={Product_Sales_Analytics} />
             <Stack.Screen name="Upload_Product_Gallery" component={Upload_Product_Gallery} />
+            {/* Transport Provider Screens */}
+            <Stack.Screen name="AddNewTransport" component={Add_New_Transport} />
+            <Stack.Screen name="MyTransportListings" component={My_Transport_Listings} />
+            <Stack.Screen name="TransportAnalytics" component={Transport_Analytics} />
+            <Stack.Screen name="TransportBookings" component={Transport_Bookings} />
+            <Stack.Screen name="TransportOffers" component={Transport_Offers} />
+
+
           </Stack.Navigator>
         </NavigationContainer>
       </SafeAreaProvider>

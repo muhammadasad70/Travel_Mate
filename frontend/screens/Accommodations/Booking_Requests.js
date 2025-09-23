@@ -10,67 +10,121 @@ import {
   Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
+// import VendorHeader from '../../components/VendorDashboard/VendorHeader';
+import VendorBottomNavBar from '../../components/VendorDashboard/VendorBottomNavBar';
 
 const screenWidth = Dimensions.get('window').width;
 const isMobile = screenWidth < 768;
 
 const dummyRequests = [
-  {
-    id: 'BR001',
-    name: 'John Doe',
-    dates: '2025-06-10 to 2025-06-15',
-    status: 'Pending',
+  { 
+    id: 'BR001', 
+    name: 'Ali Raza', 
+    email: 'ali.raza@gmail.com',
+    phone: '+92-300-1234567',
+    dates: '2025-06-10 to 2025-06-15', 
+    service: 'Luxury Hotel Suite',
+    status: 'Pending' 
   },
-  {
-    id: 'BR002',
-    name: 'Fatima Khan',
-    dates: '2025-07-01 to 2025-07-05',
-    status: 'Approved',
+  { 
+    id: 'BR002', 
+    name: 'Zara Khan', 
+    email: 'zara.khan@yahoo.com',
+    phone: '+92-301-9876543',
+    dates: '2025-07-01 to 2025-07-05', 
+    service: 'Traditional Guesthouse',
+    status: 'Pending' 
   },
 ];
 
-const Booking_Requests = () => {
+const Booking_Requests = ({ onBackToServices }) => {
   const navigation = useNavigation();
 
   const handleApprove = (id) => alert(`✅ Approved: ${id}`);
   const handleReject = (id) => alert(`❌ Rejected: ${id}`);
 
-  return (
-    <SafeAreaView style={styles.wrapper}>
-      {/* Header */}
-      <View style={styles.header}>
-        {Platform.OS === 'web' && (
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Feather name="arrow-left" size={22} color="#111" />
-          </TouchableOpacity>
-        )}
-        <Text style={styles.headerTitle}>Booking Requests</Text>
-      </View>
-
-      <FlatList
+  // If onBackToServices is provided, we're in dashboard mode (no header/bottom nav)
+  const isInDashboard = !!onBackToServices;
+  
+  if (isInDashboard) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
+        <FlatList
         data={dummyRequests}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={{ paddingHorizontal: isMobile ? 16 : 40, paddingBottom: 20, paddingTop: 0, paddingVertical: 0 }}
+        ListHeaderComponent={
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 10, marginTop: 0, paddingTop: 0 }}>
+            <Ionicons name="clipboard-outline" size={24} color="#111" style={{ marginRight: 8 }} />
+            <Text style={styles.title}>Booking Requests</Text>
+          </View>
+        }
         renderItem={({ item }) => (
           <View style={styles.card}>
             <Text style={styles.guestName}>{item.name}</Text>
+            <Text style={styles.dates}>Email: {item.email}</Text>
+            <Text style={styles.dates}>Phone: {item.phone}</Text>
+            <Text style={styles.dates}>Service: {item.service}</Text>
             <Text style={styles.dates}>Dates: {item.dates}</Text>
             <Text style={styles.status}>Status: {item.status}</Text>
 
             {item.status === 'Pending' && (
               <View style={styles.actions}>
-                <TouchableOpacity onPress={() => handleApprove(item.id)}>
-                  <Feather name="check-circle" size={20} color="#22C55E" />
+                <TouchableOpacity style={styles.approveBtn} onPress={() => handleApprove(item.id)}>
+                  <Text style={styles.actionText}>Accept</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => handleReject(item.id)}>
-                  <Feather name="x-circle" size={20} color="#EF4444" />
+                <TouchableOpacity style={styles.rejectBtn} onPress={() => handleReject(item.id)}>
+                  <Text style={styles.actionText}>Delete</Text>
                 </TouchableOpacity>
               </View>
             )}
           </View>
         )}
       />
+      </View>
+    );
+  }
+
+  // Standalone mode with header and bottom nav
+  return (
+    <SafeAreaView style={styles.wrapper}>
+    //  <VendorHeader />
+      <FlatList
+        data={dummyRequests}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.list}
+        ListHeaderComponent={
+          <View>
+            <View style={styles.titleWithIcon}>
+              <Ionicons name="clipboard-outline" size={24} color="#111" style={{ marginRight: 8 }} />
+              <Text style={styles.title}>Booking Requests</Text>
+            </View>
+          </View>
+        }
+        renderItem={({ item }) => (
+          <View style={styles.card}>
+            <Text style={styles.guestName}>{item.name}</Text>
+            <Text style={styles.dates}>Email: {item.email}</Text>
+            <Text style={styles.dates}>Phone: {item.phone}</Text>
+            <Text style={styles.dates}>Service: {item.service}</Text>
+            <Text style={styles.dates}>Dates: {item.dates}</Text>
+            <Text style={styles.status}>Status: {item.status}</Text>
+
+            {item.status === 'Pending' && (
+              <View style={styles.actions}>
+                <TouchableOpacity style={styles.approveBtn} onPress={() => handleApprove(item.id)}>
+                  <Text style={styles.actionText}>Accept</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.rejectBtn} onPress={() => handleReject(item.id)}>
+                  <Text style={styles.actionText}>Delete</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        )}
+      />
+      <VendorBottomNavBar />
     </SafeAreaView>
   );
 };
@@ -80,25 +134,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F9FAFB',
   },
-  header: {
+  titleWithIcon: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: isMobile ? 16 : 32,
-    paddingVertical: 14,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderColor: '#e5e7eb',
-    gap: 12,
+    justifyContent: 'center',
+    marginBottom: 20,
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#111827',
-  },
+  title: { fontSize: 22, fontWeight: '700', color: '#111827' },
   list: {
     paddingHorizontal: isMobile ? 16 : 40,
     paddingVertical: 20,
-    paddingBottom: 100,
+    paddingBottom: 120, // Increased to account for bottom navigation bar
+    paddingTop: Platform.OS === 'web' ? 120 : 20, // Add top padding for fixed header on web
   },
   card: {
     backgroundColor: '#FFF',
@@ -110,25 +157,13 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  guestName: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  dates: {
-    fontSize: 13,
-    color: '#4B5563',
-    marginTop: 4,
-  },
-  status: {
-    fontSize: 13,
-    color: '#2563EB',
-    marginTop: 4,
-  },
-  actions: {
-    flexDirection: 'row',
-    marginTop: 10,
-    gap: 16,
-  },
+  guestName: { fontSize: 16, fontWeight: '600' },
+  dates: { fontSize: 13, color: '#4B5563', marginTop: 4 },
+  status: { fontSize: 13, color: '#2563EB', marginTop: 4 },
+  actions: { flexDirection: 'row', marginTop: 10, gap: 12, justifyContent: 'flex-start' },
+  approveBtn: { backgroundColor: '#22C55E', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, minWidth: 80 },
+  rejectBtn: { backgroundColor: '#EF4444', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, minWidth: 80 },
+  actionText: { color: '#fff', fontWeight: '600', fontSize: 14, textAlign: 'center' },
 });
 
 export default Booking_Requests;
