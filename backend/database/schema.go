@@ -17,9 +17,43 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- one account per email (case-insensitive)
 CREATE UNIQUE INDEX IF NOT EXISTS ux_users_email_lower
   ON users (LOWER(email));
+
+-- new itineraries table
+CREATE TABLE IF NOT EXISTS itineraries (
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  city TEXT NOT NULL,
+  budget TEXT,
+  style TEXT,
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL,
+  cover_url TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- itinerary days
+CREATE TABLE IF NOT EXISTS itinerary_days (
+  id BIGSERIAL PRIMARY KEY,
+  itinerary_id BIGINT NOT NULL REFERENCES itineraries(id) ON DELETE CASCADE,
+  day_number INT NOT NULL,
+  place TEXT NOT NULL,
+  start_time TEXT,
+  end_time TEXT,
+  activities TEXT NOT NULL
+);
+
+-- user uploaded images (photos/videos)
+CREATE TABLE IF NOT EXISTS images (
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  cloudinary_id TEXT NOT NULL,
+  url TEXT NOT NULL,
+  uploaded_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 `
 
 func InitSchema() {

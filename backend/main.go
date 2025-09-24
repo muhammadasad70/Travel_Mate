@@ -1,3 +1,66 @@
+// package main
+
+// import (
+// 	"log"
+// 	"net/http"
+
+// 	"travel_mate/backend/database"
+// 	"travel_mate/backend/routes"
+
+// 	"github.com/gin-contrib/cors"
+// 	"github.com/gin-gonic/gin"
+// )
+
+// func main() {
+// 	database.Connect()
+// 	database.InitSchema()
+
+// 	// gin in release/debug prints
+// 	gin.SetMode(gin.DebugMode)
+// 	router := gin.Default()
+
+// 	// CORS
+// 	router.Use(cors.New(cors.Config{
+// 		AllowOrigins:     []string{"http://localhost:8081"},
+// 		AllowMethods:     []string{"GET", "POST", "PUT", "OPTIONS"},
+// 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+// 		AllowCredentials: true,
+// 	}))
+
+// 	// --- DEBUG 1: health
+// 	router.GET("/ping", func(c *gin.Context) {
+// 		c.JSON(200, gin.H{"msg": "pong"})
+// 	})
+
+// 	// Register real routes
+// 	routes.RegisterUserRoutes(router)
+// 	routes.RegisterItineraryRoutes(router)
+
+// 	// --- DEBUG 2: list all registered routes (so we can confirm /user/profile-status exists)
+// 	router.GET("/__routes", func(c *gin.Context) {
+// 		type R struct {
+// 			Method string `json:"method"`
+// 			Path   string `json:"path"`
+// 		}
+// 		out := []R{}
+// 		for _, r := range router.Routes() {
+// 			out = append(out, R{Method: r.Method, Path: r.Path})
+// 		}
+// 		c.JSON(http.StatusOK, gin.H{"routes": out})
+// 	})
+
+// 	// --- DEBUG 3: catch-all to log 404s
+// 	router.NoRoute(func(c *gin.Context) {
+// 		log.Printf("NoRoute: %s %s", c.Request.Method, c.Request.URL.Path)
+// 		c.JSON(http.StatusNotFound, gin.H{
+// 			"error": "not found",
+// 			"path":  c.Request.URL.Path,
+// 		})
+// 	})
+// 	log.Println("🚀 API on :8080")
+// 	router.Run(":8080")
+// }
+
 package main
 
 import (
@@ -15,27 +78,31 @@ func main() {
 	database.Connect()
 	database.InitSchema()
 
-	// gin in release/debug prints
 	gin.SetMode(gin.DebugMode)
 	router := gin.Default()
 
-	// CORS
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:8081"},
-		AllowMethods:     []string{"GET", "POST", "PUT", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		AllowOrigins: []string{
+			"http://localhost:8081",
+			"http://127.0.0.1:8081",
+		},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 	}))
 
-	// --- DEBUG 1: health
+	// health
 	router.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{"msg": "pong"})
 	})
 
-	// Register real routes
+	// routes
 	routes.RegisterUserRoutes(router)
+	routes.RegisterItineraryRoutes(router)
+	routes.RegisterAssetRoutes(router)
 
-	// --- DEBUG 2: list all registered routes (so we can confirm /user/profile-status exists)
+	// list routes
 	router.GET("/__routes", func(c *gin.Context) {
 		type R struct {
 			Method string `json:"method"`
@@ -48,7 +115,7 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{"routes": out})
 	})
 
-	// --- DEBUG 3: catch-all to log 404s
+	// 404 logger
 	router.NoRoute(func(c *gin.Context) {
 		log.Printf("NoRoute: %s %s", c.Request.Method, c.Request.URL.Path)
 		c.JSON(http.StatusNotFound, gin.H{

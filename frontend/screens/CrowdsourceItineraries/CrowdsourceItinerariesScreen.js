@@ -100,7 +100,7 @@ export default function CrowdsourceItinerariesScreen() {
     } else if (title === "Share Itinerary") {
       navigation.navigate("ShareItinerary");
     } else if (title === "Manage My Itineraries") {
-      navigation.navigate("ViewSavedItineraries");
+      navigation.navigate("ManageItineraries");
     } else if (title === "Optimize Your Itinerary") {
       navigation.navigate("OptimizeItinerary");
     } else if (title === "Itinerary Feedback") {

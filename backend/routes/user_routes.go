@@ -1,29 +1,3 @@
-// package routes
-
-// import (
-// 	"travel_mate/backend/controllers"
-// 	"travel_mate/backend/middlewares"
-
-// 	"github.com/gin-gonic/gin"
-// )
-
-// func RegisterUserRoutes(router *gin.Engine) {
-// 	auth := router.Group("/auth")
-// 	{
-// 		auth.POST("/signup", controllers.SignupUser)
-// 		auth.POST("/login", controllers.LoginUser)
-// 		auth.POST("/complete-registration", controllers.CompleteRegistration) // deprecated placeholder
-// 	}
-
-// 		protected := router.Group("/user")
-// 		protected.Use(middlewares.AuthMiddleware())
-// 		{
-// 			protected.PUT("/profile", controllers.UpdateProfile)
-// 			protected.GET("/profile-status", controllers.GetProfileStatus) // <— NEW
-// 		}
-// 	}
-
-// routes/user_routes.go
 package routes
 
 import (
