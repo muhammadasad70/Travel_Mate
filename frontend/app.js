@@ -27,6 +27,8 @@ import VendorProfileDetailsScreen from './screens/vendor/VendorProfileDetailsScr
 import CrowdsourceItinerariesScreen from './screens/CrowdsourceItineraries/CrowdsourceItinerariesScreen';
 import ManageItinerariesScreen from "./screens/CrowdsourceItineraries/ManageItinerariesScreen";
 import CreateItineraryScreen from './screens/CrowdsourceItineraries/CreateItineraryScreen';
+import EditItineraryScreen from "./screens/CrowdsourceItineraries/EditItineraryScreen";
+
 // import ItineraryDetailsScreen from "./screens/CrowdsourceItineraries/ItineraryDetailsScreen";
 import PdfViewerScreen from './screens/PdfViewerScreen';
 import RecommendationScreen from './screens/Recommendations/RecommendationScreen';
@@ -145,7 +147,8 @@ export default function App() {
             <Stack.Screen name="VendorProfileDetailsScreen" component={VendorProfileDetailsScreen} />
             <Stack.Screen name="CrowdsourceItineraries" component={CrowdsourceItinerariesScreen} />
             <Stack.Screen name="CreateItinerary" component={CreateItineraryScreen} />
-             <Stack.Screen name="ManageItineraries" component={ManageItinerariesScreen} />
+            <Stack.Screen name="EditItinerary" component={EditItineraryScreen} />
+            <Stack.Screen name="ManageItineraries" component={ManageItinerariesScreen} />
             <Stack.Screen name="PdfViewer" component={PdfViewerScreen} />
             <Stack.Screen name="RecommendationScreen" component={RecommendationScreen} />
              {/* <Stack.Screen name="ItineraryDetails" component={ItineraryDetailsScreen} /> */}

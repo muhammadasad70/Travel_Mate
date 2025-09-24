@@ -1,4 +1,5 @@
 
+
 // // screens/CrowdsourceItineraries/ManageItinerariesScreen.js
 // import React, { useEffect, useState, useCallback } from "react";
 // import {
@@ -12,6 +13,7 @@
 //   ActionSheetIOS,
 //   Alert,
 //   useWindowDimensions,
+//   Share,
 // } from "react-native";
 // import { Ionicons } from "@expo/vector-icons";
 // import { useNavigation, useFocusEffect } from "@react-navigation/native";
@@ -40,6 +42,17 @@
 //   return null;
 // };
 
+// // Build a shareable URL for the itinerary (adjust this route to your app)
+// const getShareUrl = (it) => {
+//   const id = it?.id || it?._id;
+//   if (!id) return "";
+//   if (Platform.OS === "web" && typeof window !== "undefined") {
+//     return `${window.location.origin}/itinerary/${id}`;
+//   }
+//   // For native, if you have a universal link or app link, put it here:
+//   return `https://travelmate.example.com/itinerary/${id}`;
+// };
+
 // export default function ManageItinerariesScreen() {
 //   const navigation = useNavigation();
 //   const insets = useSafeAreaInsets();
@@ -60,6 +73,7 @@
 //   const [items, setItems] = useState([]);
 //   const [loading, setLoading] = useState(true);
 //   const [refreshing, setRefreshing] = useState(false);
+//   const [deletingId, setDeletingId] = useState(null);
 
 //   const fetchData = useCallback(async () => {
 //     try {
@@ -99,101 +113,150 @@
 //   };
 
 //   const onView = (it) => navigation.navigate("ItineraryDetails", { itinerary: it, id: it?.id });
-//   const onEdit = (it) => navigation.navigate("CreateItinerary", { edit: true, itinerary: it });
+//   const onEdit = (it) => navigation.navigate("EditItinerary", { edit: true, itinerary: it });
 
+//   // Optimistic delete with rollback on failure
 //   const doDelete = async (it) => {
+//     const id = it?.id ?? it?._id;
+//     if (!id) return;
+//     const token = await getAuthToken();
+//     if (!token) {
+//       Alert.alert("Not logged in", "Please log in again.");
+//       return;
+//     }
+
+//     setDeletingId(id);
+//     const prev = items;
+//     setItems((cur) => cur.filter((x) => (x.id ?? x._id) !== id));
+
 //     try {
-//       const token = await getAuthToken();
-//       if (!token) {
-//         Alert.alert("Not logged in", "Please log in again.");
-//         return;
-//       }
-//       const res = await fetch(`${API_BASE}/itineraries/${it.id}`, {
+//       const res = await fetch(`${API_BASE}/itineraries/${id}`, {
 //         method: "DELETE",
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-//       if (!res.ok) {
-//         const raw = await res.text();
-//         let j = null;
-//         try {
-//           j = raw ? JSON.parse(raw) : null;
-//         } catch {}
-//         throw new Error(j?.error || `HTTP ${res.status}`);
+
+//       if (res.status === 204) {
+//         // success
+//         // Optional: Alert.alert("Deleted", "Itinerary removed.");
+//         return;
 //       }
-//       setItems((prev) => prev.filter((x) => x.id !== it.id));
-//     } catch (e) {
-//       console.log("Delete error:", e);
-//       Alert.alert("Error", "Could not delete the itinerary.");
+
+//       const raw = await res.text();
+//       let j = null;
+//       try { j = raw ? JSON.parse(raw) : null; } catch {}
+
+//       // rollback UI
+//       setItems(prev);
+//       const msgMap = {
+//         401: "Your session expired. Please log in again.",
+//         404: "Itinerary not found (maybe already deleted).",
+//       };
+//       const msg = j?.error || msgMap[res.status] || `Failed (HTTP ${res.status})`;
+//       Alert.alert("Delete failed", msg);
+//     } catch (err) {
+//       console.log("Delete error:", err);
+//       setItems(prev); // rollback
+//       Alert.alert("Network Error", "Could not reach server. Try again.");
+//     } finally {
+//       setDeletingId(null);
 //     }
 //   };
 
-//   const onMore = (it) => {
+//   const confirmDelete = (it) => {
 //     if (Platform.OS === "ios") {
 //       ActionSheetIOS.showActionSheetWithOptions(
 //         {
-//           options: ["Cancel", "View details", "Edit", "Delete"],
-//           destructiveButtonIndex: 3,
+//           title: "Delete itinerary?",
+//           message: "This action cannot be undone.",
+//           options: ["Cancel", "Delete"],
+//           destructiveButtonIndex: 1,
 //           cancelButtonIndex: 0,
 //           userInterfaceStyle: "light",
 //         },
-//         (btn) => {
-//           if (btn === 1) onView(it);
-//           if (btn === 2) onEdit(it);
-//           if (btn === 3) {
-//             Alert.alert("Delete itinerary?", "This action cannot be undone.", [
-//               { text: "Cancel", style: "cancel" },
-//               { text: "Delete", style: "destructive", onPress: () => doDelete(it) },
-//             ]);
-//           }
+//         (idx) => {
+//           if (idx === 1) doDelete(it);
 //         }
 //       );
 //     } else {
-//       Alert.alert(
-//         "Choose action",
-//         it?.title || "Itinerary",
-//         [
-//           { text: "View details", onPress: () => onView(it) },
-//           { text: "Edit", onPress: () => onEdit(it) },
-//           {
-//             text: "Delete",
-//             style: "destructive",
-//             onPress: () =>
-//               Alert.alert("Delete itinerary?", "This cannot be undone.", [
-//                 { text: "Cancel", style: "cancel" },
-//                 { text: "Delete", style: "destructive", onPress: () => doDelete(it) },
-//               ]),
-//           },
-//           { text: "Cancel", style: "cancel" },
-//         ],
-//         { cancelable: true }
-//       );
+//       Alert.alert("Delete itinerary?", "This action cannot be undone.", [
+//         { text: "Cancel", style: "cancel" },
+//         { text: "Delete", style: "destructive", onPress: () => doDelete(it) },
+//       ]);
 //     }
 //   };
 
-//   const renderItem = ({ item }) => (
-//     <View
-//       style={[
-//         styles.cardWrap,
-//         columns > 1 && { width: `${100 / columns}%` }, // exact share of the row
-//       ]}
-//     >
-//       <ItineraryCard item={item} onPress={() => onView(item)} />
-//       <View style={styles.cardActions}>
-//         <TouchableOpacity style={styles.actionBtn} onPress={() => onView(item)}>
-//           <Ionicons name="eye-outline" size={16} color={PRIMARY} />
-//           <Text style={styles.actionText}>View</Text>
-//         </TouchableOpacity>
-//         <TouchableOpacity style={styles.actionBtn} onPress={() => onEdit(item)}>
-//           <Ionicons name="create-outline" size={16} color={PRIMARY} />
-//           <Text style={styles.actionText}>Edit</Text>
-//         </TouchableOpacity>
-//         <TouchableOpacity style={styles.actionBtn} onPress={() => onMore(item)}>
-//           <Ionicons name="ellipsis-horizontal" size={18} color={PRIMARY} />
-//           <Text style={styles.actionText}>More</Text>
-//         </TouchableOpacity>
+//   const onShare = async (it) => {
+//     const url = getShareUrl(it);
+//     const title = it?.title || "My itinerary";
+//     const message = `${title}${url ? ` — ${url}` : ""}`;
+
+//     try {
+//       if (Platform.OS === "web" && typeof navigator !== "undefined") {
+//         if (navigator.share) {
+//           await navigator.share({ title, text: title, url });
+//         } else if (navigator.clipboard && url) {
+//           await navigator.clipboard.writeText(url);
+//           alert("Link copied to clipboard!");
+//         } else {
+//           alert(message);
+//         }
+//       } else {
+//         await Share.share(url ? { title, message, url } : { title, message });
+//       }
+//     } catch (err) {
+//       console.log("Share error:", err);
+//       Alert.alert("Unable to share right now.");
+//     }
+//   };
+
+//   const renderItem = ({ item }) => {
+//     const id = item.id ?? item._id;
+//     const isDeleting = deletingId === id;
+
+//     return (
+//       <View
+//         style={[
+//           styles.cardWrap,
+//           columns > 1 && { width: `${100 / columns}%` },
+//         ]}
+//       >
+//         <ItineraryCard item={item} onPress={() => onView(item)} />
+//         <View style={styles.cardActions}>
+//           <TouchableOpacity style={styles.actionBtn} onPress={() => onView(item)}>
+//             <Ionicons name="eye-outline" size={16} color={PRIMARY} />
+//             <Text style={styles.actionText}>View</Text>
+//           </TouchableOpacity>
+
+//           <TouchableOpacity style={styles.actionBtn} onPress={() => onEdit(item)}>
+//             <Ionicons name="create-outline" size={16} color={PRIMARY} />
+//             <Text style={styles.actionText}>Edit</Text>
+//           </TouchableOpacity>
+
+//           <TouchableOpacity style={styles.actionBtn} onPress={() => onShare(item)}>
+//             <Ionicons name="share-social-outline" size={16} color={PRIMARY} />
+//             <Text style={styles.actionText}>Share</Text>
+//           </TouchableOpacity>
+
+//           <TouchableOpacity
+//             style={[styles.actionBtn, styles.actionBtnDanger, isDeleting && { opacity: 0.6 }]}
+//             onPress={() => confirmDelete(item)}
+//             disabled={isDeleting}
+//             accessibilityLabel="Delete itinerary"
+//             accessibilityState={{ disabled: isDeleting }}
+//           >
+//             <Ionicons
+//               name={isDeleting ? "hourglass-outline" : "trash-outline"}
+//               size={16}
+//               color="#B91C1C"
+//             />
+//             <Text style={[styles.actionText, styles.actionTextDanger]}>
+//               {isDeleting ? "Deleting…" : "Delete"}
+//             </Text>
+//           </TouchableOpacity>
+//         </View>
 //       </View>
-//     </View>
-//   );
+//     );
+//   };
 
 //   return (
 //     <SafeAreaView style={[styles.safe, { paddingBottom: insets.bottom }]}>
@@ -208,17 +271,14 @@
 
 //       <FlatList
 //         data={items}
-//         key={columns} // re-render when column count changes
+//         key={columns}
 //         renderItem={renderItem}
 //         keyExtractor={(it) => String(it.id ?? it._id ?? Math.random())}
 //         numColumns={columns}
-//         // ❌ no columnWrapperStyle gap (causes overflow at row width = 100%)
 //         contentContainerStyle={[
 //           styles.listContent,
 //           {
 //             paddingBottom: 24 + insets.bottom,
-//             // Pull container padding in by half the gutter so each item’s horizontal padding
-//             // creates symmetrical gutters without overflowing the row width.
 //             paddingHorizontal: H_PADDING - GUTTER / 2,
 //             rowGap: GUTTER,
 //           },
@@ -272,18 +332,15 @@
 //   backText: { fontWeight: "800", color: "#0f172a" },
 //   title: { fontSize: 20, fontWeight: "800", color: PRIMARY, marginLeft: 2 },
 
-//   listContent: {
-//     // paddings/gaps are set in component to allow responsiveness
-//   },
+//   listContent: {},
 
-//   // Each card takes 100/columns% of the row.
-//   // We add per-item horizontal padding to create gutters safely.
 //   cardWrap: {
 //     flexGrow: 1,
-//     paddingHorizontal: GUTTER / 2, // 👈 creates the left/right gutter per item
+//     paddingHorizontal: GUTTER / 2, // per-item gutters
 //   },
 //   cardActions: {
 //     flexDirection: "row",
+//     flexWrap: "wrap",
 //     gap: 8,
 //     backgroundColor: "#fff",
 //     borderLeftWidth: 1,
@@ -304,7 +361,13 @@
 //     backgroundColor: "#F1F5F9",
 //     borderRadius: 999,
 //   },
+//   actionBtnDanger: {
+//     backgroundColor: "#FEF2F2",
+//     borderWidth: 1,
+//     borderColor: "#FECACA",
+//   },
 //   actionText: { color: PRIMARY, fontWeight: "700", fontSize: 12 },
+//   actionTextDanger: { color: "#B91C1C" },
 
 //   empty: { alignItems: "center", gap: 8 },
 //   emptyTitle: { fontWeight: "800", color: "#0f172a", marginTop: 6 },
@@ -352,9 +415,9 @@ const PRIMARY = "#003366";
 const SUBTEXT = "#6B7280";
 
 // Layout settings
-const GUTTER = 14;          // visual space between cards
-const H_PADDING = 14;       // outer list padding (we'll offset it by GUTTER/2)
-const CARD_MIN_WIDTH = 320; // min target card width on web
+const GUTTER = 14;
+const H_PADDING = 14;
+const CARD_MIN_WIDTH = 320;
 
 const TOKEN_KEYS = ["token", "auth_token", "jwt", "access_token", "AUTH_TOKEN", "userToken"];
 const getAuthToken = async () => {
@@ -372,7 +435,6 @@ const getShareUrl = (it) => {
   if (Platform.OS === "web" && typeof window !== "undefined") {
     return `${window.location.origin}/itinerary/${id}`;
   }
-  // For native, if you have a universal link or app link, put it here:
   return `https://travelmate.example.com/itinerary/${id}`;
 };
 
@@ -381,21 +443,15 @@ export default function ManageItinerariesScreen() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
 
-  // Responsive column count (web/tablets)
   const columns =
     Platform.OS === "web"
-      ? Math.max(
-          1,
-          Math.min(
-            4,
-            Math.floor((width - H_PADDING * 2 + GUTTER) / (CARD_MIN_WIDTH + GUTTER))
-          )
-        )
+      ? Math.max(1, Math.min(4, Math.floor((width - H_PADDING * 2 + GUTTER) / (CARD_MIN_WIDTH + GUTTER))))
       : 1;
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -435,35 +491,62 @@ export default function ManageItinerariesScreen() {
   };
 
   const onView = (it) => navigation.navigate("ItineraryDetails", { itinerary: it, id: it?.id });
-  const onEdit = (it) => navigation.navigate("CreateItinerary", { edit: true, itinerary: it });
+  const onEdit = (it) => navigation.navigate("EditItinerary", { edit: true, itinerary: it });
 
+  // Optimistic delete with rollback on failure
   const doDelete = async (it) => {
+    const id = it?.id ?? it?._id;
+    if (!id || deletingId) return; // guard
+    const token = await getAuthToken();
+    if (!token) {
+      Alert.alert("Not logged in", "Please log in again.");
+      return;
+    }
+
+    setDeletingId(id);
+    const prev = items;
+    setItems((cur) => cur.filter((x) => (x.id ?? x._id) !== id));
+
     try {
-      const token = await getAuthToken();
-      if (!token) {
-        Alert.alert("Not logged in", "Please log in again.");
-        return;
-      }
-      const res = await fetch(`${API_BASE}/itineraries/${it.id}`, {
+      const res = await fetch(`${API_BASE}/itineraries/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) {
-        const raw = await res.text();
-        let j = null;
-        try { j = raw ? JSON.parse(raw) : null; } catch {}
-        throw new Error(j?.error || `HTTP ${res.status}`);
+
+      if (res.status === 204) {
+        // success
+        return;
       }
-      setItems((prev) => prev.filter((x) => x.id !== it.id));
-    } catch (e) {
-      console.log("Delete error:", e);
-      Alert.alert("Error", "Could not delete the itinerary.");
+
+      const raw = await res.text();
+      let j = null;
+      try { j = raw ? JSON.parse(raw) : null; } catch {}
+      setItems(prev); // rollback
+
+      const msgMap = {
+        401: "Your session expired. Please log in again.",
+        404: "Itinerary not found (maybe already deleted).",
+        428: "Please complete your profile to continue.",
+      };
+      const msg = j?.error || msgMap[res.status] || `Failed (HTTP ${res.status})`;
+      Alert.alert("Delete failed", msg);
+    } catch (err) {
+      console.log("Delete error:", err);
+      setItems(prev); // rollback
+      Alert.alert("Network Error", "Could not reach server. Try again.");
+    } finally {
+      setDeletingId(null);
     }
   };
 
+  // WEB-SAFE confirm: use window.confirm on web, ActionSheet on iOS, Alert on Android
   const confirmDelete = (it) => {
+    if (Platform.OS === "web") {
+      const ok = typeof window !== "undefined" ? window.confirm("Delete itinerary? This action cannot be undone.") : false;
+      if (ok) doDelete(it);
+      return;
+    }
     if (Platform.OS === "ios") {
-      // Native iOS sheet looks nice for destructive
       ActionSheetIOS.showActionSheetWithOptions(
         {
           title: "Delete itinerary?",
@@ -477,12 +560,13 @@ export default function ManageItinerariesScreen() {
           if (idx === 1) doDelete(it);
         }
       );
-    } else {
-      Alert.alert("Delete itinerary?", "This action cannot be undone.", [
-        { text: "Cancel", style: "cancel" },
-        { text: "Delete", style: "destructive", onPress: () => doDelete(it) },
-      ]);
+      return;
     }
+    // Android
+    Alert.alert("Delete itinerary?", "This action cannot be undone.", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Delete", style: "destructive", onPress: () => doDelete(it) },
+    ]);
   };
 
   const onShare = async (it) => {
@@ -501,9 +585,7 @@ export default function ManageItinerariesScreen() {
           alert(message);
         }
       } else {
-        await Share.share(
-          url ? { title, message, url } : { title, message }
-        );
+        await Share.share(url ? { title, message, url } : { title, message });
       }
     } catch (err) {
       console.log("Share error:", err);
@@ -511,40 +593,54 @@ export default function ManageItinerariesScreen() {
     }
   };
 
-  const renderItem = ({ item }) => (
-    <View
-      style={[
-        styles.cardWrap,
-        columns > 1 && { width: `${100 / columns}%` },
-      ]}
-    >
-      <ItineraryCard item={item} onPress={() => onView(item)} />
-      <View style={styles.cardActions}>
-        <TouchableOpacity style={styles.actionBtn} onPress={() => onView(item)}>
-          <Ionicons name="eye-outline" size={16} color={PRIMARY} />
-          <Text style={styles.actionText}>View</Text>
-        </TouchableOpacity>
+  const renderItem = ({ item }) => {
+    const id = item.id ?? item._id;
+    const isDeleting = deletingId === id;
 
-        <TouchableOpacity style={styles.actionBtn} onPress={() => onEdit(item)}>
-          <Ionicons name="create-outline" size={16} color={PRIMARY} />
-          <Text style={styles.actionText}>Edit</Text>
-        </TouchableOpacity>
+    return (
+      <View
+        style={[
+          styles.cardWrap,
+          columns > 1 && { width: `${100 / columns}%` },
+        ]}
+      >
+        <ItineraryCard item={item} onPress={() => onView(item)} />
+        <View style={styles.cardActions}>
+          <TouchableOpacity style={styles.actionBtn} onPress={() => onView(item)}>
+            <Ionicons name="eye-outline" size={16} color={PRIMARY} />
+            <Text style={styles.actionText}>View</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.actionBtn} onPress={() => onShare(item)}>
-          <Ionicons name="share-social-outline" size={16} color={PRIMARY} />
-          <Text style={styles.actionText}>Share</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.actionBtn} onPress={() => onEdit(item)}>
+            <Ionicons name="create-outline" size={16} color={PRIMARY} />
+            <Text style={styles.actionText}>Edit</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.actionBtn, styles.actionBtnDanger]}
-          onPress={() => confirmDelete(item)}
-        >
-          <Ionicons name="trash-outline" size={16} color="#B91C1C" />
-          <Text style={[styles.actionText, styles.actionTextDanger]}>Delete</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.actionBtn} onPress={() => onShare(item)}>
+            <Ionicons name="share-social-outline" size={16} color={PRIMARY} />
+            <Text style={styles.actionText}>Share</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.actionBtn, styles.actionBtnDanger, isDeleting && { opacity: 0.6 }]}
+            onPress={() => confirmDelete(item)}
+            disabled={isDeleting}
+            accessibilityLabel="Delete itinerary"
+            accessibilityState={{ disabled: isDeleting }}
+          >
+            <Ionicons
+              name={isDeleting ? "hourglass-outline" : "trash-outline"}
+              size={16}
+              color="#B91C1C"
+            />
+            <Text style={[styles.actionText, styles.actionTextDanger]}>
+              {isDeleting ? "Deleting…" : "Delete"}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <SafeAreaView style={[styles.safe, { paddingBottom: insets.bottom }]}>
@@ -624,7 +720,7 @@ const styles = StyleSheet.create({
 
   cardWrap: {
     flexGrow: 1,
-    paddingHorizontal: GUTTER / 2, // per-item gutters
+    paddingHorizontal: GUTTER / 2,
   },
   cardActions: {
     flexDirection: "row",

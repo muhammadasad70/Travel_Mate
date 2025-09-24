@@ -13,11 +13,20 @@ func RegisterItineraryRoutes(router *gin.Engine) {
 	it := router.Group("/itineraries")
 	it.Use(middlewares.AuthMiddleware(), middlewares.RequireCompleteProfile())
 	{
-		// accept both with and without trailing slash
+		// create + list
 		it.POST("", controllers.CreateItinerary)
 		it.POST("/", controllers.CreateItinerary)
-
 		it.GET("", controllers.ListMyItineraries)
 		it.GET("/", controllers.ListMyItineraries)
+
+		// get one
+		it.GET("/:id", controllers.GetMyItinerary)
+
+		// update
+		it.PUT("/:id", controllers.UpdateItineraryPUT)
+		it.PATCH("/:id", controllers.UpdateItineraryPATCH)
+
+		// delete
+		it.DELETE("/:id", controllers.DeleteItinerary)
 	}
 }
