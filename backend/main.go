@@ -67,16 +67,22 @@ import (
 	"log"
 	"net/http"
 
+	"travel_mate/backend/cloudinary"
 	"travel_mate/backend/database"
 	"travel_mate/backend/routes"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 func main() {
 	database.Connect()
 	database.InitSchema()
+	cloudinary.InitCloudinary()
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found")
+	}
 
 	gin.SetMode(gin.DebugMode)
 	router := gin.Default()

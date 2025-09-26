@@ -6,25 +6,21 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "platforms": [
-      "ios",
-      "android",
-      "web"
-    ],
+    "platforms": ["ios", "android", "web"],
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#f5f8fa"
     },
-    "updates": {
-      "fallbackToCacheTimeout": 0
-    },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "updates": { "fallbackToCacheTimeout": 0 },
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.travelmate.app"
+      "bundleIdentifier": "com.travelmate.app",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "We need access to your photos to pick a cover image.",
+        "NSCameraUsageDescription": "We need camera access if you want to take a photo."
+      }
     },
     "android": {
       "package": "com.travelmate.app",
@@ -33,15 +29,18 @@
         "backgroundColor": "#ffffff"
       },
       "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE"
+        "android.permission.CAMERA",
+        "android.permission.READ_MEDIA_IMAGES",    
+        "android.permission.READ_MEDIA_VIDEO",        
+        "android.permission.READ_EXTERNAL_STORAGE"     
       ]
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
+    "web": { "favicon": "./assets/favicon.png" },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      ["expo-image-picker", {
+        "photosPermission": "Allow TravelMate to access your photos to select a cover image."
+      }]
     ]
   }
 }

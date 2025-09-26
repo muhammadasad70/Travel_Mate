@@ -1,4 +1,6 @@
 
+
+// // screens/CreateItineraryScreen.js
 // import React, { useMemo, useRef, useState, useEffect } from "react";
 // import {
 //   View,
@@ -7,12 +9,14 @@
 //   StyleSheet,
 //   TextInput,
 //   TouchableOpacity,
-//   Alert,
 //   Platform,
 //   Image,
 //   ActivityIndicator,
 //   BackHandler,
+//   Modal,
+//   Alert,
 // } from "react-native";
+// import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 // import { useNavigation } from "@react-navigation/native";
 // import { Picker } from "@react-native-picker/picker";
 // import * as ImagePicker from "expo-image-picker";
@@ -33,24 +37,12 @@
 //   return null;
 // };
 
+// const IS_WEB = Platform.OS === "web";
+
 // /* ========= Inline Cities → Destinations JSON (your data) ========= */
 // const PLACES_BY_CITY = {
-//   Abbottabad: [
-//     "Abbottabad City",
-//     "Ayubia National Park",
-//     "Miranjani Top",
-//     "Mushkpuri Top",
-//     "Nathia Gali",
-//     "Thandiani",
-//   ],
-//   Galiyat: [
-//     "Abbottabad City",
-//     "Ayubia National Park",
-//     "Miranjani Top",
-//     "Mushkpuri Top",
-//     "Nathia Gali",
-//     "Thandiani",
-//   ],
+//   Abbottabad: ["Abbottabad City", "Ayubia National Park", "Miranjani Top", "Mushkpuri Top", "Nathia Gali", "Thandiani"],
+//   Galiyat: ["Abbottabad City", "Ayubia National Park", "Miranjani Top", "Mushkpuri Top", "Nathia Gali", "Thandiani"],
 //   Bagh: ["Ganga Choti", "Lasdana"],
 //   Badin: ["Zero Point (Indo-Pak Border)"],
 //   Chitral: [
@@ -75,15 +67,7 @@
 //     "Taj Mughal Minar (Mughali Shikar)",
 //   ],
 //   Haveli: ["Khai Gala", "Neza Gali"],
-//   "Hunza Valley": [
-//     "Altit Fort",
-//     "Attabad Lake",
-//     "Baltit Fort",
-//     "Hussaini Suspension Bridge",
-//     "Khunjerab Pass",
-//     "Passu Cones & Glacier",
-//     "Borith Lake",
-//   ],
+//   "Hunza Valley": ["Altit Fort", "Attabad Lake", "Baltit Fort", "Hussaini Suspension Bridge", "Khunjerab Pass", "Passu Cones & Glacier", "Borith Lake"],
 //   Islamabad: [
 //     "Centaurus Mall & Blue Area",
 //     "Daman-e-Koh",
@@ -164,33 +148,11 @@
 //   Muzaffarabad: ["Pir Chinasi", "Shaheed Gali", "Subri Lake"],
 //   "Nagar Valley": ["Nagar Valley"],
 //   Nagarparkar: ["Jain Temples Nagarparkar", "Karoonjhar Mountains"],
-//   "Naran & Kaghan": [
-//     "Ansoo Lake",
-//     "Babusar Top",
-//     "Dudipatsar Lake",
-//     "Kaghan",
-//     "Lulusar Lake",
-//     "Naran",
-//     "Saif-ul-Malook Lake",
-//   ],
+//   "Naran & Kaghan": ["Ansoo Lake", "Babusar Top", "Dudipatsar Lake", "Kaghan", "Lulusar Lake", "Naran", "Saif-ul-Malook Lake"],
 //   "Neelum Valley": ["Arang Kel", "Kel", "Keran", "Sharda"],
 //   Rawalakot: ["Banjosa Lake", "Rawalakot Valley", "Toli Pir"],
-//   Skardu: [
-//     "Manthokha Waterfall",
-//     "Katpana Tso (Katpana Desert & Lake)",
-//     "Satpara Tso Lake",
-//     "Shangrila Resort / Lower Kachura Lake",
-//     "Skardu Valley",
-//   ],
-//   "Swat Valley": [
-//     "Bahrain",
-//     "Gabral Valley",
-//     "Kalam Valley",
-//     "Madyan",
-//     "Mahodand Lake",
-//     "Malam Jabba (ski resort)",
-//     "Ushu Forest",
-//   ],
+//   Skardu: ["Manthokha Waterfall", "Katpana Tso (Katpana Desert & Lake)", "Satpara Tso Lake", "Shangrila Resort / Lower Kachura Lake", "Skardu Valley"],
+//   "Swat Valley": ["Bahrain", "Gabral Valley", "Kalam Valley", "Madyan", "Mahodand Lake", "Malam Jabba (ski resort)", "Ushu Forest"],
 //   Murree: [
 //     "Mall Road, Murree",
 //     "Pindi Point",
@@ -218,16 +180,23 @@
 // const BORDER = "#E6EDF7";
 // const SUBTEXT = "#6B7280";
 
-// /* ===== tiny helpers for optional date check ===== */
+// /* ===== tiny helpers ===== */
 // const looksISODate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s);
 // const toDate = (s) => {
 //   const [y, m, d] = s.split("-").map((n) => parseInt(n, 10));
 //   return new Date(y, m - 1, d);
 // };
+// const showMsg = (title, msg) => {
+//   if (IS_WEB) {
+//     alert(`${title ? title + ": " : ""}${msg}`);
+//   } else {
+//     Alert.alert(title || "Notice", msg);
+//   }
+// };
 
-// /* ===== Cross-platform DateField: opens calendar on web & native ===== */
+// /* ===== Cross-platform DateField ===== */
 // const DateField = ({ label, value, onChange, error }) => {
-//   if (Platform.OS === "web") {
+//   if (IS_WEB) {
 //     return (
 //       <View style={{ flex: 1 }}>
 //         <Text style={styles.smallLabel}>{label}</Text>
@@ -236,10 +205,7 @@
 //           type="date"
 //           value={value || ""}
 //           onChange={(e) => onChange(e.target.value)}
-//           style={{
-//             ...styles.webDateInput,
-//             borderColor: error ? "#dc2626" : BORDER,
-//           }}
+//           style={{ ...styles.webDateInput, borderColor: error ? "#dc2626" : BORDER }}
 //         />
 //         {error ? <Text style={styles.errText}>{error}</Text> : null}
 //       </View>
@@ -279,12 +245,14 @@
 
 // export default function CreateItineraryScreen({ onBack }) {
 //   const navigation = useNavigation();
+//   const insets = useSafeAreaInsets();
+
 //   const goBack = () => {
 //     if (typeof onBack === "function") onBack();
 //     else if (navigation?.canGoBack()) navigation.goBack();
 //   };
 
-//   // Handle Android hardware back
+//   // Android HW back
 //   useEffect(() => {
 //     const sub = BackHandler.addEventListener("hardwareBackPress", () => {
 //       goBack();
@@ -295,31 +263,27 @@
 
 //   const scrollRef = useRef(null);
 
-//   const [cover, setCover] = useState(null); // { uri }
+//   const [cover, setCover] = useState(null);
 //   const [title, setTitle] = useState("");
 //   const [desc, setDesc] = useState("");
 //   const [city, setCity] = useState("");
 //   const [budget, setBudget] = useState("");
 //   const [stylePref, setStylePref] = useState("");
-
-//   // Dates stored as ISO strings e.g. "2025-09-23"
 //   const [startDateText, setStartDateText] = useState("");
 //   const [endDateText, setEndDateText] = useState("");
-
-//   // Days — times are optional free text
 //   const [days, setDays] = useState([{ place: "", startTime: "", endTime: "", activities: "" }]);
 
 //   const [errors, setErrors] = useState({});
 //   const [submitting, setSubmitting] = useState(false);
+//   const [showSuccess, setShowSuccess] = useState(false);
 
 //   const cityPlaces = useMemo(() => (city ? PLACES_BY_CITY[city] || [] : []), [city]);
 
-//   const addDay = () =>
-//     setDays((prev) => [...prev, { place: "", startTime: "", endTime: "", activities: "" }]);
-//   const removeDay = (idx) => setDays((prev) => prev.filter((_, i) => i !== idx));
+//   const addDay = () => setDays((p) => [...p, { place: "", startTime: "", endTime: "", activities: "" }]);
+//   const removeDay = (idx) => setDays((p) => p.filter((_, i) => i !== idx));
 //   const updateDay = (idx, patch) =>
-//     setDays((prev) => {
-//       const next = [...prev];
+//     setDays((p) => {
+//       const next = [...p];
 //       next[idx] = { ...next[idx], ...patch };
 //       return next;
 //     });
@@ -327,7 +291,7 @@
 //   const pickCover = async () => {
 //     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 //     if (status !== "granted") {
-//       Alert.alert("Permission needed", "Please allow photo library access.");
+//       showMsg("Permission needed", "Please allow photo library access.");
 //       return;
 //     }
 //     const res = await ImagePicker.launchImageLibraryAsync({
@@ -348,12 +312,7 @@
 //     if (!startDateText.trim()) e.startDateText = "Pick a start date";
 //     if (!endDateText.trim()) e.endDateText = "Pick an end date";
 
-//     if (
-//       startDateText.trim() &&
-//       endDateText.trim() &&
-//       looksISODate(startDateText) &&
-//       looksISODate(endDateText)
-//     ) {
+//     if (startDateText && endDateText && looksISODate(startDateText) && looksISODate(endDateText)) {
 //       const sd = toDate(startDateText);
 //       const ed = toDate(endDateText);
 //       if (ed < sd) e.endDateText = "End date must be after start date";
@@ -364,14 +323,13 @@
 //       if (!d.place) e[`day${i}.place`] = "Choose a place";
 //       else if (!cityPlaces.includes(d.place)) e[`day${i}.place`] = `Must be in ${city}`;
 //       if ((d.activities || "").trim().length < 5) e[`day${i}.activities`] = "Add a short note";
-//       // time fields optional
 //     });
 
 //     setErrors(e);
 //     return e;
 //   };
 
-//   const canSubmit = () =>
+//   const canSubmit =
 //     cover &&
 //     title.trim().length >= 3 &&
 //     desc.trim().length >= 10 &&
@@ -387,17 +345,16 @@
 //     const e = validate();
 //     if (Object.keys(e).length) {
 //       scrollRef.current?.scrollTo({ y: 0, animated: true });
-//       Alert.alert("Please fix the highlighted fields.");
+//       showMsg("Fix form", "Please fix the highlighted fields.");
 //       return;
 //     }
 
 //     const token = await getAuthToken();
 //     if (!token) {
-//       Alert.alert("Not logged in", "Please log in again to submit an itinerary.");
+//       showMsg("Not logged in", "Please log in again to submit an itinerary.");
 //       return;
 //     }
 
-//     // Transform to backend field names
 //     const payload = {
 //       title,
 //       description: desc,
@@ -406,12 +363,12 @@
 //       style: stylePref,
 //       start_date: startDateText,
 //       end_date: endDateText,
-//       cover_url: cover?.uri || "", // send URI (backend can store as-is or upload feature later)
+//       cover_url: cover?.uri || "",
 //       days: days.map((d, idx) => ({
 //         day_number: idx + 1,
 //         place: d.place,
-//         start_time: d.startTime || "", // optional
-//         end_time: d.endTime || "", // optional
+//         start_time: d.startTime || "",
+//         end_time: d.endTime || "",
 //         activities: d.activities || "",
 //       })),
 //     };
@@ -419,15 +376,10 @@
 //     try {
 //       setSubmitting(true);
 
-//       // 1) 20s timeout so you don't hang forever on mobile networks
 //       const controller = new AbortController();
 //       const timeoutId = setTimeout(() => controller.abort(), 20000);
 
-//       // 2) Normalize base URL + path (avoid double slashes; trailing slash not required)
-//       const base = API_BASE; // already trimmed above
-//       const url = `${base}/itineraries`; // backend accepts with/without trailing slash
-
-//       // 3) Do the request
+//       const url = `${API_BASE}/itineraries`;
 //       let res;
 //       try {
 //         res = await fetch(url, {
@@ -443,29 +395,21 @@
 //         clearTimeout(timeoutId);
 //       }
 
-//       // 4) Read body safely (JSON or empty/error text)
 //       const raw = await res.text();
 //       let j = null;
 //       try {
 //         j = raw ? JSON.parse(raw) : null;
-//       } catch {
-//         /* ignore parse errors */
-//       }
+//       } catch {}
 
-//       // 5) Handle common statuses
 //       if (res.status === 401) {
-//         Alert.alert("Session expired", "Please log in again.");
+//         showMsg("Session expired", "Please log in again.");
 //         return;
 //       }
 //       if (res.status === 428) {
-//         Alert.alert(
-//           "Complete Profile",
-//           j?.error || "Please complete your profile to continue."
-//         );
+//         showMsg("Complete Profile", j?.error || "Please complete your profile to continue.");
 //         return;
 //       }
 //       if (!res.ok) {
-//         // Friendlier messages for typical problems
 //         const friendly = {
 //           400: "Invalid data. Please review the fields.",
 //           403: "You don't have permission to do that.",
@@ -477,75 +421,59 @@
 //           503: "Server unavailable.",
 //           504: "Server timed out.",
 //         };
-//         const msg =
-//           j?.error || friendly[res.status] || `Failed to save itinerary (HTTP ${res.status})`;
-//         Alert.alert("Error", msg);
+//         const msg = j?.error || friendly[res.status] || `Failed to save itinerary (HTTP ${res.status})`;
+//         showMsg("Error", msg);
 //         return;
 //       }
 
-//       // 6) Success
-//       Alert.alert("Success", "Itinerary saved successfully!");
-
-//       // Reset form after success
-//       setTitle("");
-//       setDesc("");
-//       setCity("");
-//       setBudget("");
-//       setStylePref("");
-//       setStartDateText("");
-//       setEndDateText("");
-//       setCover(null);
-//       setDays([{ place: "", startTime: "", endTime: "", activities: "" }]);
-
-//       // Go back to Hub view if embedded
-//       goBack();
+//       // Success → modal (works on mobile & web)
+//       setShowSuccess(true);
 //     } catch (err) {
-//       // Network issues, wrong base URL, CORS on web, or our manual timeout
 //       const aborted = err?.name === "AbortError";
 //       const msg = aborted
 //         ? "Request timed out. Check your connection or API base URL."
 //         : "Unable to reach the server. Check your connection or API base URL.";
 //       console.log("Create itinerary network error:", err);
-//       Alert.alert("Network Error", msg);
+//       showMsg("Network Error", msg);
 //     } finally {
 //       setSubmitting(false);
 //     }
 //   };
 
+//   const onCloseSuccess = () => {
+//     setShowSuccess(false);
+//     setTitle("");
+//     setDesc("");
+//     setCity("");
+//     setBudget("");
+//     setStylePref("");
+//     setStartDateText("");
+//     setEndDateText("");
+//     setCover(null);
+//     setDays([{ place: "", startTime: "", endTime: "", activities: "" }]);
+//     goBack();
+//   };
+
 //   return (
-//     <>
-//       {/* Back pill (works in embedded mode and stack mode) */}
-//       <TouchableOpacity
-//         onPress={goBack}
-//         style={{
-//           flexDirection: "row",
-//           alignItems: "center",
-//           gap: 8,
-//           margin: 12,
-//           paddingVertical: 10,
-//           paddingHorizontal: 12,
-//           backgroundColor: "#fff",
-//           borderRadius: 10,
-//           borderWidth: 1,
-//           borderColor: BORDER,
-//           alignSelf: "flex-start",
-//         }}
-//         accessibilityLabel="Back to Itineraries"
-//       >
-//         <Ionicons name="arrow-back" size={18} color="#0f172a" />
-//         <Text style={{ fontWeight: "800", color: "#0f172a" }}>Back to Itineraries</Text>
-//       </TouchableOpacity>
+//     <SafeAreaView style={[styles.safe, { paddingTop: IS_WEB ? 0 : insets.top }]}>
+//       {/* Header (safe-area helpful on mobile; harmless on web) */}
+//       <View style={styles.headerBar}>
+//         <TouchableOpacity onPress={goBack} style={styles.backPill} accessibilityLabel="Back to Itineraries">
+//           <Ionicons name="arrow-back" size={18} color="#0f172a" />
+//           <Text style={styles.backPillText}>Back to Itineraries</Text>
+//         </TouchableOpacity>
+//       </View>
 
 //       <ScrollView
 //         ref={scrollRef}
 //         style={styles.wrap}
-//         contentContainerStyle={{ paddingBottom: 36 }}
+//         contentContainerStyle={{ paddingBottom: IS_WEB ? 36 : 120 + insets.bottom }}
 //         keyboardShouldPersistTaps="handled"
 //       >
 //         <Text style={styles.h1}>Create Itinerary</Text>
 
 //         {/* ------- Card: Basics ------- */}
-//         <View className="card" style={styles.card}>
+//         <View style={styles.card}>
 //           <Text style={styles.sectionTitle}>Basics</Text>
 
 //           {/* Cover */}
@@ -556,11 +484,7 @@
 //             ) : (
 //               <Text style={{ color: SUBTEXT }}>Tap “Pick Cover” to add a photo</Text>
 //             )}
-//             <TouchableOpacity
-//               style={styles.coverBtn}
-//               onPress={pickCover}
-//               accessibilityLabel="Pick cover image"
-//             >
+//             <TouchableOpacity style={styles.coverBtn} onPress={pickCover} accessibilityLabel="Pick cover image">
 //               <Ionicons name="images-outline" size={16} color="#fff" />
 //               <Text style={styles.coverBtnText}>Pick Cover</Text>
 //             </TouchableOpacity>
@@ -639,20 +563,10 @@
 //           </View>
 //           {errors.stylePref && <Text style={styles.errText}>{errors.stylePref}</Text>}
 
-//           {/* Dates (calendar-enabled) */}
+//           {/* Dates */}
 //           <View style={styles.dateRow}>
-//             <DateField
-//               label="Start Date"
-//               value={startDateText}
-//               onChange={setStartDateText}
-//               error={errors.startDateText}
-//             />
-//             <DateField
-//               label="End Date"
-//               value={endDateText}
-//               onChange={setEndDateText}
-//               error={errors.endDateText}
-//             />
+//             <DateField label="Start Date" value={startDateText} onChange={setStartDateText} error={errors.startDateText} />
+//             <DateField label="End Date" value={endDateText} onChange={setEndDateText} error={errors.endDateText} />
 //           </View>
 //         </View>
 
@@ -681,21 +595,9 @@
 //                   )}
 //                 </View>
 
-//                 {/* Place */}
 //                 <Text style={styles.smallLabel}>Place (in {city || "…"})</Text>
-//                 <View
-//                   style={[
-//                     styles.pickerBox,
-//                     errPlace && styles.errBorder,
-//                     placeDisabled && { opacity: 0.6 },
-//                   ]}
-//                   pointerEvents={placeDisabled ? "none" : "auto"}
-//                 >
-//                   <Picker
-//                     style={styles.picker}
-//                     selectedValue={d.place}
-//                     onValueChange={(v) => updateDay(idx, { place: v })}
-//                   >
+//                 <View style={[styles.pickerBox, errPlace && styles.errBorder, placeDisabled && { opacity: 0.6 }]} pointerEvents={placeDisabled ? "none" : "auto"}>
+//                   <Picker style={styles.picker} selectedValue={d.place} onValueChange={(v) => updateDay(idx, { place: v })}>
 //                     <Picker.Item label={city ? "Select Place" : "Select City first"} value="" />
 //                     {cityPlaces.map((p) => (
 //                       <Picker.Item key={p} label={p} value={p} />
@@ -704,23 +606,11 @@
 //                 </View>
 //                 {errPlace && <Text style={styles.errText}>{errPlace}</Text>}
 
-//                 {/* Optional time fields (free text) */}
 //                 <Text style={styles.smallLabel}>Start Time (optional)</Text>
-//                 <TextInput
-//                   style={styles.input}
-//                   placeholder="e.g., 9am or 09:00"
-//                   value={d.startTime}
-//                   onChangeText={(t) => updateDay(idx, { startTime: t })}
-//                 />
+//                 <TextInput style={styles.input} placeholder="e.g., 9am or 09:00" value={d.startTime} onChangeText={(t) => updateDay(idx, { startTime: t })} />
 //                 <Text style={styles.smallLabel}>End Time (optional)</Text>
-//                 <TextInput
-//                   style={styles.input}
-//                   placeholder="e.g., evening or 17:00"
-//                   value={d.endTime}
-//                   onChangeText={(t) => updateDay(idx, { endTime: t })}
-//                 />
+//                 <TextInput style={styles.input} placeholder="e.g., evening or 17:00" value={d.endTime} onChangeText={(t) => updateDay(idx, { endTime: t })} />
 
-//                 {/* Activities */}
 //                 <Text style={styles.smallLabel}>Activities / Notes</Text>
 //                 <TextInput
 //                   style={[styles.input, styles.multiline, errAct && styles.errBorder]}
@@ -735,33 +625,93 @@
 //           })}
 //         </View>
 
-//         {/* Submit */}
-//         <TouchableOpacity
-//           style={[styles.submit, (!canSubmit() || submitting) && { opacity: 0.6 }]}
-//           onPress={submit}
-//           disabled={!canSubmit() || submitting}
-//           accessibilityLabel="Submit itinerary"
-//         >
-//           {submitting ? (
-//             <ActivityIndicator size="small" color="#fff" />
-//           ) : (
-//             <>
-//               <Ionicons name="airplane-outline" size={18} color="#fff" />
-//               <Text style={styles.submitText}>Submit Itinerary</Text>
-//             </>
-//           )}
-//         </TouchableOpacity>
+//         {/* Submit (WEB ONLY — inline, like before) */}
+//         {IS_WEB && (
+//           <TouchableOpacity
+//             style={[styles.submit, (!canSubmit || submitting) && { opacity: 0.6 }]}
+//             onPress={submit}
+//             disabled={!canSubmit || submitting}
+//             accessibilityLabel="Submit itinerary"
+//           >
+//             {submitting ? (
+//               <ActivityIndicator size="small" color="#fff" />
+//             ) : (
+//               <>
+//                 <Ionicons name="airplane-outline" size={18} color="#fff" />
+//                 <Text style={styles.submitText}>Submit Itinerary</Text>
+//               </>
+//             )}
+//           </TouchableOpacity>
+//         )}
 //       </ScrollView>
-//     </>
+
+//       {/* Floating footer submit (NATIVE ONLY) */}
+//       {!IS_WEB && (
+//         <View style={[styles.footer, { paddingBottom: 12 + insets.bottom }]}>
+//           <TouchableOpacity
+//             style={[styles.submit, (!canSubmit || submitting) && { opacity: 0.6 }]}
+//             onPress={submit}
+//             disabled={!canSubmit || submitting}
+//             accessibilityLabel="Submit itinerary"
+//           >
+//             {submitting ? (
+//               <ActivityIndicator size="small" color="#fff" />
+//             ) : (
+//               <>
+//                 <Ionicons name="airplane-outline" size={18} color="#fff" />
+//                 <Text style={styles.submitText}>Submit Itinerary</Text>
+//               </>
+//             )}
+//           </TouchableOpacity>
+//         </View>
+//       )}
+
+//       {/* Success modal */}
+//       <Modal visible={showSuccess} transparent animationType="fade" onRequestClose={onCloseSuccess}>
+//         <View style={styles.modalOverlay}>
+//           <View style={styles.modalCard}>
+//             <View style={styles.modalIconCircle}>
+//               <Ionicons name="checkmark" size={36} color="#fff" />
+//             </View>
+//             <Text style={styles.modalTitle}>Itinerary Created</Text>
+//             <Text style={styles.modalText}>Your itinerary was saved successfully.</Text>
+//             <TouchableOpacity style={styles.modalBtn} onPress={onCloseSuccess}>
+//               <Text style={styles.modalBtnText}>OK</Text>
+//             </TouchableOpacity>
+//           </View>
+//         </View>
+//       </Modal>
+//     </SafeAreaView>
 //   );
 // }
 
 // /* ========= Styles ========= */
 // const styles = StyleSheet.create({
+//   safe: { flex: 1, backgroundColor: "#f7f9fc" },
+
+//   headerBar: { paddingHorizontal: 12, paddingBottom: 8, backgroundColor: "#f7f9fc" },
+//   backPill: {
+//     flexDirection: "row",
+//     alignItems: "center",
+//     gap: 8,
+//     alignSelf: "flex-start",
+//     backgroundColor: "#fff",
+//     borderRadius: 10,
+//     borderWidth: 1,
+//     borderColor: BORDER,
+//     paddingVertical: 10,
+//     paddingHorizontal: 12,
+//     shadowColor: "#000",
+//     shadowOpacity: 0.05,
+//     shadowRadius: 6,
+//     shadowOffset: { width: 0, height: 2 },
+//     elevation: 2,
+//   },
+//   backPillText: { fontWeight: "800", color: "#0f172a" },
+
 //   wrap: { flex: 1, backgroundColor: "#f7f9fc", padding: 14 },
 //   h1: { fontSize: 22, fontWeight: "800", color: PRIMARY, marginBottom: 10 },
 
-//   /* Cards */
 //   card: {
 //     backgroundColor: "#fff",
 //     borderWidth: 1,
@@ -775,19 +725,12 @@
 //     shadowOffset: { width: 0, height: 4 },
 //     elevation: 2,
 //   },
-//   cardHead: {
-//     flexDirection: "row",
-//     alignItems: "center",
-//     justifyContent: "space-between",
-//     marginBottom: 6,
-//   },
+//   cardHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 6 },
 //   sectionTitle: { fontSize: 16, fontWeight: "800", color: "#0f172a" },
 
-//   /* Labels */
 //   label: { fontWeight: "700", color: "#0f172a", marginBottom: 6, marginTop: 6 },
 //   smallLabel: { fontWeight: "600", color: "#0f172a", marginBottom: 6, marginTop: 6 },
 
-//   /* Inputs */
 //   input: {
 //     backgroundColor: "#fff",
 //     borderWidth: 1,
@@ -800,7 +743,6 @@
 //   },
 //   multiline: { minHeight: 84, textAlignVertical: "top" },
 
-//   /* Pickers */
 //   pickerBox: {
 //     borderWidth: 1,
 //     borderColor: BORDER,
@@ -817,13 +759,11 @@
 //     fontSize: 16,
 //     color: "#0f172a",
 //     paddingHorizontal: 10,
-//     ...(Platform.OS === "web" ? { outlineStyle: "none" } : null),
+//     ...(IS_WEB ? { outlineStyle: "none" } : null),
 //   },
 
-//   /* Date row */
 //   dateRow: { flexDirection: "row", gap: 10, marginTop: 8 },
 
-//   // Web date input (styled to match RN inputs)
 //   webDateInput: {
 //     width: "100%",
 //     height: 48,
@@ -838,7 +778,6 @@
 //     marginBottom: 6,
 //   },
 
-//   // Native date button
 //   dateBtn: {
 //     flexDirection: "row",
 //     alignItems: "center",
@@ -850,7 +789,6 @@
 //     marginBottom: 6,
 //   },
 
-//   /* Cover */
 //   coverBox: {
 //     height: 180,
 //     borderWidth: 1,
@@ -878,7 +816,6 @@
 //   },
 //   coverBtnText: { color: "#fff", fontWeight: "800" },
 
-//   /* Day cards */
 //   dayCard: {
 //     borderWidth: 1,
 //     borderColor: "#e9eef7",
@@ -887,39 +824,26 @@
 //     padding: 12,
 //     marginBottom: 12,
 //   },
-//   dayHead: {
-//     flexDirection: "row",
-//     justifyContent: "space-between",
-//     alignItems: "center",
-//     marginBottom: 6,
-//   },
+//   dayHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
 //   dayTitle: { fontWeight: "800", color: "#0f172a" },
 
-//   /* Chips */
 //   row: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 10 },
-//   chip: {
-//     borderWidth: 1,
-//     borderColor: BORDER,
-//     borderRadius: 999,
-//     paddingVertical: 8,
-//     paddingHorizontal: 14,
-//     backgroundColor: "#fff",
-//   },
+//   chip: { borderWidth: 1, borderColor: BORDER, borderRadius: 999, paddingVertical: 8, paddingHorizontal: 14, backgroundColor: "#fff" },
 //   chipActive: { backgroundColor: PRIMARY, borderColor: PRIMARY },
 //   chipText: { fontWeight: "700", color: PRIMARY },
 //   chipTextActive: { color: "#fff", fontWeight: "800" },
 
-//   /* Buttons */
-//   addBtn: {
-//     borderWidth: 1,
-//     borderColor: PRIMARY,
-//     borderRadius: 10,
-//     paddingVertical: 10,
-//     paddingHorizontal: 14,
-//     backgroundColor: "#fff",
-//   },
+//   addBtn: { borderWidth: 1, borderColor: PRIMARY, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 14, backgroundColor: "#fff" },
 //   addBtnText: { color: PRIMARY, fontWeight: "800" },
 
+//   // Footer submit (native only)
+//   footer: {
+//     position: "absolute",
+//     left: 16,
+//     right: 16,
+//     bottom: 0,
+//     backgroundColor: "transparent",
+//   },
 //   submit: {
 //     backgroundColor: "#16a34a",
 //     borderRadius: 12,
@@ -931,13 +855,44 @@
 //   },
 //   submitText: { color: "#fff", fontSize: 16, fontWeight: "800" },
 
-//   /* Errors */
 //   errText: { color: "#dc2626", marginBottom: 8 },
 //   errBorder: { borderColor: "#dc2626" },
+
+//   modalOverlay: {
+//     flex: 1,
+//     backgroundColor: "rgba(0,0,0,0.3)",
+//     alignItems: "center",
+//     justifyContent: "center",
+//     padding: 24,
+//   },
+//   modalCard: {
+//     width: "100%",
+//     maxWidth: 360,
+//     backgroundColor: "#fff",
+//     borderRadius: 16,
+//     padding: 20,
+//     alignItems: "center",
+//   },
+//   modalIconCircle: {
+//     width: 64,
+//     height: 64,
+//     borderRadius: 999,
+//     backgroundColor: "#16a34a",
+//     alignItems: "center",
+//     justifyContent: "center",
+//     marginBottom: 12,
+//   },
+//   modalTitle: { fontSize: 18, fontWeight: "800", color: "#0f172a", marginBottom: 6, textAlign: "center" },
+//   modalText: { color: "#374151", textAlign: "center", marginBottom: 16 },
+//   modalBtn: {
+//     backgroundColor: "#0f172a",
+//     paddingVertical: 10,
+//     paddingHorizontal: 18,
+//     borderRadius: 10,
+//   },
+//   modalBtnText: { color: "#fff", fontWeight: "800" },
 // });
 
-
-// screens/CreateItineraryScreen.js
 
 // screens/CreateItineraryScreen.js
 import React, { useMemo, useRef, useState, useEffect } from "react";
@@ -977,6 +932,7 @@ const getAuthToken = async () => {
 };
 
 const IS_WEB = Platform.OS === "web";
+const IS_NATIVE = !IS_WEB;
 
 /* ========= Inline Cities → Destinations JSON (your data) ========= */
 const PLACES_BY_CITY = {
@@ -1202,6 +1158,10 @@ export default function CreateItineraryScreen({ onBack }) {
 
   const scrollRef = useRef(null);
 
+  // Web-only hidden file input (optional to use on web)
+  const webInputRef = useRef(null);
+  const [webFile, setWebFile] = useState(null);
+
   const [cover, setCover] = useState(null);
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
@@ -1227,17 +1187,172 @@ export default function CreateItineraryScreen({ onBack }) {
       return next;
     });
 
-  const pickCover = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      showMsg("Permission needed", "Please allow photo library access.");
-      return;
+  // ======= helper to fetch user id from storage =======
+  const getUserIdForUpload = async () => {
+    const candidateKeys = ["user_id", "userId", "id", "USER_ID", "currentUser", "user", "profile"];
+    for (const k of candidateKeys) {
+      const val = await AsyncStorage.getItem(k);
+      if (!val) continue;
+      try {
+        const maybeObj = JSON.parse(val);
+        if (maybeObj && typeof maybeObj === "object") {
+          if (maybeObj.user_id != null) return String(maybeObj.user_id);
+          if (maybeObj.id != null) return String(maybeObj.id);
+          if (maybeObj.userId != null) return String(maybeObj.userId);
+        } else if (String(val).trim()) {
+          return String(val).trim();
+        }
+      } catch {
+        if (String(val).trim()) return String(val).trim();
+      }
     }
+    return null;
+  };
+
+  // ======= robust multipart upload (native + web) =======
+  const uploadCoverIfNeeded = async (token) => {
+    if (!cover?.uri || /^https?:\/\//i.test(cover.uri)) {
+      return "";
+    }
+
+    const userId = await getUserIdForUpload();
+    if (!userId) {
+      showMsg("Not logged in", "Cannot find your user ID. Please log in again.");
+      return null;
+    }
+
+    const endpoint = `${API_BASE}/asset/${encodeURIComponent(userId)}`;
+    const form = new FormData();
+
+    try {
+      if (IS_WEB) {
+        if (webFile) {
+          form.append("asset", webFile);
+        } else {
+          const resp = await fetch(cover.uri);
+          const blob = await resp.blob();
+          const fname = `cover_${Date.now()}.${(blob.type || "image/jpeg").includes("png") ? "png" : "jpg"}`;
+          form.append("asset", new File([blob], fname, { type: blob.type || "image/jpeg" }));
+        }
+      } else {
+        const name = cover.fileName || cover.filename || `cover_${Date.now()}.jpg`;
+        const type = cover.mimeType || cover.type || "image/jpeg";
+        form.append("asset", { uri: cover.uri, name, type });
+      }
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 25000);
+
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: form,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      const text = await res.text();
+      let json = null;
+      try {
+        json = text ? JSON.parse(text) : null;
+      } catch {}
+
+      if (res.status === 401) {
+        showMsg("Session expired", "Please log in again.");
+        return null;
+      }
+      if (res.status === 428) {
+        showMsg("Complete Profile", json?.error || "Please complete your profile to continue.");
+        return null;
+      }
+      if (!res.ok) {
+        const msg = (json && (json.error || json.message)) || `Failed to upload image (HTTP ${res.status})`;
+        showMsg("Upload Error", msg);
+        return null;
+      }
+
+      const uploadedUrl = json?.url;
+      if (!uploadedUrl) {
+        showMsg("Upload Error", "Upload succeeded but no URL returned.");
+        return null;
+      }
+      return uploadedUrl;
+    } catch (err) {
+      const aborted = err?.name === "AbortError";
+      const msg = aborted ? "Image upload timed out. Please try again." : "Unable to upload the image. Check your connection.";
+      showMsg("Upload Error", msg);
+      return null;
+    }
+  };
+
+  // ======= pickCover (same mediaTypes + immediate native upload as Edit) =======
+  const pickCover = async () => {
     const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ["images"],
       quality: 0.85,
     });
-    if (!res.canceled) setCover(res.assets?.[0] || null);
+    if (res.canceled) return;
+
+    const a = res.assets?.[0];
+    if (!a?.uri) {
+      showMsg("Error", "Could not read the selected image.");
+      return;
+    }
+
+    const filename =
+      a.fileName || a.filename || `cover_${Date.now()}.${(a.type?.includes("png") || a.mimeType?.includes("png")) ? "png" : "jpg"}`;
+    const mime =
+      a.mimeType || (filename.toLowerCase().endsWith(".png") ? "image/png" : "image/jpeg");
+
+    // local preview
+    setCover({
+      uri: a.uri,
+      fileName: filename,
+      filename,
+      type: mime,
+      mimeType: mime,
+    });
+
+    // on native, upload immediately and swap in remote URL
+    if (IS_NATIVE) {
+      try {
+        const token = await getAuthToken();
+        if (!token) return;
+        const userId = await getUserIdForUpload();
+        if (!userId) return;
+
+        const form = new FormData();
+        form.append("asset", { uri: a.uri, name: filename, type: mime });
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 25000);
+
+        const resUp = await fetch(`${API_BASE}/asset/${encodeURIComponent(userId)}`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: form,
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        const txt = await resUp.text();
+        let json = null;
+        try { json = txt ? JSON.parse(txt) : null; } catch {}
+
+        if (resUp.ok && json?.url) {
+          setCover({ uri: json.url });
+        } else {
+          const msg = json?.error || `Failed to upload image (HTTP ${resUp.status})`;
+          console.log("Create immediate upload error:", msg);
+        }
+      } catch (e) {
+        console.log("Create immediate upload exception:", e);
+      }
+    }
   };
 
   const validate = () => {
@@ -1294,6 +1409,16 @@ export default function CreateItineraryScreen({ onBack }) {
       return;
     }
 
+    // ensure we have a remote URL if needed
+    let finalCoverUrl =
+      cover?.uri && /^https?:\/\//i.test(cover.uri) ? cover.uri : "";
+
+    if (cover?.uri && !/^https?:\/\//i.test(cover.uri)) {
+      const uploaded = await uploadCoverIfNeeded(token);
+      if (!uploaded) return;
+      finalCoverUrl = uploaded;
+    }
+
     const payload = {
       title,
       description: desc,
@@ -1302,7 +1427,7 @@ export default function CreateItineraryScreen({ onBack }) {
       style: stylePref,
       start_date: startDateText,
       end_date: endDateText,
-      cover_url: cover?.uri || "",
+      cover_url: finalCoverUrl,
       days: days.map((d, idx) => ({
         day_number: idx + 1,
         place: d.place,
@@ -1402,6 +1527,25 @@ export default function CreateItineraryScreen({ onBack }) {
           <Text style={styles.backPillText}>Back to Itineraries</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Hidden file input for web (optional) */}
+      {IS_WEB && (
+        // @ts-ignore web-only
+        <input
+          ref={webInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: "none" }}
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) {
+              setWebFile(f);
+              const url = URL.createObjectURL(f);
+              setCover({ uri: url, name: f.name, type: f.type });
+            }
+          }}
+        />
+      )}
 
       <ScrollView
         ref={scrollRef}

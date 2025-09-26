@@ -14,6 +14,10 @@ func RegisterUserRoutes(router *gin.Engine) {
 		auth.POST("/signup", controllers.SignupUser)
 		auth.POST("/login", controllers.LoginUser)
 		auth.POST("/complete-registration", controllers.CompleteRegistration) // deprecated
+		auth.POST("/email-varification", controllers.ForgetPasswordHandler)   // step 1 (send code)
+		auth.POST("/verify-code", controllers.VerifyCodeHandler)              // step 2 (check code)
+		auth.POST("/reset-password", controllers.ResetPasswordHandler)        // step 3 (set new password)
+
 	}
 
 	// ---------- AUTH ONLY (user can finish profile here even if incomplete) ----------

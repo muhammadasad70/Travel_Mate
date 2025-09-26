@@ -140,3 +140,17 @@ func GetUserByID(id int) (User, error) {
 	)
 	return user, err
 }
+func UpdateUserPasswordByEmail(email, hashed string) error {
+	res, err := database.DB.Exec(`UPDATE users SET password=$1 WHERE LOWER(email)=LOWER($2)`, hashed, email)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return errors.New("no user updated")
+	}
+	return nil
+}
