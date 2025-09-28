@@ -29,9 +29,9 @@
 // const SUBTEXT = "#6B7280";
 
 // // Layout settings
-// const GUTTER = 14;          // visual space between cards
-// const H_PADDING = 14;       // outer list padding (we'll offset it by GUTTER/2)
-// const CARD_MIN_WIDTH = 320; // min target card width on web
+// const GUTTER = 14;
+// const H_PADDING = 14;
+// const CARD_MIN_WIDTH = 320;
 
 // const TOKEN_KEYS = ["token", "auth_token", "jwt", "access_token", "AUTH_TOKEN", "userToken"];
 // const getAuthToken = async () => {
@@ -49,7 +49,6 @@
 //   if (Platform.OS === "web" && typeof window !== "undefined") {
 //     return `${window.location.origin}/itinerary/${id}`;
 //   }
-//   // For native, if you have a universal link or app link, put it here:
 //   return `https://travelmate.example.com/itinerary/${id}`;
 // };
 
@@ -58,16 +57,9 @@
 //   const insets = useSafeAreaInsets();
 //   const { width } = useWindowDimensions();
 
-//   // Responsive column count (web/tablets)
 //   const columns =
 //     Platform.OS === "web"
-//       ? Math.max(
-//           1,
-//           Math.min(
-//             4,
-//             Math.floor((width - H_PADDING * 2 + GUTTER) / (CARD_MIN_WIDTH + GUTTER))
-//           )
-//         )
+//       ? Math.max(1, Math.min(4, Math.floor((width - H_PADDING * 2 + GUTTER) / (CARD_MIN_WIDTH + GUTTER))))
 //       : 1;
 
 //   const [items, setItems] = useState([]);
@@ -118,7 +110,7 @@
 //   // Optimistic delete with rollback on failure
 //   const doDelete = async (it) => {
 //     const id = it?.id ?? it?._id;
-//     if (!id) return;
+//     if (!id || deletingId) return; // guard
 //     const token = await getAuthToken();
 //     if (!token) {
 //       Alert.alert("Not logged in", "Please log in again.");
@@ -137,19 +129,18 @@
 
 //       if (res.status === 204) {
 //         // success
-//         // Optional: Alert.alert("Deleted", "Itinerary removed.");
 //         return;
 //       }
 
 //       const raw = await res.text();
 //       let j = null;
 //       try { j = raw ? JSON.parse(raw) : null; } catch {}
+//       setItems(prev); // rollback
 
-//       // rollback UI
-//       setItems(prev);
 //       const msgMap = {
 //         401: "Your session expired. Please log in again.",
 //         404: "Itinerary not found (maybe already deleted).",
+//         428: "Please complete your profile to continue.",
 //       };
 //       const msg = j?.error || msgMap[res.status] || `Failed (HTTP ${res.status})`;
 //       Alert.alert("Delete failed", msg);
@@ -162,7 +153,13 @@
 //     }
 //   };
 
+//   // WEB-SAFE confirm: use window.confirm on web, ActionSheet on iOS, Alert on Android
 //   const confirmDelete = (it) => {
+//     if (Platform.OS === "web") {
+//       const ok = typeof window !== "undefined" ? window.confirm("Delete itinerary? This action cannot be undone.") : false;
+//       if (ok) doDelete(it);
+//       return;
+//     }
 //     if (Platform.OS === "ios") {
 //       ActionSheetIOS.showActionSheetWithOptions(
 //         {
@@ -177,12 +174,13 @@
 //           if (idx === 1) doDelete(it);
 //         }
 //       );
-//     } else {
-//       Alert.alert("Delete itinerary?", "This action cannot be undone.", [
-//         { text: "Cancel", style: "cancel" },
-//         { text: "Delete", style: "destructive", onPress: () => doDelete(it) },
-//       ]);
+//       return;
 //     }
+//     // Android
+//     Alert.alert("Delete itinerary?", "This action cannot be undone.", [
+//       { text: "Cancel", style: "cancel" },
+//       { text: "Delete", style: "destructive", onPress: () => doDelete(it) },
+//     ]);
 //   };
 
 //   const onShare = async (it) => {
@@ -336,7 +334,7 @@
 
 //   cardWrap: {
 //     flexGrow: 1,
-//     paddingHorizontal: GUTTER / 2, // per-item gutters
+//     paddingHorizontal: GUTTER / 2,
 //   },
 //   cardActions: {
 //     flexDirection: "row",
@@ -384,7 +382,6 @@
 //   },
 //   primaryBtnText: { color: "#fff", fontWeight: "800" },
 // });
-
 
 // screens/CrowdsourceItineraries/ManageItinerariesScreen.js
 import React, { useEffect, useState, useCallback } from "react";
@@ -466,7 +463,12 @@ export default function ManageItinerariesScreen() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const raw = await res.text();
-      const data = raw ? JSON.parse(raw) : [];
+      let data = [];
+      try {
+        data = raw ? JSON.parse(raw) : [];
+      } catch {
+        data = [];
+      }
       if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
       setItems(Array.isArray(data) ? data : data?.items || []);
     } catch (e) {
@@ -490,7 +492,12 @@ export default function ManageItinerariesScreen() {
     setRefreshing(false);
   };
 
-  const onView = (it) => navigation.navigate("ItineraryDetails", { itinerary: it, id: it?.id });
+  // Always pass both id and the full object for instant render + refetch on detail screen
+  const onView = (it) => {
+    const id = it?.id ?? it?._id;
+    navigation.navigate("ItineraryDetails", { id, itinerary: it });
+  };
+
   const onEdit = (it) => navigation.navigate("EditItinerary", { edit: true, itinerary: it });
 
   // Optimistic delete with rollback on failure
@@ -657,7 +664,7 @@ export default function ManageItinerariesScreen() {
         data={items}
         key={columns}
         renderItem={renderItem}
-        keyExtractor={(it) => String(it.id ?? it._id ?? Math.random())}
+        keyExtractor={(it, i) => String(it?.id ?? it?._id ?? i)}
         numColumns={columns}
         contentContainerStyle={[
           styles.listContent,

@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -61,8 +60,8 @@ const Header = ({ onTabChange }) => {
       case 'services':
       case 'profile':
       case 'communityHub':
-      case 'groups':    
-      case 'offline': 
+      case 'groups':
+      case 'offline':
       case 'messages':
         dispatchTab(key);
         break;
@@ -71,10 +70,8 @@ const Header = ({ onTabChange }) => {
         dispatchTab('notification'); break;
 
       // dedicated screens
-
       case 'saved': navigation.navigate('SavedScreen'); break;
       case 'history': navigation.navigate('TripsScreen'); break;
-   
 
       case 'settings': navigation.navigate('ManageTravelerProfile'); break;
       case 'support': navigation.navigate('HelpScreen'); break;
@@ -130,6 +127,8 @@ const Header = ({ onTabChange }) => {
               { label: '📝 Trip Planner', key: 'tripplanner' },
               { label: '🎉 Events', key: 'events' },
               { label: '🛎 Services', key: 'services' },
+              { label: '👥 Community', key: 'communityHub' },   // NEW
+              { label: '🧑‍🤝‍🧑 Groups', key: 'groups' },       // NEW
             ].map((item) => (
               <TouchableOpacity
                 key={item.key}
@@ -142,25 +141,14 @@ const Header = ({ onTabChange }) => {
           </View>
         )}
 
-        {/* Right actions */}
+        {/* Right actions (vendor icon removed; still available in dropdown) */}
         <View style={styles.rightSection}>
-          {/* web-only vendor */}
-          {!isMobile && (
-            <IconWithCaption
-              icon="briefcase-outline"
-              label="Be a vendor"
-              onPress={() => handleItemPress('vendor')}
-            />
-          )}
-
-          {/* alerts (web + mobile) */}
           <IconWithCaption
             icon="notifications-outline"
             label="Alerts"
             onPress={() => handleItemPress('notification')}
           />
 
-          {/* NEW: mobile-only Messages beside Alerts */}
           {isMobile && (
             <IconWithCaption
               icon="chatbubble-ellipses-outline"
@@ -169,7 +157,6 @@ const Header = ({ onTabChange }) => {
             />
           )}
 
-          {/* web-only profile + menu */}
           {!isMobile && (
             <>
               <IconAvatar label="Profile" onPress={() => handleItemPress('profile')} />
@@ -212,7 +199,7 @@ const Header = ({ onTabChange }) => {
             <RowAction icon="person-circle-outline" label="Profile" onPress={() => handleItemPress('profile')} />
             <RowAction icon="chatbubble-ellipses-outline" label="Messages" onPress={() => handleItemPress('messages')} />
 
-            {/* CTA */}
+            {/* CTA (vendor kept here) */}
             <TouchableOpacity style={styles.vendorCta} onPress={() => handleItemPress('vendor')} activeOpacity={0.9}>
               <Ionicons name="briefcase-outline" size={18} color="#fff" />
               <Text style={styles.vendorCtaText} numberOfLines={1}>Become a Vendor</Text>
@@ -242,7 +229,7 @@ const IconWithCaption = ({ icon, label, onPress, isMenu }) => (
     >
       <Ionicons name={icon} size={isMenu ? 26 : 22} color="#003366" />
     </TouchableOpacity>
-    <Text style={styles.iconCaption}>{label}</Text>
+    {!!label && <Text style={styles.iconCaption}>{label}</Text>}
   </View>
 );
 
@@ -348,7 +335,7 @@ const styles = StyleSheet.create({
   activeButton: { backgroundColor: '#e0f4ff', borderColor: '#0077b6' },
   navButtonText: { fontSize: 14, fontWeight: '600', color: '#003366' },
 
-  rightSection: { flexDirection: 'row', alignItems: 'center', gap: 8,marginLeft:15 },
+  rightSection: { flexDirection: 'row', alignItems: 'center', gap: 8, marginLeft: 15 },
 
   iconWithLabel: { alignItems: 'center', justifyContent: 'center', gap: 2 },
   iconCaption: { fontSize: 10, fontWeight: '500', color: '#003366', lineHeight: 12 },
@@ -450,5 +437,3 @@ const styles = StyleSheet.create({
 });
 
 export default Header;
-
-

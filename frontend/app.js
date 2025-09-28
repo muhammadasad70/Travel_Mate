@@ -42,6 +42,7 @@ import CulturalExchangeScreen from './screens/VendorServices/CulturalExchangeScr
 import GroupScreen from './screens/GroupScreen';
 import ProfileCompletionScreen from './screens/ProfileCompletionScreen';
 import ItinerariesHub from './screens/ItinerariesHub';
+import completeitinerrarydetail from "./screens/completeitinerrarydetail";
 
 /*Vendor Type Selection */
 import VendorTypeSelectionScreen from './screens/vendor/VendorTypeSelectionScreen';
@@ -129,6 +130,7 @@ export default function App() {
             <Stack.Screen name="VendorDashboard" component={VendorDashboard} />
             <Stack.Screen name="EventIntegration" component={EventIntegrationScreen} />
             <Stack.Screen name="ItinerariesHub" component={ItinerariesHub} />
+            <Stack.Screen name="ItineraryDetails" component={completeitinerrarydetail} />
 
             {/* NEW entry points */}
             <Stack.Screen name="CommunityHub" component={CommunityHubScreen} />

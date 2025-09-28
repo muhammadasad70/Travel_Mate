@@ -103,7 +103,7 @@ const TravelerProfile = ({ inPage = false }) => {
   const quickTiles = useMemo(
     () => [
       { key: 'community',   label: 'Community',   image: communityImg,   route: 'CommunityScreen',   fallbackIcon: 'people-circle-outline' },
-      { key: 'connections', label: 'Connections', image: connectionsImg, route: 'ConnectionsScreen', fallbackIcon: 'people-outline' },
+      { key: 'connections', label: 'groups', image: connectionsImg, route: 'ConnectionsScreen', fallbackIcon: 'people-outline' },
       { key: 'history',     label: 'History',     image: historyImg,     route: 'TripsScreen',       fallbackIcon: 'time-outline' },
       { key: 'saved',       label: 'Saved',       image: savedImg,       route: 'SavedScreen',       fallbackIcon: 'heart-outline' },
     ],

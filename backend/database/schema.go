@@ -41,10 +41,12 @@ CREATE TABLE IF NOT EXISTS itinerary_days (
   itinerary_id BIGINT NOT NULL REFERENCES itineraries(id) ON DELETE CASCADE,
   day_number INT NOT NULL,
   place TEXT NOT NULL,
+  place_source TEXT NOT NULL DEFAULT 'custom' CHECK (place_source IN ('curated','custom')),
   start_time TEXT,
   end_time TEXT,
   activities TEXT NOT NULL
 );
+
 
 -- user uploaded images (photos/videos)
 CREATE TABLE IF NOT EXISTS images (
