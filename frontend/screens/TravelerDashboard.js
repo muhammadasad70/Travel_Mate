@@ -1,4 +1,5 @@
 
+
 // import React, { useState, useEffect } from 'react';
 // import { View, StyleSheet, ScrollView, Platform } from 'react-native';
 // import { useRoute, useNavigation } from '@react-navigation/native';
@@ -12,16 +13,11 @@
 // import CulturalExchange from '../components/TravelerDashboard/CulturalExchange';
 // import TopServiceProviders from '../components/TravelerDashboard/TravelerTopServiceProviders';
 // import Footer from '../components/TravelerDashboard/Footer';
-
-// import CrowdsourceItineraries from './CrowdsourceItineraries/CrowdsourceItinerariesScreen';
 // import EventIntegration from './EventIntegrationScreen';
 // import TravelerServicesScreen from './VendorServices/TravelerServicesScreen';
 // import TravelerNotifications from './RealTimeAlertsScreen';
 // import TravelerProfile from './TravelerProfile';
-// import GroupScreen from './GroupScreen';
-// import CommunityHubScreen from './CommunityHubScreen';
 // import OfflineScreen from './OfflineScreen';
-// import CommunityScreen from './CommunityScreen';
 // import MessagesScreen from './MessagesScreen';
 // import ItinerariesHub from './ItinerariesHub';
 
@@ -31,7 +27,9 @@
 // const TravelerDashboard = () => {
 //   const route = useRoute();
 //   const navigation = useNavigation();
+
 //   const [selectedTab, setSelectedTab] = useState('explore');
+//   const [plannerView, setPlannerView] = useState('hub'); // 'hub' | 'create'
 
 //   // Mobile: tab switching via route.params
 //   useEffect(() => {
@@ -55,11 +53,36 @@
 //       return () => window.removeEventListener('tabChange', handleTabChange);
 //     }
 //   }, []);
-// // return < CrowdsourceItineraries />;
+
+//   // If user leaves the tripplanner tab, reset sub-view to hub
+//   useEffect(() => {
+//     if (selectedTab !== 'tripplanner' && plannerView !== 'hub') {
+//       setPlannerView('hub');
+//     }
+//   }, [selectedTab, plannerView]);
+
+//   // 👉 When "communityHub" is chosen, jump to SocialDashboard (with 'from' flag)
+//   useEffect(() => {
+//     if (selectedTab === 'communityHub') {
+//       navigation.navigate('SocialDashboard', {
+//         tabKey: `home-${Date.now()}`,
+//         from: 'TravelerDashboard', // ← triggers Back chip in SocialHeader
+//       });
+//       // Prevent redirect loop when user returns to TravelerDashboard
+//       setTimeout(() => setSelectedTab('explore'), 0);
+//     }
+//   }, [selectedTab, navigation]);
+
 //   const renderCurrentTab = () => {
 //     switch (selectedTab) {
 //       case 'tripplanner':
-//         return <ItinerariesHub />;
+//         return (
+//           <ItinerariesHub
+//             mode={plannerView}
+//             onOpenCreate={() => setPlannerView('create')}
+//             onBackToHub={() => setPlannerView('hub')}
+//           />
+//         );
 //       case 'events':
 //         return <EventIntegration />;
 //       case 'services':
@@ -68,12 +91,11 @@
 //         return <TravelerNotifications />;
 //       case 'profile':
 //         return <TravelerProfile inPage />;
-//       case 'communityHub':
-//         return <CommunityHubScreen inPage />;
 //       case 'offline':
 //         return <OfflineScreen inPage />;
 //       case 'messages':
 //         return <MessagesScreen inPage />;
+//       // 'communityHub' handled by the effect above
 //       default:
 //         return (
 //           <>
@@ -121,19 +143,6 @@
 // export default TravelerDashboard;
 
 
-
-
-
-// above code is for simple not for go back 
-
-
-
-
-
-
-
-
-
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Platform } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -151,10 +160,7 @@ import EventIntegration from './EventIntegrationScreen';
 import TravelerServicesScreen from './VendorServices/TravelerServicesScreen';
 import TravelerNotifications from './RealTimeAlertsScreen';
 import TravelerProfile from './TravelerProfile';
-import GroupScreen from './GroupScreen';
-import CommunityHubScreen from './CommunityHubScreen';
 import OfflineScreen from './OfflineScreen';
-import CommunityScreen from './CommunityScreen';
 import MessagesScreen from './MessagesScreen';
 import ItinerariesHub from './ItinerariesHub';
 
@@ -166,8 +172,7 @@ const TravelerDashboard = () => {
   const navigation = useNavigation();
 
   const [selectedTab, setSelectedTab] = useState('explore');
-  // Controls which planner sub-view is on screen: 'hub' or 'create'
-  const [plannerView, setPlannerView] = useState('hub');
+  const [plannerView, setPlannerView] = useState('hub'); // 'hub' | 'create'
 
   // Mobile: tab switching via route.params
   useEffect(() => {
@@ -199,12 +204,33 @@ const TravelerDashboard = () => {
     }
   }, [selectedTab, plannerView]);
 
+  // 👉 Community Hub redirect (existing)
+  useEffect(() => {
+    if (selectedTab === 'communityHub') {
+      navigation.navigate('SocialDashboard', {
+        tabKey: `home-${Date.now()}`,
+        from: 'TravelerDashboard',
+      });
+      // Prevent redirect loop when user returns
+      setTimeout(() => setSelectedTab('explore'), 0);
+    }
+  }, [selectedTab, navigation]);
+
+  // ✅ NEW: Groups redirect — when Header/BottomBar sets selectedTab === 'groups'
+  useEffect(() => {
+    if (selectedTab === 'groups') {
+      navigation.navigate('GroupsHome', { from: 'TravelerDashboard' });
+      // Reset tab so coming back lands on Explore and avoids re-trigger
+      setTimeout(() => setSelectedTab('explore'), 0);
+    }
+  }, [selectedTab, navigation]);
+
   const renderCurrentTab = () => {
     switch (selectedTab) {
       case 'tripplanner':
         return (
           <ItinerariesHub
-            mode={plannerView}                // 'hub' | 'create'
+            mode={plannerView}
             onOpenCreate={() => setPlannerView('create')}
             onBackToHub={() => setPlannerView('hub')}
           />
@@ -217,12 +243,11 @@ const TravelerDashboard = () => {
         return <TravelerNotifications />;
       case 'profile':
         return <TravelerProfile inPage />;
-      case 'communityHub':
-        return <CommunityHubScreen inPage />;
       case 'offline':
         return <OfflineScreen inPage />;
       case 'messages':
         return <MessagesScreen inPage />;
+      // 'communityHub' and 'groups' are handled by effects above
       default:
         return (
           <>
@@ -239,6 +264,7 @@ const TravelerDashboard = () => {
 
   return (
     <View style={styles.container}>
+      {/* Header should have a "Groups" control that calls onTabChange('groups') */}
       <Header onTabChange={setSelectedTab} />
 
       <ScrollView contentContainerStyle={styles.contentWrapper}>

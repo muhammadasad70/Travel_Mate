@@ -28,6 +28,8 @@ import CrowdsourceItinerariesScreen from './screens/CrowdsourceItineraries/Crowd
 import ManageItinerariesScreen from "./screens/CrowdsourceItineraries/ManageItinerariesScreen";
 import CreateItineraryScreen from './screens/CrowdsourceItineraries/CreateItineraryScreen';
 import EditItineraryScreen from "./screens/CrowdsourceItineraries/EditItineraryScreen";
+import SocialDashboard from './screens/SocialDashboard';
+import GroupsHomeScreen from "./components/Groups/GroupsHomeScreen";
 
 // import ItineraryDetailsScreen from "./screens/CrowdsourceItineraries/ItineraryDetailsScreen";
 import PdfViewerScreen from './screens/PdfViewerScreen';
@@ -58,7 +60,7 @@ import Chat_With_Guest from './screens/Accommodations/Chat_With_Guest';
 import Notifications from './screens/Accommodations/Notifications';
 
 /* Community / Messages */
-import CommunityScreen from './screens/CommunityScreen';
+
 import MessagesScreen from './screens/MessagesScreen';
 
 /* Cultural Exchange */
@@ -87,7 +89,7 @@ import Transport_Bookings from './screens/Transport/Transport_Bookings';
 import Transport_Offers from './screens/Transport/Transport_Offers';
 
 /* NEW: CommunityHub + Offline */
-import CommunityHubScreen from './screens/CommunityHubScreen';
+
 import OfflineScreen from './screens/OfflineScreen';
 
 const Stack = createNativeStackNavigator();
@@ -131,14 +133,13 @@ export default function App() {
             <Stack.Screen name="EventIntegration" component={EventIntegrationScreen} />
             <Stack.Screen name="ItinerariesHub" component={ItinerariesHub} />
             <Stack.Screen name="ItineraryDetails" component={completeitinerrarydetail} />
+            <Stack.Screen name="SocialDashboard" component={SocialDashboard} />
+            <Stack.Screen name="GroupsHome" component={GroupsHomeScreen} />
 
             {/* NEW entry points */}
-            <Stack.Screen name="CommunityHub" component={CommunityHubScreen} />
             <Stack.Screen name="OfflineScreen" component={OfflineScreen} />
 
             {/* Community / Messages */}
-            <Stack.Screen name="CommunityScreen" component={CommunityScreen} />
-            <Stack.Screen name="Community" component={CommunityScreen} />
             <Stack.Screen name="MessagesScreen" component={MessagesScreen} />
             <Stack.Screen name="Messages" component={MessagesScreen} />
 
@@ -161,6 +162,7 @@ export default function App() {
             <Stack.Screen name="TravelerProductScreen" component={TravelerProductScreen} />
             <Stack.Screen name="CulturalExchangeScreen" component={CulturalExchangeScreen} />
             <Stack.Screen name="GroupScreen" component={GroupScreen} />
+            
 
             {/* Accommodation Provider Screens */}
             <Stack.Screen name="MyServices" component={My_Services} />

@@ -1,4 +1,5 @@
 
+
 // import React, { useEffect, useMemo, useRef, useState } from 'react';
 // import {
 //   View,
@@ -10,7 +11,6 @@
 //   Easing,
 // } from 'react-native';
 // import { Ionicons } from '@expo/vector-icons';
-// import { useNavigation } from '@react-navigation/native';
 // import { SafeAreaView } from 'react-native-safe-area-context';
 
 // const ACTIVE_COLOR = '#003366';
@@ -41,20 +41,16 @@
 //   return isMobile;
 // }
 
-// const BottomNavBar = ({ onTabChange, currentTab }) => {
+// const SocialBottomBar = ({ onTabChange, currentTab }) => {
 //   const isMobile = useIsMobile();
-//   const navigation = useNavigation();
-//   const [activeKey, setActiveKey] = useState(currentTab || 'explore');
+//   const [activeKey, setActiveKey] = useState(currentTab || 'home');
 
 //   const navItems = useMemo(
 //     () => [
-//       { label: 'Explore',   icon: 'compass-outline',         key: 'explore',     isTab: true  },
-//       { label: 'Planner',   icon: 'calendar-outline',        key: 'tripplanner', isTab: true  },
-//       { label: 'Events',    icon: 'sparkles-outline',        key: 'events',      isTab: true  },
-//       { label: 'Offline',    icon: 'download-outline',      key: 'offline',       isTab: true },
-//       { label: 'Services',  icon: 'briefcase-outline',       key: 'services',    isTab: true  },
-//       { label: 'Community',  icon: 'people-circle-outline', key: 'communityHub',  isTab: true }, 
-//       { label: 'Profile',   icon: 'person-circle-outline',   key: 'profile',     isTab: true  },
+//       { label: 'Home',    icon: 'home-outline',          key: 'home',    isTab: true },
+//       { label: 'Search',  icon: 'search-outline',        key: 'search',  isTab: true },
+//       { label: 'Post',    icon: 'add-circle-outline',    key: 'post',    isTab: true },
+//       { label: 'Profile', icon: 'person-circle-outline', key: 'profile', isTab: true },
 //     ],
 //     []
 //   );
@@ -75,21 +71,15 @@
 //   }, []);
 
 //   const handlePress = (item) => {
-//     if (item.isTab) {
-//       setActiveKey(item.key);
-//       onTabChange?.(item.key);
-//       if (Platform.OS === 'web' && typeof window !== 'undefined') {
-//         try {
-//           const evt = new CustomEvent('tabChange', { detail: { tabKey: item.key } });
-//           window.dispatchEvent(evt);
-//         } catch {}
-//       }
-//       return;
-//     }
+//     if (!item.isTab) return;
+//     setActiveKey(item.key);
+//     onTabChange?.(item.key);
 
-//     // (No non-tab items now; keeping for future)
-//     if (item.key === 'messages') {
-//       navigation.navigate('MessagesScreen');
+//     if (Platform.OS === 'web' && typeof window !== 'undefined') {
+//       try {
+//         const evt = new CustomEvent('tabChange', { detail: { tabKey: item.key } });
+//         window.dispatchEvent(evt);
+//       } catch {}
 //     }
 //   };
 
@@ -199,8 +189,7 @@
 //   },
 // });
 
-// export default BottomNavBar;
-
+// export default SocialBottomBar;
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -213,14 +202,21 @@ import {
   Easing,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const ACTIVE_COLOR = '#003366';
-const INACTIVE_COLOR = '#6B7280';
-const BAR_BG = '#FFFFFF';
-const BORDER = '#E5E7EB';
-const NATIVE_DRIVER = Platform.OS !== 'web';
+const ACTIVE_TXT = '#003366';
+const MUTED_TXT  = '#6B7280';
+const BAR_BG     = '#FFFFFF';
+const BORDER     = '#E5E7EB';
+const NATIVE     = Platform.OS !== 'web';
+
+// Accent colors per tab (for active bubble)
+const ACCENTS = {
+  home:    '#2563EB', // blue
+  search:  '#8B5CF6', // violet
+  post:    '#F59E0B', // amber
+  profile: '#10B981', // emerald
+};
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(() => {
@@ -228,179 +224,149 @@ function useIsMobile() {
     if (typeof window === 'undefined' || !window.matchMedia) return false;
     return window.matchMedia('(max-width: 599px)').matches;
   });
-
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined' || !window.matchMedia) return;
     const mql = window.matchMedia('(max-width: 599px)');
     const handler = (e) => setIsMobile(e.matches);
-    if (mql.addEventListener) mql.addEventListener('change', handler);
-    else mql.addListener(handler);
+    mql.addEventListener ? mql.addEventListener('change', handler) : mql.addListener(handler);
     return () => {
-      if (mql.removeEventListener) mql.removeEventListener('change', handler);
-      else mql.removeListener(handler);
+      mql.removeEventListener ? mql.removeEventListener('change', handler) : mql.removeListener(handler);
     };
   }, []);
-
   return isMobile;
 }
 
-const BottomNavBar = ({ onTabChange, currentTab }) => {
+export default function SocialBottomBar({ onTabChange, currentTab = 'home' }) {
   const isMobile = useIsMobile();
-  const navigation = useNavigation();
-  const [activeKey, setActiveKey] = useState(currentTab || 'explore');
+  const [activeKey, setActiveKey] = useState(currentTab);
 
-  const navItems = useMemo(
+  const items = useMemo(
     () => [
-      { label: 'Explore',   icon: 'compass-outline',          key: 'explore',      isTab: true },
-      { label: 'Planner',   icon: 'calendar-outline',         key: 'tripplanner',  isTab: true },
-      { label: 'Events',    icon: 'sparkles-outline',         key: 'events',       isTab: true },
-      { label: 'Services',  icon: 'briefcase-outline',        key: 'services',     isTab: true },
-      // 👇 Replaced Offline with Groups
-      { label: 'Groups',    icon: 'people-outline',           key: 'groups',       isTab: true },
-      { label: 'Community', icon: 'people-circle-outline',    key: 'communityHub', isTab: true },
-      { label: 'Profile',   icon: 'person-circle-outline',    key: 'profile',      isTab: true },
+      { k: 'home',    label: 'Home',    icon: 'home-outline' },
+      { k: 'post',    label: 'Post',    icon: 'add-circle-outline' }, // <- now same style
+      { k: 'search',  label: 'Search',  icon: 'search-outline' },
+      { k: 'profile', label: 'Profile', icon: 'person-circle-outline' },
     ],
     []
   );
 
-  useEffect(() => {
-    if (currentTab && currentTab !== activeKey) setActiveKey(currentTab);
-  }, [currentTab]);
+  useEffect(() => { if (currentTab !== activeKey) setActiveKey(currentTab); }, [currentTab]);
 
   useEffect(() => {
-    const handler = (e) => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+    const h = (e) => {
       const key = e?.detail?.tabKey && String(e.detail.tabKey).split('-')[0];
       if (key) setActiveKey(key);
     };
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      window.addEventListener('tabChange', handler);
-      return () => window.removeEventListener('tabChange', handler);
-    }
+    window.addEventListener('tabChange', h);
+    return () => window.removeEventListener('tabChange', h);
   }, []);
 
-  const handlePress = (item) => {
-    if (item.isTab) {
-      setActiveKey(item.key);
-      onTabChange?.(item.key);
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        try {
-          const evt = new CustomEvent('tabChange', { detail: { tabKey: item.key } });
-          window.dispatchEvent(evt);
-        } catch {}
-      }
-      return;
-    }
-
-    // (No non-tab items now; keeping for future)
-    if (item.key === 'messages') {
-      navigation.navigate('MessagesScreen');
+  const go = (k) => {
+    setActiveKey(k);
+    onTabChange?.(k);
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      try { window.dispatchEvent(new CustomEvent('tabChange', { detail: { tabKey: k } })); } catch {}
     }
   };
 
+  if (!isMobile) return <View style={styles.hidden} />;
+
   return (
-    <View style={[styles.root, !isMobile && styles.hidden]} pointerEvents={isMobile ? 'auto' : 'none'}>
+    <View style={styles.root}>
       <SafeAreaView edges={['bottom']} style={styles.safeArea}>
-        <View style={styles.bar}>
-          <View style={styles.container}>
-            {navItems.map((item) => {
-              const active = item.isTab && item.key === activeKey;
-              return (
-                <NavButton
-                  key={item.key}
-                  item={item}
-                  active={!!active}
-                  onPress={() => handlePress(item)}
-                />
-              );
-            })}
+        <View style={styles.barShadowWrap}>
+          <View style={styles.bar}>
+            {items.map((it) => (
+              <NavItem
+                key={it.k}
+                k={it.k}
+                label={it.label}
+                icon={it.icon}
+                active={activeKey === it.k}
+                onPress={() => go(it.k)}
+              />
+            ))}
           </View>
         </View>
       </SafeAreaView>
     </View>
   );
-};
+}
 
-const NavButton = ({ item, active, onPress }) => {
+function NavItem({ k, label, icon, active, onPress }) {
   const scale = useRef(new Animated.Value(1)).current;
+  const onIn  = () => Animated.timing(scale, { toValue: 0.95, duration: 90, easing: Easing.out(Easing.quad), useNativeDriver: NATIVE }).start();
+  const onOut = () => Animated.timing(scale, { toValue: 1,    duration: 120, easing: Easing.out(Easing.quad), useNativeDriver: NATIVE }).start();
 
-  const onPressIn = () => {
-    Animated.timing(scale, {
-      toValue: 0.96,
-      duration: 80,
-      easing: Easing.out(Easing.quad),
-      useNativeDriver: NATIVE_DRIVER,
-    }).start();
-  };
-  const onPressOut = () => {
-    Animated.timing(scale, {
-      toValue: 1,
-      duration: 120,
-      easing: Easing.out(Easing.quad),
-      useNativeDriver: NATIVE_DRIVER,
-    }).start();
-  };
+  const color = ACCENTS[k] || ACTIVE_TXT;
 
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      onPressIn={onPressIn}
-      onPressOut={onPressOut}
-      style={styles.navItem}
-      activeOpacity={0.7}
-      accessibilityRole="button"
-      accessibilityLabel={item.label}
-    >
-      <Animated.View style={{ transform: [{ scale }] }}>
-        <Ionicons
-          name={item.icon}
-          size={22}
-          color={active ? ACTIVE_COLOR : INACTIVE_COLOR}
-        />
+    <TouchableOpacity onPress={onPress} onPressIn={onIn} onPressOut={onOut} style={styles.item} activeOpacity={0.85}>
+      <Animated.View
+        style={[
+          styles.iconBubble,
+          active && { backgroundColor: hex(color, 0.12), borderColor: hex(color, 0.4) },
+          { transform: [{ scale }] },
+        ]}
+      >
+        <Ionicons name={icon} size={22} color={active ? color : MUTED_TXT} />
       </Animated.View>
-      <Text style={[styles.label, { color: active ? ACTIVE_COLOR : INACTIVE_COLOR }]}>
-        {item.label}
-      </Text>
+      <Text style={[styles.label, active ? { color } : null]}>{label}</Text>
     </TouchableOpacity>
   );
-};
+}
 
+/* ---------- helpers ---------- */
+function hex(hexStr, alpha) {
+  const r = parseInt(hexStr.slice(1,3), 16);
+  const g = parseInt(hexStr.slice(3,5), 16);
+  const b = parseInt(hexStr.slice(5,7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+/* ---------- styles ---------- */
 const styles = StyleSheet.create({
+  hidden: { display: 'none' },
+
   root: {
     position: 'fixed',
-    left: 0,
-    right: 0,
-    bottom: 0,
+    left: 0, right: 0, bottom: 0,
     zIndex: 1000,
   },
-  hidden: { opacity: 0, height: 0 },
   safeArea: { backgroundColor: 'transparent' },
 
+  barShadowWrap: {
+    paddingHorizontal: 10,
+    paddingBottom: Platform.OS === 'android' ? 6 : 2,
+  },
+
   bar: {
+    height: 74,
     backgroundColor: BAR_BG,
     borderTopWidth: 1,
     borderTopColor: BORDER,
-  },
-
-  container: {
-    height: 64,
-    paddingBottom: Platform.OS === 'android' ? 6 : 2,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-around',
-    alignItems: 'center',
+    shadowColor: '#000',
+    ...Platform.select({
+      ios:     { shadowOpacity: 0.08, shadowRadius: 12, shadowOffset: { width: 0, height: -4 } },
+      android: { elevation: 10 },
+      web:     { boxShadow: '0 -8px 24px rgba(0,0,0,0.06)' },
+    }),
   },
 
-  navItem: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 54,
-    gap: 4,
-    ...(Platform.OS === 'web' && { cursor: 'pointer' }),
+  item: { alignItems: 'center', justifyContent: 'center', gap: 6, minWidth: 68 },
+
+  iconBubble: {
+    width: 40, height: 40, borderRadius: 20,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#F3F6FA',
+    borderWidth: 1, borderColor: BORDER,
   },
 
-  label: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
+  label: { fontSize: 12, fontWeight: '800', color: MUTED_TXT },
 });
-
-export default BottomNavBar;
