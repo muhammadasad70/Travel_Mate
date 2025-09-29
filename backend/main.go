@@ -4,39 +4,48 @@
 // 	"log"
 // 	"net/http"
 
+// 	"travel_mate/backend/cloudinary"
 // 	"travel_mate/backend/database"
 // 	"travel_mate/backend/routes"
 
 // 	"github.com/gin-contrib/cors"
 // 	"github.com/gin-gonic/gin"
+// 	"github.com/joho/godotenv"
 // )
 
 // func main() {
 // 	database.Connect()
 // 	database.InitSchema()
+// 	cloudinary.InitCloudinary()
+// 	if err := godotenv.Load(); err != nil {
+// 		log.Println("No .env file found")
+// 	}
 
-// 	// gin in release/debug prints
 // 	gin.SetMode(gin.DebugMode)
 // 	router := gin.Default()
 
-// 	// CORS
 // 	router.Use(cors.New(cors.Config{
-// 		AllowOrigins:     []string{"http://localhost:8081"},
-// 		AllowMethods:     []string{"GET", "POST", "PUT", "OPTIONS"},
-// 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+// 		AllowOrigins: []string{
+// 			"http://localhost:8081",
+// 			"http://127.0.0.1:8081",
+// 		},
+// 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+// 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
+// 		ExposeHeaders:    []string{"Content-Length"},
 // 		AllowCredentials: true,
 // 	}))
 
-// 	// --- DEBUG 1: health
+// 	// health
 // 	router.GET("/ping", func(c *gin.Context) {
 // 		c.JSON(200, gin.H{"msg": "pong"})
 // 	})
 
-// 	// Register real routes
+// 	// routes
 // 	routes.RegisterUserRoutes(router)
 // 	routes.RegisterItineraryRoutes(router)
+// 	routes.RegisterAssetRoutes(router)
 
-// 	// --- DEBUG 2: list all registered routes (so we can confirm /user/profile-status exists)
+// 	// list routes
 // 	router.GET("/__routes", func(c *gin.Context) {
 // 		type R struct {
 // 			Method string `json:"method"`
@@ -49,7 +58,7 @@
 // 		c.JSON(http.StatusOK, gin.H{"routes": out})
 // 	})
 
-// 	// --- DEBUG 3: catch-all to log 404s
+// 	// 404 logger
 // 	router.NoRoute(func(c *gin.Context) {
 // 		log.Printf("NoRoute: %s %s", c.Request.Method, c.Request.URL.Path)
 // 		c.JSON(http.StatusNotFound, gin.H{
@@ -57,6 +66,7 @@
 // 			"path":  c.Request.URL.Path,
 // 		})
 // 	})
+
 // 	log.Println("🚀 API on :8080")
 // 	router.Run(":8080")
 // }
@@ -77,16 +87,21 @@ import (
 )
 
 func main() {
+	// DB + schema
 	database.Connect()
 	database.InitSchema()
+
+	// other inits
 	cloudinary.InitCloudinary()
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found")
 	}
 
+	// Gin
 	gin.SetMode(gin.DebugMode)
 	router := gin.Default()
 
+	// CORS
 	router.Use(cors.New(cors.Config{
 		AllowOrigins: []string{
 			"http://localhost:8081",
@@ -98,17 +113,20 @@ func main() {
 		AllowCredentials: true,
 	}))
 
-	// health
+	// Health
 	router.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{"msg": "pong"})
 	})
 
-	// routes
+	// ===== Register routes =====
 	routes.RegisterUserRoutes(router)
 	routes.RegisterItineraryRoutes(router)
 	routes.RegisterAssetRoutes(router)
 
-	// list routes
+	// ✅ NEW: Groups (lists, invites, create, details)
+	routes.RegisterGroupRoutes(router)
+
+	// Debug: list routes
 	router.GET("/__routes", func(c *gin.Context) {
 		type R struct {
 			Method string `json:"method"`

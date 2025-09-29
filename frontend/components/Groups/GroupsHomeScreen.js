@@ -9,7 +9,6 @@ import {
   ActivityIndicator,
   RefreshControl,
   useWindowDimensions,
-  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
@@ -45,8 +44,8 @@ export default function GroupsHomeScreen() {
       setError("");
       setLoading(true);
       const [g, i] = await Promise.all([
-        api.get("/groups/mine"),
-        api.get("/groups/invites"),
+        api.get("/groups/mine").catch(() => ({ data: [] })),
+        api.get("/groups/invites").catch(() => ({ data: [] })),
       ]);
       setGroups(Array.isArray(g.data) ? g.data : []);
       setInvites(Array.isArray(i.data) ? i.data : []);
@@ -92,7 +91,6 @@ export default function GroupsHomeScreen() {
         <Ionicons name="arrow-back" size={22} color={PRIMARY_DARK} />
       </Pressable>
       <Text style={styles.appbarTitle} numberOfLines={1}>Groups</Text>
-      {/* spacer for centering */}
       <View style={{ width: 22 }} />
     </View>
   ), [nav]);
@@ -112,14 +110,6 @@ export default function GroupsHomeScreen() {
   const QuickActions = (
     <View style={[styles.actionsRow, isPhone && { gap: 10 }]}>
       <Pressable
-        onPress={() => nav.navigate("JoinGroupModal")}
-        style={({ pressed }) => [styles.actionSecondary, pressed && { opacity: 0.9 }]}
-      >
-        <Ionicons name="key-outline" size={18} color={PRIMARY_DARK} />
-        <Text style={styles.actionSecondaryTxt}>Join with Code</Text>
-      </Pressable>
-
-      <Pressable
         onPress={() => nav.navigate("CreateGroupModal")}
         style={({ pressed }) => [styles.actionPrimary, pressed && { opacity: 0.95 }]}
       >
@@ -136,7 +126,7 @@ export default function GroupsHomeScreen() {
   );
 
   const renderInvite = ({ item }) => (
-    <View style={styles.cardRow}>
+    <View key={item.id} style={[styles.cardRow, { marginHorizontal: 16, marginBottom: 10 }]}>
       <View style={{ flex: 1 }}>
         <Text style={styles.cardTitle}>{item.groupName || "Group"}</Text>
         <Text style={styles.meta}>{fmtActivity(item.lastActivity)}</Text>
@@ -155,21 +145,16 @@ export default function GroupsHomeScreen() {
   const renderGroup = ({ item }) => (
     <Pressable
       onPress={() => nav.navigate("GroupDashboard", { groupId: item.id })}
-      style={({ pressed }) => [styles.groupCard, pressed && { opacity: 0.92 }]}
+      style={({ pressed }) => [styles.groupCard, pressed && { opacity: 0.92 }, { marginHorizontal: 16 }]}
     >
       <View style={styles.groupTop}>
         <Text style={styles.groupName}>{item.name}</Text>
-        {!!item.unreadCount && (
-          <View style={styles.badge}><Text style={styles.badgeTxt}>{item.unreadCount}</Text></View>
-        )}
       </View>
       <Text style={styles.meta}>
         {item.membersCount ?? 0} member{(item.membersCount ?? 0) === 1 ? "" : "s"} • {fmtActivity(item.lastActivity)}
       </Text>
     </Pressable>
   );
-
-  const showEmpty = !loading && invites.length === 0 && groups.length === 0;
 
   if (loading) {
     return (
@@ -188,33 +173,40 @@ export default function GroupsHomeScreen() {
     <SafeAreaView style={styles.container}>
       {HeaderBar}
 
-      <View style={styles.topPad}>
-        {Hero}
-        {QuickActions}
-      </View>
+      {/* Single scrollable list */}
+      <FlatList
+        data={groups}
+        keyExtractor={(x) => String(x.id)}
+        renderItem={renderGroup}
+        ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        contentContainerStyle={{ paddingBottom: 50 }}
+        ListHeaderComponent={
+          <>
+            <View style={styles.topPad}>
+              {Hero}
+              {QuickActions}
+            </View>
 
-      {!!error && <Text style={[styles.error, { paddingHorizontal: 16 }]}>{error}</Text>}
+            {!!error && <Text style={[styles.error, { paddingHorizontal: 16 }]}>{error}</Text>}
 
-      {/* Invites */}
-      {invites.length > 0 && (
-        <View style={{ marginTop: 8 }}>
-          <SectionLabel>Invites</SectionLabel>
-          <FlatList
-            data={invites}
-            keyExtractor={(x) => String(x.id)}
-            renderItem={renderInvite}
-            ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-            style={{ paddingHorizontal: 16 }}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-          />
-        </View>
-      )}
+            {/* Invites (inline, scrolls with the list) */}
+            {invites.length > 0 && (
+              <View style={{ marginTop: 8 }}>
+                <SectionLabel>Invites</SectionLabel>
+                <View>
+                  {invites.map((inv) => renderInvite({ item: inv }))}
+                </View>
+              </View>
+            )}
 
-      {/* My Groups / Empty */}
-      <View style={{ marginTop: 14 }}>
-        <SectionLabel>My Groups</SectionLabel>
-
-        {showEmpty ? (
+            {/* "My Groups" section label before groups list */}
+            <View style={{ marginTop: 14 }}>
+              <SectionLabel>My Groups</SectionLabel>
+            </View>
+          </>
+        }
+        ListEmptyComponent={
           <View style={styles.emptyCard}>
             <View style={styles.emptyIcon}>
               <Ionicons name="people-outline" size={22} color={PRIMARY} />
@@ -225,24 +217,10 @@ export default function GroupsHomeScreen() {
                 <Ionicons name="add" size={18} color="#FFF" />
                 <Text style={styles.actionPrimaryTxt}>Create Group</Text>
               </Pressable>
-              <Pressable onPress={() => nav.navigate("JoinGroupModal")} style={styles.actionSecondary}>
-                <Ionicons name="key-outline" size={18} color={PRIMARY_DARK} />
-                <Text style={styles.actionSecondaryTxt}>Join with Code</Text>
-              </Pressable>
             </View>
           </View>
-        ) : (
-          <FlatList
-            data={groups}
-            keyExtractor={(x) => String(x.id)}
-            renderItem={renderGroup}
-            ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-            style={{ paddingHorizontal: 16 }}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-            contentContainerStyle={{ paddingBottom: 24 }}
-          />
-        )}
-      </View>
+        }
+      />
     </SafeAreaView>
   );
 }
@@ -253,14 +231,9 @@ const styles = StyleSheet.create({
 
   /* app bar */
   appbar: {
-    height: 48,
-    paddingHorizontal: 10,
-    backgroundColor: CARD_BG,
-    borderBottomWidth: 1,
-    borderBottomColor: BORDER,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    height: 48, paddingHorizontal: 10, backgroundColor: CARD_BG,
+    borderBottomWidth: 1, borderBottomColor: BORDER,
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
   },
   backBtn: { padding: 6 },
   appbarTitle: { fontSize: 18, fontWeight: "800", color: PRIMARY_DARK },
@@ -268,140 +241,67 @@ const styles = StyleSheet.create({
   /* hero + actions */
   topPad: { paddingHorizontal: 16, paddingTop: 10 },
   hero: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    backgroundColor: SOFT,
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: BORDER,
+    flexDirection: "row", alignItems: "center", gap: 10,
+    backgroundColor: SOFT, borderRadius: 16, padding: 14,
+    borderWidth: 1, borderColor: BORDER,
   },
   heroIcon: {
     width: 36, height: 36, borderRadius: 18,
-    backgroundColor: "#E7F0FF",
-    alignItems: "center", justifyContent: "center",
+    backgroundColor: "#E7F0FF", alignItems: "center", justifyContent: "center",
   },
   heroTitle: { fontSize: 16, fontWeight: "800", color: PRIMARY_DARK },
   heroSubtitle: { color: SUBTEXT, marginTop: 2, fontSize: 12 },
 
-  actionsRow: {
-    marginTop: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
+  actionsRow: { marginTop: 10, flexDirection: "row", alignItems: "center", gap: 12 },
   actionPrimary: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: ACCENT,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 14,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 8,
-    elevation: 2,
+    flexDirection: "row", alignItems: "center", gap: 8,
+    backgroundColor: ACCENT, paddingHorizontal: 16, paddingVertical: 10,
+    borderRadius: 14, elevation: 2,
   },
   actionPrimaryTxt: { color: "#FFF", fontWeight: "800" },
 
-  actionSecondary: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: "#EEF3FF",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#D9E4FF",
-  },
-  actionSecondaryTxt: { fontWeight: "800", color: PRIMARY_DARK },
-
   /* section pill */
   sectionPill: {
-    alignSelf: "flex-start",
-    marginLeft: 16,
-    marginBottom: 8,
-    backgroundColor: "#ECF3FF",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "#DCE7FF",
+    alignSelf: "flex-start", marginLeft: 16, marginBottom: 8,
+    backgroundColor: "#ECF3FF", paddingHorizontal: 12, paddingVertical: 6,
+    borderRadius: 999, borderWidth: 1, borderColor: "#DCE7FF",
   },
   sectionPillTxt: { color: PRIMARY_DARK, fontWeight: "800", fontSize: 12 },
 
   /* list cards */
   cardRow: {
-    backgroundColor: CARD_BG,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: BORDER,
-    padding: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
+    backgroundColor: CARD_BG, borderRadius: 14, borderWidth: 1, borderColor: BORDER,
+    padding: 14, flexDirection: "row", alignItems: "center", gap: 10,
   },
   cardTitle: { fontSize: 15, fontWeight: "700", color: PRIMARY_DARK },
   meta: { color: SUBTEXT, marginTop: 4, fontSize: 12 },
   rowBtns: { flexDirection: "row", gap: 8 },
 
   smallPrimary: {
-    backgroundColor: ACCENT,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    backgroundColor: ACCENT, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7,
   },
   smallPrimaryTxt: { color: "#FFF", fontWeight: "800", fontSize: 12 },
 
   smallGhost: {
-    backgroundColor: "#F3F6FA",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderWidth: 1,
-    borderColor: BORDER,
+    backgroundColor: "#F3F6FA", borderRadius: 10,
+    paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1, borderColor: BORDER,
   },
   smallGhostTxt: { fontWeight: "800", fontSize: 12, color: PRIMARY_DARK },
 
   groupCard: {
-    backgroundColor: CARD_BG,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: BORDER,
-    padding: 14,
+    backgroundColor: CARD_BG, borderRadius: 14, borderWidth: 1, borderColor: BORDER, padding: 14,
   },
   groupTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   groupName: { fontSize: 16, fontWeight: "800", color: PRIMARY_DARK },
 
-  badge: {
-    backgroundColor: PRIMARY,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-    minWidth: 20,
-    alignItems: "center",
-  },
-  badgeTxt: { color: "#FFF", fontSize: 12, fontWeight: "800" },
-
   /* empty state */
   emptyCard: {
-    marginHorizontal: 16,
-    backgroundColor: CARD_BG,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: BORDER,
-    padding: 18,
-    alignItems: "center",
+    marginHorizontal: 16, backgroundColor: CARD_BG, borderRadius: 16,
+    borderWidth: 1, borderColor: BORDER, padding: 18, alignItems: "center",
   },
   emptyIcon: {
-    width: 44, height: 44, borderRadius: 22,
-    backgroundColor: SOFT,
-    alignItems: "center", justifyContent: "center",
-    marginBottom: 10,
+    width: 44, height: 44, borderRadius: 22, backgroundColor: SOFT,
+    alignItems: "center", justifyContent: "center", marginBottom: 10,
     borderWidth: 1, borderColor: BORDER,
   },
   emptyText: { color: SUBTEXT, marginBottom: 12, textAlign: "center" },

@@ -29,7 +29,9 @@ import ManageItinerariesScreen from "./screens/CrowdsourceItineraries/ManageItin
 import CreateItineraryScreen from './screens/CrowdsourceItineraries/CreateItineraryScreen';
 import EditItineraryScreen from "./screens/CrowdsourceItineraries/EditItineraryScreen";
 import SocialDashboard from './screens/SocialDashboard';
+import CreateGroupModal from "./components/Groups/CreateGroupModal";
 import GroupsHomeScreen from "./components/Groups/GroupsHomeScreen";
+import GroupDashboard from "./screens/GroupDashboard";
 
 // import ItineraryDetailsScreen from "./screens/CrowdsourceItineraries/ItineraryDetailsScreen";
 import PdfViewerScreen from './screens/PdfViewerScreen';
@@ -135,6 +137,7 @@ export default function App() {
             <Stack.Screen name="ItineraryDetails" component={completeitinerrarydetail} />
             <Stack.Screen name="SocialDashboard" component={SocialDashboard} />
             <Stack.Screen name="GroupsHome" component={GroupsHomeScreen} />
+            <Stack.Screen name="CreateGroupModal" component={CreateGroupModal}/>
 
             {/* NEW entry points */}
             <Stack.Screen name="OfflineScreen" component={OfflineScreen} />
@@ -162,6 +165,7 @@ export default function App() {
             <Stack.Screen name="TravelerProductScreen" component={TravelerProductScreen} />
             <Stack.Screen name="CulturalExchangeScreen" component={CulturalExchangeScreen} />
             <Stack.Screen name="GroupScreen" component={GroupScreen} />
+            <Stack.Screen name="GroupDashboard" component={GroupDashboard} />
             
 
             {/* Accommodation Provider Screens */}

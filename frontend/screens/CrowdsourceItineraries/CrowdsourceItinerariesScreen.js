@@ -32,10 +32,8 @@ const sampleItinerary = {
 
 const RAW_CARDS = [
   { title: "Create Itinerary", subtitle: "Start a new travel plan", iconKey: "plus", color: "#fafafa" },
-  { title: "Update Itinerary", subtitle: "Revise based on feedback", iconKey: "cycle", color: "#fafafa" },
   !isWeb && { title: "Save as PDF", subtitle: "Download your itinerary", iconKey: "download", color: "#fafafa" },
   { title: "Manage My Itineraries", subtitle: "Access itineraries you’ve bookmarked", iconKey: "folder", color: "#fafafa", badge: savedCount },
-  { title: "Optimize Your Itinerary", subtitle: "Discover personalized suggestions", iconKey: "cycle", color: "#fafafa" },
   { title: "Itinerary Feedback", subtitle: "Skardu Adventure stats", iconKey: "message", color: "#fafafa", feedbackStats: { views: 120, rating: 4.8, comments: 4 } },
 ].filter(Boolean);
 
