@@ -122,7 +122,9 @@ func main() {
 	routes.RegisterUserRoutes(router)
 	routes.RegisterItineraryRoutes(router)
 	routes.RegisterAssetRoutes(router)
-
+	routes.RegisterChatRoutes(router)
+	routes.RegisterPostRoutes(router)
+	routes.RegisterFollowRoutes(router)
 	// ✅ NEW: Groups (lists, invites, create, details)
 	routes.RegisterGroupRoutes(router)
 

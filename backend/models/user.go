@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 	"travel_mate/backend/database"
@@ -153,4 +154,370 @@ func UpdateUserPasswordByEmail(email, hashed string) error {
 		return errors.New("no user updated")
 	}
 	return nil
+}
+
+/*
+SearchUsersBasic runs a relevance-ranked search over email / first_name / last_name /
+and computed full name (first_name + ' ' + last_name).
+
+Params:
+  - q: raw query string from user input
+  - limit: max rows to return (use 20–50 typical)
+
+Returns a slice of map[string]interface{} so we don’t introduce new DTO structs.
+Keys: id, email, first_name, last_name, country_code, phone, country, role,
+is_profile_complete, created_at, relevance_score
+*/
+func SearchUsersBasic(q string, limit int) ([]map[string]interface{}, error) {
+	if limit <= 0 || limit > 100 {
+		limit = 20
+	}
+	searchLower := strings.ToLower(strings.TrimSpace(q))
+	contains := "%" + searchLower + "%"
+	starts := searchLower + "%"
+	words := fieldsNonEmpty(searchLower)
+
+	// Build dynamic param list
+	params := []any{
+		searchLower, // $1 exact
+		starts,      // $2 startswith
+		contains,    // $3 contains
+	}
+
+	// Build "all words in full name" condition with $4..$N
+	allWordsCond, params := buildAllWordsInFullNameCond(params, words, 4)
+
+	// Relevance scoring over email + name_concat
+	// name_concat = LOWER(COALESCE(first_name,'') || ' ' || COALESCE(last_name,''))
+	sb := strings.Builder{}
+	sb.WriteString(`
+		WITH src AS (
+			SELECT
+				id, email, first_name, last_name, country_code, phone, country, role,
+				is_profile_complete, created_at,
+				LOWER(COALESCE(first_name,'') || ' ' || COALESCE(last_name,'')) AS name_concat
+			FROM users
+		)
+		SELECT 
+			id, email, first_name, last_name, country_code, phone, country, role,
+			is_profile_complete, created_at,
+			(
+				CASE
+					WHEN LOWER(email) = $1 THEN 1000
+					WHEN LOWER(email) LIKE $2 THEN 900
+					WHEN LOWER(email) LIKE $3 THEN 800
+					WHEN name_concat = $1 THEN 700
+					WHEN name_concat LIKE $2 THEN 600
+					WHEN ` + nullIfEmpty(allWordsCond, "FALSE") + ` THEN 550
+					WHEN name_concat LIKE $3 THEN 500
+					WHEN LOWER(first_name) LIKE $2 OR LOWER(last_name) LIKE $2 THEN 450
+					WHEN LOWER(first_name) LIKE $3 OR LOWER(last_name) LIKE $3 THEN 350
+					ELSE 100
+				END
+			) AS relevance_score
+		FROM src
+		WHERE
+			LOWER(email) LIKE $3
+			OR name_concat LIKE $3
+			OR LOWER(first_name) LIKE $3
+			OR LOWER(last_name) LIKE $3
+	`)
+	// If multi-word, include the ANDed full-name words condition in WHERE too
+	if allWordsCond != "" {
+		sb.WriteString("\n   OR (")
+		sb.WriteString(allWordsCond)
+		sb.WriteString(")")
+	}
+	// Order & limit
+	sb.WriteString(`
+		ORDER BY relevance_score DESC, id ASC
+		LIMIT $`)
+	sb.WriteString(fmt.Sprint(len(params) + 1)) // next param index for LIMIT
+
+	params = append(params, limit)
+
+	rows, err := database.DB.Query(sb.String(), params...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []map[string]interface{}
+	for rows.Next() {
+		var (
+			id                int
+			email             string
+			firstName         sql.NullString
+			lastName          sql.NullString
+			countryCode       sql.NullString
+			phone             sql.NullString
+			country           sql.NullString
+			role              string
+			isProfileComplete bool
+			createdAt         sql.NullTime
+			score             int
+		)
+		if err := rows.Scan(
+			&id, &email, &firstName, &lastName, &countryCode, &phone, &country, &role,
+			&isProfileComplete, &createdAt, &score,
+		); err != nil {
+			return nil, err
+		}
+		out = append(out, map[string]interface{}{
+			"id":                  id,
+			"email":               email,
+			"first_name":          nv(firstName),
+			"last_name":           nv(lastName),
+			"country_code":        nv(countryCode),
+			"phone":               nv(phone),
+			"country":             nv(country),
+			"role":                role,
+			"is_profile_complete": isProfileComplete,
+			"created_at":          nt(createdAt),
+			"relevance_score":     score,
+		})
+	}
+	return out, nil
+}
+
+/*
+SearchUsersAdvanced extends basic search with an optional role filter.
+*/
+func SearchUsersAdvanced(q string, role *string, limit int) ([]map[string]interface{}, error) {
+	if limit <= 0 || limit > 100 {
+		limit = 20
+	}
+	searchLower := strings.ToLower(strings.TrimSpace(q))
+	contains := "%" + searchLower + "%"
+	starts := searchLower + "%"
+
+	words := fieldsNonEmpty(searchLower)
+
+	params := []any{
+		searchLower, // $1 exact
+		starts,      // $2 startswith
+		contains,    // $3 contains
+	}
+	allWordsCond, params := buildAllWordsInFullNameCond(params, words, 4)
+
+	roleFilter := ""
+	if role != nil && strings.TrimSpace(*role) != "" {
+		roleFilter = " AND role = $" + fmt.Sprint(len(params)+1)
+		params = append(params, *role)
+	}
+
+	sb := strings.Builder{}
+	sb.WriteString(`
+		WITH src AS (
+			SELECT
+				id, email, first_name, last_name, country_code, phone, country, role,
+				is_profile_complete, created_at,
+				LOWER(COALESCE(first_name,'') || ' ' || COALESCE(last_name,'')) AS name_concat
+			FROM users
+		)
+		SELECT 
+			id, email, first_name, last_name, country_code, phone, country, role,
+			is_profile_complete, created_at,
+			(
+				CASE
+					WHEN LOWER(email) = $1 THEN 2000
+					WHEN LOWER(email) LIKE $2 THEN 1800
+					WHEN LOWER(email) LIKE $3 THEN 1500
+					WHEN name_concat = $1 THEN 1200
+					WHEN name_concat LIKE $2 THEN 1000
+					WHEN ` + nullIfEmpty(allWordsCond, "FALSE") + ` THEN 800
+					WHEN name_concat LIKE $3 THEN 700
+					ELSE 100
+				END
+			) AS relevance_score
+		FROM src
+		WHERE (
+			LOWER(email) LIKE $3
+			OR name_concat LIKE $3
+			OR LOWER(first_name) LIKE $3
+			OR LOWER(last_name) LIKE $3
+	`)
+	if allWordsCond != "" {
+		sb.WriteString(" OR (")
+		sb.WriteString(allWordsCond)
+		sb.WriteString(")")
+	}
+	sb.WriteString(")")
+	sb.WriteString(roleFilter)
+	sb.WriteString(`
+		ORDER BY relevance_score DESC, id ASC
+		LIMIT $`)
+	sb.WriteString(fmt.Sprint(len(params) + 1))
+
+	params = append(params, limit)
+
+	rows, err := database.DB.Query(sb.String(), params...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []map[string]interface{}
+	for rows.Next() {
+		var (
+			id                int
+			email             string
+			firstName         sql.NullString
+			lastName          sql.NullString
+			countryCode       sql.NullString
+			phone             sql.NullString
+			country           sql.NullString
+			roleVal           string
+			isProfileComplete bool
+			createdAt         sql.NullTime
+			score             int
+		)
+		if err := rows.Scan(
+			&id, &email, &firstName, &lastName, &countryCode, &phone, &country, &roleVal,
+			&isProfileComplete, &createdAt, &score,
+		); err != nil {
+			return nil, err
+		}
+		out = append(out, map[string]interface{}{
+			"id":                  id,
+			"email":               email,
+			"first_name":          nv(firstName),
+			"last_name":           nv(lastName),
+			"country_code":        nv(countryCode),
+			"phone":               nv(phone),
+			"country":             nv(country),
+			"role":                roleVal,
+			"is_profile_complete": isProfileComplete,
+			"created_at":          nt(createdAt),
+			"relevance_score":     score,
+		})
+	}
+	return out, nil
+}
+
+/*
+GetUserProfileByID returns a single user's public profile by ID,
+plus simple stats (posts, followers, following). Follower counts assume a `follows` table
+with (follower_id, following_id, status='accepted').
+*/
+func GetUserProfileByID(id int) (map[string]interface{}, error) {
+	row := database.DB.QueryRow(`
+		SELECT id, email, first_name, last_name, country_code, phone, country, role,
+		       is_profile_complete, created_at
+		FROM users
+		WHERE id = $1
+	`, id)
+
+	var (
+		userID            int
+		email             string
+		firstName         sql.NullString
+		lastName          sql.NullString
+		countryCode       sql.NullString
+		phone             sql.NullString
+		country           sql.NullString
+		role              string
+		isProfileComplete bool
+		createdAt         sql.NullTime
+	)
+	if err := row.Scan(
+		&userID, &email, &firstName, &lastName, &countryCode, &phone, &country, &role,
+		&isProfileComplete, &createdAt,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+
+	var posts, followers, following int
+	_ = database.DB.QueryRow(`SELECT COUNT(*) FROM posts WHERE user_id=$1`, userID).Scan(&posts)
+	// adjust table name/filters to your actual social-graph table
+	_ = database.DB.QueryRow(`SELECT COUNT(*) FROM follows WHERE following_id=$1 AND status='accepted'`, userID).Scan(&followers)
+	_ = database.DB.QueryRow(`SELECT COUNT(*) FROM follows WHERE follower_id=$1 AND status='accepted'`, userID).Scan(&following)
+
+	return map[string]interface{}{
+		"user": map[string]interface{}{
+			"id":                  userID,
+			"email":               email,
+			"first_name":          nv(firstName),
+			"last_name":           nv(lastName),
+			"country_code":        nv(countryCode),
+			"phone":               nv(phone),
+			"country":             nv(country),
+			"role":                role,
+			"is_profile_complete": isProfileComplete,
+			"created_at":          nt(createdAt),
+		},
+		"stats": map[string]interface{}{
+			"posts":     posts,
+			"followers": followers,
+			"following": following,
+		},
+	}, nil
+}
+
+/*
+GetSearchIndexStatements returns SQLs you can run to optimize search.
+You can expose these via a controller endpoint for convenience.
+*/
+func GetSearchIndexStatements() []string {
+	return []string{
+		"CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_users_email_lower ON users (LOWER(email));",
+		"CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_users_first_name_lower ON users (LOWER(first_name));",
+		"CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_users_last_name_lower ON users (LOWER(last_name));",
+		"CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_users_role ON users (role);",
+		"CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_users_country ON users (country);",
+		"CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_users_profile_complete ON users (is_profile_complete);",
+		"CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_users_search_composite ON users (LOWER(email), LOWER(first_name), LOWER(last_name));",
+	}
+}
+
+/* ---------- small helpers (no new types) ---------- */
+
+func fieldsNonEmpty(s string) []string {
+	ws := strings.Fields(s)
+	out := make([]string, 0, len(ws))
+	for _, w := range ws {
+		w = strings.TrimSpace(w)
+		if w != "" {
+			out = append(out, w)
+		}
+	}
+	return out
+}
+
+// buildAllWordsInFullNameCond builds "name_concat LIKE $N AND name_concat LIKE $N+1 ..."
+func buildAllWordsInFullNameCond(params []any, words []string, start int) (string, []any) {
+	if len(words) <= 1 {
+		return "", params
+	}
+	parts := make([]string, 0, len(words))
+	idx := start
+	for _, w := range words {
+		parts = append(parts, fmt.Sprintf("name_concat LIKE $%d", idx))
+		params = append(params, "%"+w+"%")
+		idx++
+	}
+	return strings.Join(parts, " AND "), params
+}
+
+// null-handling helpers
+func nv(ns sql.NullString) string {
+	if ns.Valid {
+		return ns.String
+	}
+	return ""
+}
+func nt(nt sql.NullTime) any {
+	if nt.Valid {
+		return nt.Time
+	}
+	return nil
+}
+func nullIfEmpty(s string, fallback string) string {
+	if strings.TrimSpace(s) == "" {
+		return fallback
+	}
+	return s
 }

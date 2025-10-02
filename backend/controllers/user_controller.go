@@ -1,9 +1,10 @@
 package controllers
 
 import (
+	"log"
 	"net/http"
+	"strconv"
 	"strings"
-
 	"travel_mate/backend/models"
 	"travel_mate/backend/utils"
 
@@ -207,4 +208,128 @@ func CompleteRegistration(c *gin.Context) {
 		"error":  "Endpoint deprecated. Use PUT /user/profile after signup.",
 		"status": 410,
 	})
+}
+
+/*
+=========================
+
+	SearchUsers (basic)
+	GET /search/users?q=...&limit=20
+	=========================
+*/
+func SearchUsers(c *gin.Context) {
+	q := strings.TrimSpace(c.Query("q"))
+	if q == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Search query is required"})
+		return
+	}
+	limit := 20
+	if s := c.Query("limit"); s != "" {
+		if n, err := strconv.Atoi(s); err == nil && n > 0 && n <= 100 {
+			limit = n
+		}
+	}
+
+	rows, err := models.SearchUsersBasic(q, limit)
+	if err != nil {
+		log.Printf("[SearchUsers] model error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to search users"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"users": rows,
+		"query": q,
+		"count": len(rows),
+	})
+}
+
+/*
+=========================
+
+	AdvancedSearchUsers
+	GET /search/users/advanced?q=...&role=vendor&limit=20
+	=========================
+*/
+func AdvancedSearchUsers(c *gin.Context) {
+	q := strings.TrimSpace(c.Query("q"))
+	if q == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Search query is required"})
+		return
+	}
+	var role *string
+	if r := strings.TrimSpace(c.Query("role")); r != "" {
+		role = &r
+	}
+	limit := 20
+	if s := c.Query("limit"); s != "" {
+		if n, err := strconv.Atoi(s); err == nil && n > 0 && n <= 100 {
+			limit = n
+		}
+	}
+
+	rows, err := models.SearchUsersAdvanced(q, role, limit)
+	if err != nil {
+		log.Printf("[AdvancedSearchUsers] model error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Search failed"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"users":    rows,
+		"query":    q,
+		"count":    len(rows),
+		"has_more": len(rows) == limit,
+		"filters":  gin.H{"role": roleIf(role)},
+	})
+}
+
+/*
+=========================
+
+	OptimizeSearchIndexes
+	GET /search/users/indexes
+	(returns SQL statements; run them manually)
+	=========================
+*/
+func OptimizeSearchIndexes(c *gin.Context) {
+	indexes := models.GetSearchIndexStatements()
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Database indexes for optimal search performance",
+		"indexes": indexes,
+		"note":    "Run these SQL commands manually in your database for better search performance",
+	})
+}
+
+/*
+=========================
+
+	GetUserProfile (by ID)
+	GET /users/:id/profile
+	=========================
+*/
+func GetUserProfile(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil || id <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+		return
+	}
+	data, err := models.GetUserProfileByID(id)
+	if err != nil {
+		if err == models.ErrNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+			return
+		}
+		log.Printf("[GetUserProfile] model error: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user"})
+		return
+	}
+	c.JSON(http.StatusOK, data)
+}
+
+/* ---------- tiny helper ---------- */
+func roleIf(p *string) any {
+	if p == nil {
+		return nil
+	}
+	return *p
 }
