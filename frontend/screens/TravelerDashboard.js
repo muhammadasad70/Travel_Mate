@@ -1,5 +1,6 @@
 
 
+
 // import React, { useState, useEffect } from 'react';
 // import { View, StyleSheet, ScrollView, Platform } from 'react-native';
 // import { useRoute, useNavigation } from '@react-navigation/native';
@@ -61,14 +62,23 @@
 //     }
 //   }, [selectedTab, plannerView]);
 
-//   // 👉 When "communityHub" is chosen, jump to SocialDashboard (with 'from' flag)
+//   // 👉 Community Hub redirect (existing)
 //   useEffect(() => {
 //     if (selectedTab === 'communityHub') {
 //       navigation.navigate('SocialDashboard', {
 //         tabKey: `home-${Date.now()}`,
-//         from: 'TravelerDashboard', // ← triggers Back chip in SocialHeader
+//         from: 'TravelerDashboard',
 //       });
-//       // Prevent redirect loop when user returns to TravelerDashboard
+//       // Prevent redirect loop when user returns
+//       setTimeout(() => setSelectedTab('explore'), 0);
+//     }
+//   }, [selectedTab, navigation]);
+
+//   // ✅ NEW: Groups redirect — when Header/BottomBar sets selectedTab === 'groups'
+//   useEffect(() => {
+//     if (selectedTab === 'groups') {
+//       navigation.navigate('GroupsHome', { from: 'TravelerDashboard' });
+//       // Reset tab so coming back lands on Explore and avoids re-trigger
 //       setTimeout(() => setSelectedTab('explore'), 0);
 //     }
 //   }, [selectedTab, navigation]);
@@ -95,7 +105,7 @@
 //         return <OfflineScreen inPage />;
 //       case 'messages':
 //         return <MessagesScreen inPage />;
-//       // 'communityHub' handled by the effect above
+//       // 'communityHub' and 'groups' are handled by effects above
 //       default:
 //         return (
 //           <>
@@ -112,6 +122,7 @@
 
 //   return (
 //     <View style={styles.container}>
+//       {/* Header should have a "Groups" control that calls onTabChange('groups') */}
 //       <Header onTabChange={setSelectedTab} />
 
 //       <ScrollView contentContainerStyle={styles.contentWrapper}>
@@ -143,6 +154,7 @@
 // export default TravelerDashboard;
 
 
+
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Platform } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -156,7 +168,6 @@ import TopTravelers from '../components/TravelerDashboard/TopTravelers';
 import CulturalExchange from '../components/TravelerDashboard/CulturalExchange';
 import TopServiceProviders from '../components/TravelerDashboard/TravelerTopServiceProviders';
 import Footer from '../components/TravelerDashboard/Footer';
-import EventIntegration from './EventIntegrationScreen';
 import TravelerServicesScreen from './VendorServices/TravelerServicesScreen';
 import TravelerNotifications from './RealTimeAlertsScreen';
 import TravelerProfile from './TravelerProfile';
@@ -166,6 +177,9 @@ import ItinerariesHub from './ItinerariesHub';
 
 // 🔔 Popup that checks /user/profile-status after 5s
 import CompleteProfilePrompt from './CompleteProfilePrompt';
+
+// ✅ NEW: Events explorer (flatlist-based; do NOT wrap in ScrollView)
+import EventsExplorerScreen from './EventsExplorerScreen'; // <-- add this import
 
 const TravelerDashboard = () => {
   const route = useRoute();
@@ -216,11 +230,10 @@ const TravelerDashboard = () => {
     }
   }, [selectedTab, navigation]);
 
-  // ✅ NEW: Groups redirect — when Header/BottomBar sets selectedTab === 'groups'
+  // ✅ Groups redirect (existing behavior)
   useEffect(() => {
     if (selectedTab === 'groups') {
       navigation.navigate('GroupsHome', { from: 'TravelerDashboard' });
-      // Reset tab so coming back lands on Explore and avoids re-trigger
       setTimeout(() => setSelectedTab('explore'), 0);
     }
   }, [selectedTab, navigation]);
@@ -235,8 +248,11 @@ const TravelerDashboard = () => {
             onBackToHub={() => setPlannerView('hub')}
           />
         );
+
+      // ✅ REPLACED: use the real Events explorer screen here
       case 'events':
-        return <EventIntegration />;
+        return <EventsExplorerScreen />;
+
       case 'services':
         return <TravelerServicesScreen />;
       case 'notification':
@@ -247,7 +263,6 @@ const TravelerDashboard = () => {
         return <OfflineScreen inPage />;
       case 'messages':
         return <MessagesScreen inPage />;
-      // 'communityHub' and 'groups' are handled by effects above
       default:
         return (
           <>
@@ -262,19 +277,25 @@ const TravelerDashboard = () => {
     }
   };
 
+  // ⚠️ IMPORTANT: avoid wrapping Events (FlatList) inside ScrollView
+  const isFlatListTab = selectedTab === 'events';
+
   return (
     <View style={styles.container}>
-      {/* Header should have a "Groups" control that calls onTabChange('groups') */}
       <Header onTabChange={setSelectedTab} />
 
-      <ScrollView contentContainerStyle={styles.contentWrapper}>
-        {renderCurrentTab()}
-      </ScrollView>
+      {isFlatListTab ? (
+        // Full-height container for EventsExplorerScreen (it manages its own SafeArea + FlatList)
+        <View style={[styles.contentWrapper, { flex: 1, paddingHorizontal: 0, paddingBottom: 0 }]}>
+          {renderCurrentTab()}
+        </View>
+      ) : (
+        <ScrollView contentContainerStyle={styles.contentWrapper} keyboardShouldPersistTaps="handled">
+          {renderCurrentTab()}
+        </ScrollView>
+      )}
 
-      {/* 🔔 Show “Complete Profile” popup 5s after landing (only if incomplete) */}
       <CompleteProfilePrompt navigation={navigation} delayMs={5000} />
-
-      {/* Bottom navigation bar (highlights based on current tab) */}
       <BottomNavBar onTabChange={setSelectedTab} currentTab={selectedTab} />
     </View>
   );

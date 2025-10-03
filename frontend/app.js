@@ -16,7 +16,8 @@ import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
 import VendorDashboard from './screens/VendorDashboard';
 import RealTimeAlertsScreen from './screens/RealTimeAlertsScreen';
-import EventIntegrationScreen from './screens/EventIntegrationScreen';
+import EventsExplorerScreen from "./screens/EventsExplorerScreen";
+
 
 /* Traveler Screens */
 import TravelerProfile from './screens/TravelerProfile';
@@ -133,7 +134,6 @@ export default function App() {
             {/* Dashboards */}
             <Stack.Screen name="RealTimeAlerts" component={RealTimeAlertsScreen} />
             <Stack.Screen name="VendorDashboard" component={VendorDashboard} />
-            <Stack.Screen name="EventIntegration" component={EventIntegrationScreen} />
             <Stack.Screen name="ItinerariesHub" component={ItinerariesHub} />
             <Stack.Screen name="ItineraryDetails" component={completeitinerrarydetail} />
             <Stack.Screen name="SocialDashboard" component={SocialDashboard} />
@@ -158,6 +158,7 @@ export default function App() {
             <Stack.Screen name="ManageItineraries" component={ManageItinerariesScreen} />
             <Stack.Screen name="PdfViewer" component={PdfViewerScreen} />
             <Stack.Screen name="RecommendationScreen" component={RecommendationScreen} />
+            <Stack.Screen name="EventsExplorer" component={EventsExplorerScreen} />
              {/* <Stack.Screen name="ItineraryDetails" component={ItineraryDetailsScreen} /> */}
             <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
             <Stack.Screen name="ResetPasswordScreen2" component={ResetPasswordScreen2} />
