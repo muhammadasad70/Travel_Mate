@@ -2187,10 +2187,10 @@ export default function CommunityProfileScreen() {
     <SafeAreaView style={styles.page}>
       {/* Top bar */}
       <View style={styles.topbar}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} activeOpacity={0.9}>
+        {/* <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} activeOpacity={0.9}>
           <Ionicons name="arrow-back" size={18} color={COLORS.text} />
           <Text style={styles.backText}>Back</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
         <Text style={styles.brand}>Community</Text>
         <View style={{ width: 64 }} />
       </View>
@@ -2262,6 +2262,8 @@ export default function CommunityProfileScreen() {
             paddingTop: Platform.OS === "web" ? 16 : 8,
             ...(Platform.OS === "web" ? { maxWidth: 1000, alignSelf: "center", width: "100%" } : {}),
           }}
+          scrollEnabled={false}
+          nestedScrollEnabled
         />
       )}
 

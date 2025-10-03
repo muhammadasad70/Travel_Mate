@@ -3684,6 +3684,9 @@ export default function HomeFeed() {
               ? { maxWidth: 860, alignSelf: "center", width: "100%" }
               : {}),
           }}
+          scrollEnabled={false}
+          nestedScrollEnabled
+
         />
       )}
     </View>

@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Platform, ScrollView } from 'react-native'; // ← added Text
+import { View, Text, StyleSheet, Platform, ScrollView } from 'react-native'; 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -9,47 +9,27 @@ import VendorHeader from '../components/VendorDashboard/VendorHeader';
 import VendorBottomNavBar from '../components/VendorDashboard/VendorBottomNavBar';
 import CompleteProfilePrompt from './CompleteProfilePrompt';
 
-// Renders inside dashboard when activeTab === 'profile'
+
 import VendorProfile from './VendorProfile';
-// Import My_Services for accommodation providers
 import My_Services from './Accommodations/My_Services';
-// Import Add_New_Services for accommodation providers
 import Add_New_Services from './Accommodations/Add_New_Services';
-// Import Booking_Requests for accommodation providers
 import Booking_Requests from './Accommodations/Booking_Requests';
-// Import Create_Offer for accommodation providers
 import Create_Offer from './Accommodations/Create_Offer';
-// Import Booking_Analytics for accommodation providers
 import Booking_Analytics from './Accommodations/Booking_Analytics';
-// Import My_Cultural_Listings for cultural exchangers
 import My_Cultural_Listings from './Cultural_exchange/My_Cultural_Listings';
-// Import Offer_Cultural_Skill for cultural exchangers
 import Offer_Cultural_Skill from './Cultural_exchange/Offer_Cultural_Skill';
-// Import Manage_Requests for cultural exchangers
 import Manage_Requests from './Cultural_exchange/Manage_Requests';
-// Import Traveler_Feedback for cultural exchangers
 import Traveler_Feedback from './Cultural_exchange/Traveler_Feedback';
-// Import Cultural_Engagement_Stats for cultural exchangers
 import Cultural_Engagement_Stats from './Cultural_exchange/Cultural_Engagement_Stats';
-// Import My_Product_Listings for product sellers
 import My_Product_Listings from './Product/My_Product_Listings';
-// Import Add_New_Product for product sellers
 import Add_New_Product from './Product/Add_New_Product';
-// Import Manage_Orders for product sellers
 import Manage_Orders from './Product/Manage_Orders';
-// Import Product_Sales_Analytics for product sellers
 import Product_Sales_Analytics from './Product/Product_Sales_Analytics';
-// Import Customer_Feedback for product sellers
 import Customer_Feedback from './Product/Customer_Feedback';
-// Import My_Transport_Listings for transport providers
 import My_Transport_Listings from './Transport/My_Transport_Listings';
-// Import Add_New_Transport for transport providers
 import Add_New_Transport from './Transport/Add_New_Transport';
-// Import Transport_Bookings for transport providers
 import Transport_Bookings from './Transport/Transport_Bookings';
-// Import Transport_Offers for transport providers
 import Transport_Offers from './Transport/Transport_Offers';
-// Import Transport_Analytics for transport providers
 import Transport_Analytics from './Transport/Transport_Analytics';
 
 const TAB = {
