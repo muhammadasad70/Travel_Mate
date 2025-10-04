@@ -231,6 +231,34 @@ CREATE TABLE IF NOT EXISTS message_reads (
   PRIMARY KEY (message_id, user_id)
 );
 CREATE INDEX IF NOT EXISTS ix_message_reads_user ON message_reads (user_id);
+-- =========================
+-- Events
+-- =========================
+CREATE TABLE IF NOT EXISTS events (
+  id BIGSERIAL PRIMARY KEY,
+  source TEXT NOT NULL CHECK (source IN ('eventbrite','meetup','ticketmaster','custom')),
+  external_id TEXT,                             -- id from the provider (nullable for custom)
+  title TEXT NOT NULL,
+  category TEXT,
+  start_time TIMESTAMPTZ,
+  end_time TIMESTAMPTZ,
+  tz TEXT,
+  venue_name TEXT,
+  venue_address TEXT,
+  city TEXT,
+  lat DOUBLE PRECISION,
+  lng DOUBLE PRECISION,
+  image_url TEXT,
+  price TEXT,
+  url TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT ux_events_source_extid UNIQUE (source, external_id)
+);
+
+CREATE INDEX IF NOT EXISTS ix_events_start_time ON events (start_time DESC);
+CREATE INDEX IF NOT EXISTS ix_events_city       ON events (city);
+CREATE INDEX IF NOT EXISTS ix_events_category   ON events (category);
+
 
 `
 

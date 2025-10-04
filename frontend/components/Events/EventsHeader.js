@@ -1,3 +1,4 @@
+// components/Events/EventsHeader.js
 import React from "react";
 import { View, Text, StyleSheet, Platform, TextInput, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -6,12 +7,24 @@ const COLORS = {
   text: "#0F3A6B",
   sub: "#6B7280",
   border: "#EAF0F6",
-  accent: "#0F70F0",
+  accent: "#0c2444ff",
 };
 
-export default function EventsHeader({ search, onChangeSearch, onOpenFilters, dateWindow, setDateWindow }) {
+export default function EventsHeader({
+  search,
+  onChangeSearch,
+  onOpenFilters,
+  dateWindow,
+  setDateWindow,
+  tight = true,                // ✅ new: tighten the gap to the site header
+}) {
+  // Keep a tiny buffer below your fixed top header on web, minimal on native
+  const topPad = Platform.OS === "web"
+    ? (tight ? 64 : 92)         // was 92 → now 64 when tight
+    : (tight ? 8  : 16);
+
   return (
-    <View style={styles.header}>
+    <View style={[styles.header, { paddingTop: topPad }]}>
       <Text style={styles.h1}>Events</Text>
 
       <View style={styles.searchRow}>
@@ -49,7 +62,7 @@ function QuickPill({ label, active, onPress }) {
 const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === "web" ? 92 : 16,
+    paddingTop: 92, // default; overridden by inline style above
     paddingBottom: 8,
     ...(Platform.OS === "web" ? { maxWidth: 1100, alignSelf: "center", width: "100%" } : {}),
   },
@@ -78,11 +91,7 @@ const styles = StyleSheet.create({
   },
   filterTxt: { color: "#fff", fontWeight: "800" },
 
-  quickRow: {
-    marginTop: 8,
-    flexDirection: "row",
-    gap: 8,
-  },
+  quickRow: { marginTop: 8, flexDirection: "row", gap: 8 },
   quickPill: {
     paddingHorizontal: 12,
     paddingVertical: 6,

@@ -2232,6 +2232,24 @@ export default function CommunityProfileScreen() {
             const it = itCache[item.content_id];
             return (
               <View style={styles.postCard}>
+                {/* <TouchableOpacity
+                  // style={[styles.actionBtn, styles.actionBtnDanger, isDeleting && { opacity: 0.6 }]}
+                  // onPress={() => confirmDelete(item)}
+                  // disabled={isDeleting}
+                  // accessibilityLabel="Delete itinerary"
+                  // accessibilityState={{ disabled: isDeleting }}
+                > */}
+                  <Ionicons
+                    // name={isDeleting ? "hourglass-outline" : "trash-outline"}
+                    name="trash-outline"
+                    size={16}
+                    color="#B91C1C"
+                  />
+                  <Text style={[styles.actionText, styles.actionTextDanger]}>
+                    delete
+                    {/* {isDeleting ? "Deleting…" : "Delete"} */}
+                  </Text>
+                {/* </TouchableOpacity> */}
                 {!!item.caption && <Text style={styles.caption}>{item.caption}</Text>}
                 {it ? (
                   <ItineraryCard

@@ -3622,11 +3622,6 @@ export default function HomeFeed() {
       );
     }
   };
-
-  const handlePostDeleted = (postId) => {
-    setPosts((ps) => ps.filter((p) => p.id !== Number(postId)));
-  };
-
   const renderItem = ({ item }) => (
     <PostCard
       post={item}
@@ -3634,7 +3629,6 @@ export default function HomeFeed() {
       headers={authHeaders}
       me={auth.userId}
       authed={!!auth.token && !!auth.userId}
-      onDeleted={handlePostDeleted}
     />
   );
 
@@ -3694,7 +3688,7 @@ export default function HomeFeed() {
 }
 
 /* ----------------------- Post card with itinerary + comments + actions ----------------------- */
-function PostCard({ post, onLike, headers, me, authed, onDeleted }) {
+function PostCard({ post, onLike, headers, me, authed }) {
   const navigation = useNavigation();
 
   const [showComments, setShowComments] = useState(false);
@@ -3854,34 +3848,6 @@ function PostCard({ post, onLike, headers, me, authed, onDeleted }) {
     } catch {}
   };
 
-  const onDelete = async () => {
-    if (!isOwner || !post?.content_id) return;
-    Alert.alert(
-      "Delete itinerary",
-      "This will permanently delete the itinerary (and may remove the post). Continue?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              const res = await fetch(`${API_BASE_URL}/itineraries/${post.content_id}`, {
-                method: "DELETE",
-                headers: { ...headers, "Content-Type": "application/json" },
-                body: JSON.stringify({ user_id: me, UserID: me }),
-              });
-              if (!res.ok) throw new Error(`HTTP ${res.status}`);
-              onDeleted?.(post.id);
-            } catch (e) {
-              Alert.alert("Delete failed", e?.message || "Unable to delete itinerary.");
-            }
-          },
-        },
-      ]
-    );
-  };
-
   // Name for a comment from embedded user object (Go: User with FirstName/LastName)
   const commentAuthor = (c) => {
     const u = c.user || c.User;
@@ -3941,15 +3907,7 @@ function PostCard({ post, onLike, headers, me, authed, onDeleted }) {
       {post?.content_id && (
         <View style={styles.itinActions}>
           <ActionPill icon="eye-outline" label="View" onPress={onView} />
-          {isOwner ? (
-            <>
-              <ActionPill icon={Platform.OS === "ios" ? "create-outline" : "pencil"} label="Edit" onPress={onEdit} />
-              <ActionPill icon="share-social-outline" label="Share" onPress={onShare} />
-              <ActionPill icon="trash-outline" label="Delete" destructive onPress={onDelete} />
-            </>
-          ) : (
-            <ActionPill icon="share-social-outline" label="Share" onPress={onShare} />
-          )}
+          <ActionPill icon="share-social-outline" label="Share" onPress={onShare} />
         </View>
       )}
 

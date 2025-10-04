@@ -458,7 +458,7 @@ const COLORS = {
   pillBg: "#ECF3FF",
   pillBorder: "#DCE7FF",
   soft: "#F1F5FE",
-  accent: "#003366",
+  accent: "#0c2444ff",
 };
 
 const fmtActivity = (s) => s || "No activity yet";
