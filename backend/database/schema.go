@@ -19,6 +19,28 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE UNIQUE INDEX IF NOT EXISTS ux_users_email_lower
   ON users (LOWER(email));
+-- 001_alter_users_social.sql  (run once)
+ALTER TABLE users
+  ALTER COLUMN password DROP NOT NULL;
+
+ALTER TABLE users
+  ADD COLUMN IF NOT EXISTS provider TEXT
+    CHECK (provider IN ('google','facebook')),
+
+  ADD COLUMN IF NOT EXISTS provider_id TEXT,
+  ADD COLUMN IF NOT EXISTS avatar_url TEXT,
+  ADD COLUMN IF NOT EXISTS name TEXT;
+
+-- prevent duplicate social identities
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_indexes WHERE indexname = 'ux_users_provider_pid'
+  ) THEN
+    CREATE UNIQUE INDEX ux_users_provider_pid ON users(provider, provider_id);
+  END IF;
+END$$;
+
 
 -- new itineraries table
 CREATE TABLE IF NOT EXISTS itineraries (

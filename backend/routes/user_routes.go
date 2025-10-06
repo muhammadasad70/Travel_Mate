@@ -60,6 +60,7 @@ func RegisterUserRoutes(router *gin.Engine) {
 	{
 		auth.POST("/signup", controllers.SignupUser)
 		auth.POST("/login", controllers.LoginUser)
+		auth.POST("/social", controllers.SocialLogin)
 		auth.POST("/complete-registration", controllers.CompleteRegistration) // deprecated
 		auth.POST("/email-varification", controllers.ForgetPasswordHandler)   // step 1
 		auth.POST("/verify-code", controllers.VerifyCodeHandler)              // step 2

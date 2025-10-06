@@ -17,6 +17,18 @@ func GenerateToken(email string, userId int) (string, error) {
 	})
 	return token.SignedString(jwtKey)
 }
+func GenerateTokenWithRole(email string, userId int, role string) (string, error) {
+	claims := jwt.MapClaims{
+		"email":  email,
+		"userId": userId,
+		"exp":    time.Now().Add(2 * time.Hour).Unix(),
+	}
+	if role != "" {
+		claims["role"] = role
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString(jwtKey)
+}
 
 func VerifyToken(tokenStr string) (jwt.MapClaims, error) {
 	token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {

@@ -99,6 +99,84 @@ func IsProfileCompleteByID(id int) (bool, error) {
 	return v, err
 }
 
+type SocialUserIn struct {
+	Provider   string
+	ProviderID string
+	Email      string
+	Name       string
+	AvatarURL  string
+	Role       string // "traveler" or "vendor" (fallback "traveler")
+}
+
+func UpsertSocialUser(in SocialUserIn) (*User, error) {
+	// Normalize
+	in.Email = strings.ToLower(strings.TrimSpace(in.Email))
+	role := in.Role
+	if role != "vendor" && role != "traveler" {
+		role = "traveler"
+	}
+
+	// If an account already exists with this provider_id -> return it
+	{
+		const q = `
+			SELECT id, email, COALESCE(is_profile_complete,false), role
+			FROM users
+			WHERE provider=$1 AND provider_id=$2
+			LIMIT 1`
+		var u User
+		var completed bool
+		err := database.DB.QueryRow(q, in.Provider, in.ProviderID).
+			Scan(&u.Id, &u.Email, &completed, &u.Role)
+		if err == nil {
+			u.IsProfileComplete = completed
+			return &u, nil
+		}
+	}
+
+	// If same email exists (email/password or another social), link it to this provider
+	{
+		const q = `
+			SELECT id, email, role, COALESCE(is_profile_complete,false)
+			FROM users WHERE LOWER(email)=LOWER($1) LIMIT 1`
+		var u User
+		err := database.DB.QueryRow(q, in.Email).Scan(&u.Id, &u.Email, &u.Role, &u.IsProfileComplete)
+		if err == nil {
+			_, _ = database.DB.Exec(`
+				UPDATE users
+				SET provider=$1, provider_id=$2, name=COALESCE(name,$3), avatar_url=COALESCE(avatar_url,$4)
+				WHERE id=$5`,
+				in.Provider, in.ProviderID, nullIfBlank(in.Name), nullIfBlank(in.AvatarURL), u.Id,
+			)
+			return &u, nil
+		}
+	}
+
+	// Otherwise create a fresh user (no password)
+	const ins = `
+		INSERT INTO users (email, password, role, provider, provider_id, name, avatar_url, is_profile_complete)
+		VALUES ($1, '', $2, $3, $4, $5, $6, false)
+		RETURNING id, COALESCE(is_profile_complete,false)`
+	var u User
+	u.Email = in.Email
+	u.Role = role
+	u.FirstName = "" // can be filled later from profile completion
+	u.LastName = ""
+	var completed bool
+	if err := database.DB.QueryRow(ins, in.Email, role, in.Provider, in.ProviderID, nullIfBlank(in.Name), nullIfBlank(in.AvatarURL)).
+		Scan(&u.Id, &completed); err != nil {
+		return nil, err
+	}
+	u.IsProfileComplete = completed
+	return &u, nil
+}
+
+func nullIfBlank(s string) any {
+	if strings.TrimSpace(s) == "" {
+		return nil
+	}
+	return s
+}
+
 // func GetUserByID(id int) (User, error) {
 // 	const query = `
 // 		SELECT id, email, role, first_name, last_name, country_code, phone, country, is_profile_complete

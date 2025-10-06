@@ -6,15 +6,22 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "platforms": ["ios", "android", "web"],
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#f5f8fa"
     },
-    "updates": { "fallbackToCacheTimeout": 0 },
-    "assetBundlePatterns": ["**/*"],
-
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.travelmate.app",
@@ -24,7 +31,6 @@
         "NSCalendarsUsageDescription": "We need access to add events to your calendar."
       }
     },
-
     "android": {
       "package": "com.travelmate.app",
       "adaptiveIcon": {
@@ -36,19 +42,22 @@
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.READ_MEDIA_VIDEO",
         "android.permission.READ_EXTERNAL_STORAGE",
-
         "android.permission.READ_CALENDAR",
         "android.permission.WRITE_CALENDAR"
       ]
     },
-
-    "web": { "favicon": "./assets/favicon.png" },
-
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
     "plugins": [
       "expo-font",
-      ["expo-image-picker", {
-        "photosPermission": "Allow TravelMate to access your photos to select a cover image."
-      }]
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow TravelMate to access your photos to select a cover image."
+        }
+      ],
+      "expo-web-browser"
     ]
   }
 }
