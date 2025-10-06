@@ -15,5 +15,6 @@ func RegisterEventRoutes(router *gin.Engine) {
 
 		// Simple ingest (lock it down later with your Auth + role)
 		ev.POST("/ingest", controllers.IngestEvents)
+		RegisterLiveEventRoutes(router)
 	}
 }

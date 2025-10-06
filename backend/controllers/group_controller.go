@@ -29,11 +29,12 @@ func CreateGroup(c *gin.Context) {
 	name := strings.TrimSpace(in.Name)
 	desc := strings.TrimSpace(in.Description)
 
-	if len(name) < 5 {
+	// messages ↔ checks aligned
+	if len(name) < 4 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Group name must be at least 4 characters"})
 		return
 	}
-	if len(desc) < 10 {
+	if len(desc) < 20 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Description must be at least 20 characters"})
 		return
 	}
@@ -57,7 +58,8 @@ func GetMyGroups(c *gin.Context) {
 }
 
 func GetGroup(c *gin.Context) {
-	id, _ := strconv.Atoi(c.Param("id"))
+	// use the SAME wildcard name used in routes: ":group_id"
+	id, _ := strconv.Atoi(c.Param("group_id"))
 	g, err := models.GetGroupByID(id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Group not found"})

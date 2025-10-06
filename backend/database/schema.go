@@ -111,6 +111,10 @@ BEGIN
       CHECK (char_length(btrim(description)) >= 10) NOT VALID;
   END IF;
 END$$;
+CREATE INDEX IF NOT EXISTS ix_group_members_gid_user ON group_members(group_id, user_id);
+CREATE INDEX IF NOT EXISTS ix_group_invites_gid_invitee ON group_invites(group_id, invitee_id);
+CREATE INDEX IF NOT EXISTS ix_group_invites_status ON group_invites(status);
+
 
 -- =========================
 -- Social graph
@@ -231,6 +235,7 @@ CREATE TABLE IF NOT EXISTS message_reads (
   PRIMARY KEY (message_id, user_id)
 );
 CREATE INDEX IF NOT EXISTS ix_message_reads_user ON message_reads (user_id);
+
 -- =========================
 -- Events
 -- =========================

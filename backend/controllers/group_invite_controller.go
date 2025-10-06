@@ -42,3 +42,12 @@ func DeclineInvite(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"status": "declined"})
 }
+func CancelGroupInviteHandler(c *gin.Context) {
+	actorID := c.GetInt("user_id")
+	inviteID, _ := strconv.Atoi(c.Param("inviteId"))
+	if err := models.CancelGroupInvite(inviteID, actorID); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"ok": true})
+}
