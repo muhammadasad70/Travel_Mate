@@ -9,7 +9,6 @@
 //   ScrollView,
 //   Image,
 //   ActivityIndicator,
-//   Alert,
 // } from 'react-native';
 // import { Ionicons } from '@expo/vector-icons';
 // import { useNavigation } from '@react-navigation/native';
@@ -17,25 +16,22 @@
 // import api from '../api';
 // import Avatar from '../components/avatar';
 
-// /* ==== Import your JPGs (adjust ../ to ../../ if needed) ==== */
-// import communityImg   from '../assets/community_2.jpg';
-// import connectionsImg from '../assets/connection.avif';
-// import historyImg     from '../assets/history.jpg';
-// import savedImg       from '../assets/saved_2.jpg';
+// /* ==== Assets (keep only what we use now) ==== */
+// import historyImg from '../assets/history.jpg';
+// import savedImg   from '../assets/saved_2.jpg';
 
-// /* ==== Design tokens (Airbnb-ish) ==== */
+// /* ==== Design tokens ==== */
 // const PRIMARY = '#003366';
 // const SUBTEXT = '#6B7280';
 // const PAGE_BG = '#F7F7F7';
 // const CARD_BG = '#FFFFFF';
 // const BORDER  = '#ECEFF3';
-// const PILL_BG = '#F0F6FF';
-// const SUCCESS = '#10B981';
 // const DANGER  = '#EF4444';
 
-// /* Centered column width similar to Airbnb */
+// /* Centered column width */
 // const MAX_W = 720;
 
+// /* ---------- helpers ---------- */
 // function getInitials(first = '', last = '') {
 //   const a = (first || '').trim();
 //   const b = (last || '').trim();
@@ -44,7 +40,7 @@
 //   return (i1 + i2 || 'U').toUpperCase();
 // }
 
-// /* ---------- date helpers: handle "YYYY-MM-DD HH:mm:ss+0500" & ISO ---------- */
+// /* handle "YYYY-MM-DD HH:mm:ss+0500" & ISO */
 // function normalizeDateInput(d) {
 //   if (!d) return null;
 //   if (d instanceof Date) return d;
@@ -69,10 +65,10 @@
 //   }
 // }
 
+// /* =================== Component =================== */
 // const TravelerProfile = ({ inPage = false }) => {
 //   const navigation = useNavigation();
 
-//   /* ---------- data ---------- */
 //   const [loading, setLoading] = useState(true);
 //   const [user, setUser]       = useState(null);
 //   const [error, setError]     = useState('');
@@ -100,12 +96,12 @@
 //     return () => { mounted = false; };
 //   }, []);
 
+//   /* Tiles: Offline + History + Saved */
 //   const quickTiles = useMemo(
 //     () => [
-//       { key: 'community',   label: 'Community',   image: communityImg,   route: 'CommunityScreen',   fallbackIcon: 'people-circle-outline' },
-//       { key: 'connections', label: 'groups', image: connectionsImg, route: 'ConnectionsScreen', fallbackIcon: 'people-outline' },
-//       { key: 'history',     label: 'History',     image: historyImg,     route: 'TripsScreen',       fallbackIcon: 'time-outline' },
-//       { key: 'saved',       label: 'Saved',       image: savedImg,       route: 'SavedScreen',       fallbackIcon: 'heart-outline' },
+//       { key: 'offline', label: 'Offline', image: null,       route: null,          fallbackIcon: 'cloud-download-outline' },
+//       { key: 'history', label: 'History', image: historyImg, route: 'TripsScreen', fallbackIcon: 'time-outline' },
+//       { key: 'saved',   label: 'Saved',   image: savedImg,   route: 'SavedScreen', fallbackIcon: 'heart-outline' },
 //     ],
 //     []
 //   );
@@ -121,9 +117,16 @@
 //   );
 
 //   const go = (route) => route && navigation.navigate(route);
-//   const onVendorPress = () => navigation.navigate('Login', { selectedRole: 'vendor' });
 
-//   /* ---------- derived from user ---------- */
+//   /* Offline needs to switch dashboard tab */
+//   const handleTilePress = (item) => {
+//     if (item.key === 'offline') {
+//       return navigation.navigate('TravelerDashboard', { tabKey: `offline-${Date.now()}` });
+//     }
+//     return go(item.route);
+//   };
+
+//   /* derived from user */
 //   const firstName   = user?.first_name ?? user?.firstName;
 //   const lastName    = user?.last_name ?? user?.lastName;
 //   const initials    = getInitials(firstName, lastName);
@@ -131,8 +134,6 @@
 //   const role        = (user?.role || 'traveler').toLowerCase();
 //   const roleLabel   = role === 'vendor' ? 'Vendor' : 'Traveler';
 //   const isComplete  = !!user?.is_profile_complete;
-
-//   // NEW: member since (created_at or createdAt)
 //   const memberSinceStr = formatDatePretty(user?.created_at ?? user?.createdAt);
 
 //   /* ---------- UI ---------- */
@@ -178,10 +179,9 @@
 
 //   const Content = (
 //     <View style={styles.content}>
-//       {/* Page heading */}
 //       <Text style={styles.pageTitle}>About Me</Text>
 
-//       {/* Header card */}
+//       {/* Header card / loaders */}
 //       {loading ? (
 //         <View style={[styles.card, styles.center]}>
 //           <ActivityIndicator size="small" />
@@ -195,15 +195,15 @@
 //         HeaderCard
 //       )}
 
-//       {/* ===== Section: Tiles ===== */}
-//       <Text style={styles.sectionHeading}>Community & Activity</Text>
+//       {/* ===== Tiles: Offline / History / Saved ===== */}
+//       <Text style={styles.sectionHeading}>My Library</Text>
 //       <View style={styles.tilesWrap}>
 //         {quickTiles.map((t) => (
-//           <TileCard key={t.key} item={t} onPress={() => go(t.route)} />
+//           <TileCard key={t.key} item={t} onPress={() => handleTilePress(t)} />
 //         ))}
 //       </View>
 
-//       {/* ===== Section: Vendor ===== */}
+//       {/* ===== Vendor CTA (unchanged) ===== */}
 //       <Text style={styles.sectionHeading}>Become a Vendor</Text>
 //       <View style={styles.vendorCard}>
 //         <View style={{ flex: 1 }}>
@@ -212,13 +212,17 @@
 //             Earn by offering tours, local expertise, or services.
 //           </Text>
 //         </View>
-//         <TouchableOpacity onPress={onVendorPress} style={styles.vendorBtn} activeOpacity={0.9}>
+//         <TouchableOpacity
+//           onPress={() => navigation.navigate('Login', { selectedRole: 'vendor' })}
+//           style={styles.vendorBtn}
+//           activeOpacity={0.9}
+//         >
 //           <Ionicons name="briefcase-outline" size={18} color="#fff" />
 //           <Text style={styles.vendorBtnText}>Start</Text>
 //         </TouchableOpacity>
 //       </View>
 
-//       {/* ===== Section: Settings ===== */}
+//       {/* ===== Settings ===== */}
 //       <Text style={styles.sectionHeading}>Account & Support</Text>
 //       <View style={styles.sectionCard}>
 //         {settings.map((s) => (
@@ -255,7 +259,7 @@
 //   );
 // };
 
-// /* ---- TileCard (image fills) ---- */
+// /* ---- TileCard ---- */
 // const TileCard = ({ item, onPress }) => (
 //   <TouchableOpacity style={styles.tileCard} onPress={onPress} activeOpacity={0.9}>
 //     {item.image ? (
@@ -290,7 +294,7 @@
 //     marginBottom: 10,
 //   },
 
-//   /* ----- Shared card & header styles (match Profile Detail) ----- */
+//   /* Card + header */
 //   card: {
 //     backgroundColor: CARD_BG,
 //     borderRadius: 16,
@@ -328,28 +332,28 @@
 //     paddingHorizontal: 2,
 //   },
 
-//   /* ---- Tiles ---- */
-//   tilesWrap: {
+//   /* Tiles */
+//  tilesWrap: {
 //     marginTop: 6,
 //     flexDirection: 'row',
 //     flexWrap: 'wrap',
 //     justifyContent: 'space-between',
-//     rowGap: 14,
+//     rowGap: 12,
 //   },
 //   tileCard: {
-//     width: '48%',
+//     width: '31%', // 🔥 3 per row
 //     backgroundColor: CARD_BG,
-//     borderRadius: 16,
+//     borderRadius: 12,
 //     overflow: 'hidden',
 //     shadowColor: '#000',
-//     shadowOpacity: 0.08,
-//     shadowRadius: 10,
-//     shadowOffset: { width: 0, height: 4 },
-//     elevation: 4,
+//     shadowOpacity: 0.06,
+//     shadowRadius: 6,
+//     shadowOffset: { width: 0, height: 3 },
+//     elevation: 2,
 //   },
 //   tileImage: {
 //     width: '100%',
-//     height: 70,
+//     height: 55, // smaller image height
 //     resizeMode: 'cover',
 //   },
 //   tileImageFallbackCenter: {
@@ -358,15 +362,15 @@
 //     backgroundColor: '#f2f4f7',
 //   },
 //   tileTitle: {
-//     fontSize: 14,
-//     fontWeight: '700',
+//     fontSize: 12, // smaller text
+//     fontWeight: '600',
 //     color: '#0F172A',
-//     paddingVertical: 10,
+//     paddingVertical: 6,
 //     textAlign: 'center',
 //     backgroundColor: CARD_BG,
 //   },
 
-//   /* ---- Vendor CTA ---- */
+//   /* Vendor CTA */
 //   vendorCard: {
 //     backgroundColor: CARD_BG,
 //     borderRadius: 16,
@@ -390,7 +394,7 @@
 //   },
 //   vendorBtnText: { color: '#fff', fontWeight: '800', fontSize: 13 },
 
-//   /* ---- Settings ---- */
+//   /* Settings */
 //   sectionCard: {
 //     backgroundColor: CARD_BG,
 //     borderRadius: 16,
@@ -412,7 +416,7 @@
 
 // export default TravelerProfile;
 
-
+// screens/TravelerProfile.js
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
@@ -430,20 +434,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../api';
 import Avatar from '../components/avatar';
 
-/* ==== Assets (keep only what we use now) ==== */
 import historyImg from '../assets/history.jpg';
 import savedImg   from '../assets/saved_2.jpg';
 
-/* ==== Design tokens ==== */
 const PRIMARY = '#003366';
 const SUBTEXT = '#6B7280';
 const PAGE_BG = '#F7F7F7';
 const CARD_BG = '#FFFFFF';
 const BORDER  = '#ECEFF3';
 const DANGER  = '#EF4444';
+const MAX_W   = 720;
 
-/* Centered column width */
-const MAX_W = 720;
+const isMobile = Platform.OS === 'ios' || Platform.OS === 'android';
 
 /* ---------- helpers ---------- */
 function getInitials(first = '', last = '') {
@@ -453,8 +455,6 @@ function getInitials(first = '', last = '') {
   const i2 = b ? b[0] : '';
   return (i1 + i2 || 'U').toUpperCase();
 }
-
-/* handle "YYYY-MM-DD HH:mm:ss+0500" & ISO */
 function normalizeDateInput(d) {
   if (!d) return null;
   if (d instanceof Date) return d;
@@ -510,15 +510,23 @@ const TravelerProfile = ({ inPage = false }) => {
     return () => { mounted = false; };
   }, []);
 
-  /* Tiles: Offline + History + Saved */
-  const quickTiles = useMemo(
-    () => [
-      { key: 'offline', label: 'Offline', image: null,       route: null,          fallbackIcon: 'cloud-download-outline' },
+  /* Tiles: show Offline only on mobile */
+  const quickTiles = useMemo(() => {
+    const tiles = [
       { key: 'history', label: 'History', image: historyImg, route: 'TripsScreen', fallbackIcon: 'time-outline' },
       { key: 'saved',   label: 'Saved',   image: savedImg,   route: 'SavedScreen', fallbackIcon: 'heart-outline' },
-    ],
-    []
-  );
+    ];
+    if (isMobile) {
+      tiles.unshift({
+        key: 'offline',
+        label: 'Offline',
+        image: null,
+        route: 'OfflineCenter',
+        fallbackIcon: 'cloud-download-outline',
+      });
+    }
+    return tiles;
+  }, []);
 
   const settings = useMemo(
     () => [
@@ -532,10 +540,10 @@ const TravelerProfile = ({ inPage = false }) => {
 
   const go = (route) => route && navigation.navigate(route);
 
-  /* Offline needs to switch dashboard tab */
+  /* Offline: navigate directly to the Offline center (mobile only) */
   const handleTilePress = (item) => {
     if (item.key === 'offline') {
-      return navigation.navigate('TravelerDashboard', { tabKey: `offline-${Date.now()}` });
+      return navigation.navigate('OfflineCenter');
     }
     return go(item.route);
   };
@@ -595,7 +603,6 @@ const TravelerProfile = ({ inPage = false }) => {
     <View style={styles.content}>
       <Text style={styles.pageTitle}>About Me</Text>
 
-      {/* Header card / loaders */}
       {loading ? (
         <View style={[styles.card, styles.center]}>
           <ActivityIndicator size="small" />
@@ -609,7 +616,6 @@ const TravelerProfile = ({ inPage = false }) => {
         HeaderCard
       )}
 
-      {/* ===== Tiles: Offline / History / Saved ===== */}
       <Text style={styles.sectionHeading}>My Library</Text>
       <View style={styles.tilesWrap}>
         {quickTiles.map((t) => (
@@ -617,7 +623,6 @@ const TravelerProfile = ({ inPage = false }) => {
         ))}
       </View>
 
-      {/* ===== Vendor CTA (unchanged) ===== */}
       <Text style={styles.sectionHeading}>Become a Vendor</Text>
       <View style={styles.vendorCard}>
         <View style={{ flex: 1 }}>
@@ -636,7 +641,6 @@ const TravelerProfile = ({ inPage = false }) => {
         </TouchableOpacity>
       </View>
 
-      {/* ===== Settings ===== */}
       <Text style={styles.sectionHeading}>Account & Support</Text>
       <View style={styles.sectionCard}>
         {settings.map((s) => (
@@ -673,7 +677,6 @@ const TravelerProfile = ({ inPage = false }) => {
   );
 };
 
-/* ---- TileCard ---- */
 const TileCard = ({ item, onPress }) => (
   <TouchableOpacity style={styles.tileCard} onPress={onPress} activeOpacity={0.9}>
     {item.image ? (
@@ -687,7 +690,6 @@ const TileCard = ({ item, onPress }) => (
   </TouchableOpacity>
 );
 
-/* =================== Styles =================== */
 const styles = StyleSheet.create({
   page: {
     flex: 1,
@@ -708,7 +710,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 
-  /* Card + header */
   card: {
     backgroundColor: CARD_BG,
     borderRadius: 16,
@@ -746,8 +747,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
 
-  /* Tiles */
- tilesWrap: {
+  tilesWrap: {
     marginTop: 6,
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -755,7 +755,7 @@ const styles = StyleSheet.create({
     rowGap: 12,
   },
   tileCard: {
-    width: '31%', // 🔥 3 per row
+    width: '31%',
     backgroundColor: CARD_BG,
     borderRadius: 12,
     overflow: 'hidden',
@@ -767,7 +767,7 @@ const styles = StyleSheet.create({
   },
   tileImage: {
     width: '100%',
-    height: 55, // smaller image height
+    height: 55,
     resizeMode: 'cover',
   },
   tileImageFallbackCenter: {
@@ -776,7 +776,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f2f4f7',
   },
   tileTitle: {
-    fontSize: 12, // smaller text
+    fontSize: 12,
     fontWeight: '600',
     color: '#0F172A',
     paddingVertical: 6,
@@ -784,7 +784,6 @@ const styles = StyleSheet.create({
     backgroundColor: CARD_BG,
   },
 
-  /* Vendor CTA */
   vendorCard: {
     backgroundColor: CARD_BG,
     borderRadius: 16,
@@ -808,7 +807,6 @@ const styles = StyleSheet.create({
   },
   vendorBtnText: { color: '#fff', fontWeight: '800', fontSize: 13 },
 
-  /* Settings */
   sectionCard: {
     backgroundColor: CARD_BG,
     borderRadius: 16,
