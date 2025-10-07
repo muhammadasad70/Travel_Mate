@@ -265,44 +265,12 @@ import completeitinerrarydetail from "./screens/completeitinerrarydetail";
 
 /* Vendor Type Selection */
 import VendorTypeSelectionScreen from './screens/vendor/VendorTypeSelectionScreen';
-
-/* Accommodation Provider */
-import My_Services from './screens/Accommodations/My_Services';
-import Add_New_Services from './screens/Accommodations/Add_New_Services';
-import Create_Offer from './screens/Accommodations/Create_Offer';
-import Manage_My_Offer from './screens/Accommodations/Manage_My_Offer';
-import Booking_Requests from './screens/Accommodations/Booking_Requests';
-import Booking_Analytics from './screens/Accommodations/Booking_Analytics';
-import Chat_With_Guest from './screens/Accommodations/Chat_With_Guest';
-import Notifications from './screens/Accommodations/Notifications';
-
 /* Community / Messages */
 import MessagesScreen from './screens/MessagesScreen';
 
-/* Cultural Exchange */
-import Offer_Cultural_Skill from './screens/Cultural_exchange/Offer_Cultural_Skill';
-import My_Cultural_Listings from './screens/Cultural_exchange/My_Cultural_Listings';
-import Manage_Requests from './screens/Cultural_exchange/Manage_Requests';
-import Chat_With_Interested_Travelers from './screens/Cultural_exchange/Chat_With_Interested_Travelers';
-import Upload_Cultural_Moments from './screens/Cultural_exchange/Upload_Cultural_Moments';
-import Traveler_Feedback from './screens/Cultural_exchange/Traveler_Feedback';
-import Cultural_Engagement_Stats from './screens/Cultural_exchange/Cultural_Engagement_Stats';
 
-/* Product Seller */
-import Add_New_Product from './screens/Product/Add_New_Product';
-import My_Product_Listings from './screens/Product/My_Product_Listings';
-import Manage_Orders from './screens/Product/Manage_Orders';
-import Chat_With_Customers from './screens/Product/Chat_With_Customers';
-import Customer_Feedback from './screens/Product/Customer_Feedback';
-import Product_Sales_Analytics from './screens/Product/Product_Sales_Analytics';
-import Upload_Product_Gallery from './screens/Product/Upload_Product_Gallery';
 
-/* Transport Provider */
-import Add_New_Transport from './screens/Transport/Add_New_Transport';
-import My_Transport_Listings from './screens/Transport/My_Transport_Listings';
-import Transport_Analytics from './screens/Transport/Transport_Analytics';
-import Transport_Bookings from './screens/Transport/Transport_Bookings';
-import Transport_Offers from './screens/Transport/Transport_Offers';
+
 
 /* Existing Offline (keep if you still use it elsewhere) */
 import OfflineScreen from './screens/OfflineScreen';
@@ -344,7 +312,7 @@ export default function App() {
     <RoleProvider>
       <SafeAreaProvider>
         <NavigationContainer ref={navRef}>
-          <Stack.Navigator initialRouteName="Landing Page" screenOptions={{ headerShown: false }}>
+          <Stack.Navigator initialRouteName="VendorTypeSelection" screenOptions={{ headerShown: false }}>
             {/* Core Navigation */}
             <Stack.Screen name="Landing Page" component={LandingScreen} />
             <Stack.Screen name="AboutTravelMatePage" component={AboutTravelMatePage} />
@@ -398,41 +366,6 @@ export default function App() {
             <Stack.Screen name="CulturalExchangeScreen" component={CulturalExchangeScreen} />
             <Stack.Screen name="GroupScreen" component={GroupScreen} />
             <Stack.Screen name="GroupDashboard" component={GroupDashboard} />
-
-            {/* Accommodation Provider Screens */}
-            <Stack.Screen name="MyServices" component={My_Services} />
-            <Stack.Screen name="AddNewServices" component={Add_New_Services} />
-            <Stack.Screen name="CreateOffer" component={Create_Offer} />
-            <Stack.Screen name="ManageMyOffer" component={Manage_My_Offer} />
-            <Stack.Screen name="BookingRequests" component={Booking_Requests} />
-            <Stack.Screen name="BookingAnalytics" component={Booking_Analytics} />
-            <Stack.Screen name="ChatWithGuest" component={Chat_With_Guest} />
-            <Stack.Screen name="Notifications" component={Notifications} />
-
-            {/* Cultural Exchange Screens */}
-            <Stack.Screen name="OfferCulturalSkill" component={Offer_Cultural_Skill} />
-            <Stack.Screen name="MyCulturalListings" component={My_Cultural_Listings} />
-            <Stack.Screen name="ManageCulturalRequests" component={Manage_Requests} />
-            <Stack.Screen name="CulturalChat" component={Chat_With_Interested_Travelers} />
-            <Stack.Screen name="UploadCulturalMedia" component={Upload_Cultural_Moments} />
-            <Stack.Screen name="CulturalFeedback" component={Traveler_Feedback} />
-            <Stack.Screen name="CulturalStats" component={Cultural_Engagement_Stats} />
-
-            {/* Product Seller Screens */}
-            <Stack.Screen name="Add_New_Product" component={Add_New_Product} />
-            <Stack.Screen name="My_Product_Listings" component={My_Product_Listings} />
-            <Stack.Screen name="Manage_Orders" component={Manage_Orders} />
-            <Stack.Screen name="Chat_With_Customers" component={Chat_With_Customers} />
-            <Stack.Screen name="Customer_Feedback" component={Customer_Feedback} />
-            <Stack.Screen name="Product_Sales_Analytics" component={Product_Sales_Analytics} />
-            <Stack.Screen name="Upload_Product_Gallery" component={Upload_Product_Gallery} />
-
-            {/* Transport Provider Screens */}
-            <Stack.Screen name="AddNewTransport" component={Add_New_Transport} />
-            <Stack.Screen name="MyTransportListings" component={My_Transport_Listings} />
-            <Stack.Screen name="TransportAnalytics" component={Transport_Analytics} />
-            <Stack.Screen name="TransportBookings" component={Transport_Bookings} />
-            <Stack.Screen name="TransportOffers" component={Transport_Offers} />
           </Stack.Navigator>
         </NavigationContainer>
       </SafeAreaProvider>

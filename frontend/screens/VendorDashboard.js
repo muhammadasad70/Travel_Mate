@@ -1,41 +1,420 @@
 
+// // screens/VendorDashboard.js
+// import React, { useEffect, useState } from 'react';
+// import { View, Text, StyleSheet, Platform, ScrollView } from 'react-native';
+// import { SafeAreaView } from 'react-native-safe-area-context';
+// import { useNavigation } from '@react-navigation/native';
+
+// import VendorHeader from '../components/VendorDashboard/VendorHeader';
+// import VendorBottomNavBar from '../components/VendorDashboard/VendorBottomNavBar';
+// import CompleteProfilePrompt from './CompleteProfilePrompt';
+// import VendorProfile from './VendorProfile';
+
+// // ⬇️ Cultural Exchange Services Hub (the UI you just added)
+// import CulturalServicesHub from './CulturalExchange/ServicesHub';
+
+// const TAB = {
+//   HOME: 'home',
+//   SERVICES: 'services',
+//   BOOKING: 'booking',
+//   REQUEST: 'request',
+//   ANALYSIS: 'analysis',
+//   CHAT: 'chat',
+//   NOTIFICATION: 'notification',
+//   PROFILE: 'profile',
+// };
+
+// export default function VendorDashboardScreen() {
+//   const [activeTab, setActiveTab] = useState(TAB.HOME);
+//   const navigation = useNavigation();
+
+//   // Keep header/bottom bar and screen in sync via custom event on web
+//   useEffect(() => {
+//     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+//     const handler = (e) => {
+//       const key = e?.detail?.tabKey && String(e.detail?.tabKey).split('-')[0];
+//       if (key) setActiveTab(key);
+//     };
+//     window.addEventListener('vendorTabChange', handler);
+//     return () => window.removeEventListener('vendorTabChange', handler);
+//   }, []);
+
+//   const handleTabChange = (key) => setActiveTab(key);
+
+//   return (
+//     <View style={styles.root}>
+//       <VendorHeader onTabChange={handleTabChange} />
+
+//       <SafeAreaView edges={['left', 'right']} style={styles.safe}>
+//         <ScrollView
+//           contentContainerStyle={[
+//             styles.bodyContainer,
+//             Platform.OS === 'web' ? styles.webPaddingForFixedHeader : null,
+//           ]}
+//         >
+//           {activeTab === TAB.HOME && <HomeTab />}
+//           {activeTab === TAB.SERVICES && <ServicesTab />}
+//           {activeTab === TAB.BOOKING && <BookingTab />}
+//           {activeTab === TAB.REQUEST && <RequestTab />}
+//           {activeTab === TAB.ANALYSIS && <AnalysisTab />}
+//           {activeTab === TAB.CHAT && <ChatTab />}
+//           {activeTab === TAB.NOTIFICATION && <NotificationTab />}
+//           {activeTab === TAB.PROFILE && <VendorProfile />}
+//         </ScrollView>
+//       </SafeAreaView>
+
+//       <CompleteProfilePrompt navigation={navigation} delayMs={5000} />
+//       <VendorBottomNavBar onTabChange={handleTabChange} currentTab={activeTab} />
+//     </View>
+//   );
+// }
+
+// /* ---------- tabs ---------- */
+
+// const Section = ({ title, children }) => (
+//   <View style={{ gap: 8 }}>
+//     <Text style={styles.h2}>{title}</Text>
+//     <View style={styles.card}>{children}</View>
+//   </View>
+// );
+
+// function HomeTab() {
+//   return (
+//     <View style={styles.tabWrap}>
+//       <View style={styles.banner}>
+//         <Text style={styles.bannerText}>
+//           Tip: Go to Services to add your first cultural experience (class, workshop, city walk).
+//         </Text>
+//       </View>
+
+//       <Section title="Quick Stats">
+//         <Text>Pending Requests: 0 · Confirmed Bookings: 0 · Avg. Rating: —</Text>
+//       </Section>
+
+//       <Section title="My Services">
+//         <Text>Your published cultural experiences will appear here.</Text>
+//       </Section>
+
+//       <Section title="Recent Requests">
+//         <Text>Approve / Decline requests from travelers once bookings are enabled.</Text>
+//       </Section>
+//     </View>
+//   );
+// }
+
+// function ServicesTab() {
+//   // Always Cultural Exchange in this scope
+//   return (
+//     <View style={styles.tabWrap}>
+//       <Text style={styles.h2}>Cultural Exchange — Services</Text>
+//       <View style={styles.card}>
+//         <CulturalServicesHub />
+//       </View>
+//     </View>
+//   );
+// }
+
+// function BookingTab() {
+//   return (
+//     <View style={styles.tabWrap}>
+//       <Section title="Bookings (Cultural Exchange)">
+//         <Text>List of bookings will appear here (pending/confirmed/cancelled).</Text>
+//       </Section>
+//     </View>
+//   );
+// }
+
+// function RequestTab() {
+//   return (
+//     <View style={styles.tabWrap}>
+//       <Section title="Requests">
+//         <Text>Incoming requests from travelers (approve/decline, message traveler).</Text>
+//       </Section>
+//     </View>
+//   );
+// }
+
+// function AnalysisTab() {
+//   return (
+//     <View style={styles.tabWrap}>
+//       <Section title="Analytics">
+//         <Text>KPIs: views, requests, confirmations, revenue. Charts to be added later.</Text>
+//       </Section>
+//     </View>
+//   );
+// }
+
+// function ChatTab() {
+//   return (
+//     <View style={styles.tabWrap}>
+//       <Section title="Chat">
+//         <Text>Conversation list + thread preview (coming soon).</Text>
+//       </Section>
+//     </View>
+//   );
+// }
+
+// function NotificationTab() {
+//   return (
+//     <View style={styles.tabWrap}>
+//       <Section title="Notifications">
+//         <Text>Unified alerts for requests, bookings, and reviews.</Text>
+//       </Section>
+//     </View>
+//   );
+// }
+
+// /* ---------- styles ---------- */
+
+// const styles = StyleSheet.create({
+//   root: { flex: 1, backgroundColor: '#F1F5F9' },
+//   safe: { flex: 1 },
+//   bodyContainer: { paddingHorizontal: 12, paddingBottom: 84, gap: 12 },
+//   webPaddingForFixedHeader: { paddingTop: 120 },
+//   tabWrap: { gap: 12 },
+//   h2: { fontSize: 18, fontWeight: '800', color: '#0f172a' },
+//   card: {
+//     backgroundColor: '#fff',
+//     borderWidth: 1,
+//     borderColor: '#E5E7EB',
+//     borderRadius: 16,
+//     padding: 12,
+//   },
+//   banner: {
+//     backgroundColor: '#EFF6FF',
+//     borderColor: '#BFDBFE',
+//     borderWidth: 1,
+//     padding: 10,
+//     borderRadius: 12,
+//   },
+//   bannerText: { color: '#1D4ED8' },
+// });
+
+// // screens/VendorDashboard.js
+// import React, { useEffect, useState } from 'react';
+// import { View, Text, StyleSheet, Platform, ScrollView } from 'react-native';
+// import { SafeAreaView } from 'react-native-safe-area-context';
+// import { useNavigation } from '@react-navigation/native';
+
+// import VendorHeader from '../components/VendorDashboard/VendorHeader';
+// import VendorBottomNavBar from '../components/VendorDashboard/VendorBottomNavBar';
+// import CompleteProfilePrompt from './CompleteProfilePrompt';
+// import VendorProfile from './VendorProfile';
+
+// // Cultural Exchange Services Hub
+// import CulturalServicesHub from './CulturalExchange/ServicesHub';
+
+// const TAB = {
+//   HOME: 'home',
+//   SERVICES: 'services',
+//   BOOKING: 'booking',
+//   REQUEST: 'request',
+//   ANALYSIS: 'analysis',
+//   CHAT: 'chat',
+//   NOTIFICATION: 'notification',
+//   PROFILE: 'profile',
+// };
+
+// export default function VendorDashboardScreen() {
+//   const [activeTab, setActiveTab] = useState(TAB.HOME);
+//   const navigation = useNavigation();
+
+//   useEffect(() => {
+//     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+//     const handler = (e) => {
+//       const key = e?.detail?.tabKey && String(e.detail?.tabKey).split('-')[0];
+//       if (key) setActiveTab(key);
+//     };
+//     window.addEventListener('vendorTabChange', handler);
+//     return () => window.removeEventListener('vendorTabChange', handler);
+//   }, []);
+
+//   const handleTabChange = (key) => setActiveTab(key);
+
+//   return (
+//     <View style={styles.root}>
+//       <VendorHeader onTabChange={handleTabChange} />
+
+//       <SafeAreaView edges={['left', 'right']} style={styles.safe}>
+//         {/* Services tab fills the viewport (no ScrollView wrapper) */}
+//         {activeTab === TAB.SERVICES ? (
+//           <View
+//             style={[
+//               styles.bodyContainer,
+//               styles.bodyFill,
+//               Platform.OS === 'web' ? styles.webPaddingForFixedHeader : null,
+//             ]}
+//           >
+//             <ServicesTab />
+//           </View>
+//         ) : (
+//           // Other tabs keep ScrollView
+//           <ScrollView
+//             contentContainerStyle={[
+//               styles.bodyContainer,
+//               Platform.OS === 'web' ? styles.webPaddingForFixedHeader : null,
+//             ]}
+//           >
+//             {activeTab === TAB.HOME && <HomeTab />}
+//             {activeTab === TAB.BOOKING && <BookingTab />}
+//             {activeTab === TAB.REQUEST && <RequestTab />}
+//             {activeTab === TAB.ANALYSIS && <AnalysisTab />}
+//             {activeTab === TAB.CHAT && <ChatTab />}
+//             {activeTab === TAB.NOTIFICATION && <NotificationTab />}
+//             {activeTab === TAB.PROFILE && <VendorProfile />}
+//           </ScrollView>
+//         )}
+//       </SafeAreaView>
+
+//       <CompleteProfilePrompt navigation={navigation} delayMs={5000} />
+//       <VendorBottomNavBar onTabChange={handleTabChange} currentTab={activeTab} />
+//     </View>
+//   );
+// }
+
+// /* ---------- tabs ---------- */
+
+// const Section = ({ title, children }) => (
+//   <View style={{ gap: 8 }}>
+//     <Text style={styles.h2}>{title}</Text>
+//     <View style={styles.card}>{children}</View>
+//   </View>
+// );
+
+// function HomeTab() {
+//   return (
+//     <View style={styles.tabWrap}>
+//       <View style={styles.banner}>
+//         <Text style={styles.bannerText}>
+//           Tip: Go to Services to add your first cultural experience (class, workshop, city walk).
+//         </Text>
+//       </View>
+
+//       <Section title="Quick Stats">
+//         <Text>Pending Requests: 0 · Confirmed Bookings: 0 · Avg. Rating: —</Text>
+//       </Section>
+
+//       <Section title="My Services">
+//         <Text>Your published cultural experiences will appear here.</Text>
+//       </Section>
+
+//       <Section title="Recent Requests">
+//         <Text>Approve / Decline requests from travelers once bookings are enabled.</Text>
+//       </Section>
+//     </View>
+//   );
+// }
+
+// function ServicesTab() {
+//   // Cultural Exchange scope
+//   return (
+//     <View style={styles.tabWrap}>
+//       <Text style={styles.h2}>Cultural Exchange — Services</Text>
+//       {/* Give the hub the whole remaining height (so FlatList can render) */}
+//       <View style={{ flex: 1 }}>
+//         <CulturalServicesHub />
+//       </View>
+//     </View>
+//   );
+// }
+
+// function BookingTab() {
+//   return (
+//     <View style={styles.tabWrap}>
+//       <Section title="Bookings (Cultural Exchange)">
+//         <Text>List of bookings will appear here (pending/confirmed/cancelled).</Text>
+//       </Section>
+//     </View>
+//   );
+// }
+
+// function RequestTab() {
+//   return (
+//     <View style={styles.tabWrap}>
+//       <Section title="Requests">
+//         <Text>Incoming requests from travelers (approve/decline, message traveler).</Text>
+//       </Section>
+//     </View>
+//   );
+// }
+
+// function AnalysisTab() {
+//   return (
+//     <View style={styles.tabWrap}>
+//       <Section title="Analytics">
+//         <Text>KPIs: views, requests, confirmations, revenue. Charts to be added later.</Text>
+//       </Section>
+//     </View>
+//   );
+// }
+
+// function ChatTab() {
+//   return (
+//     <View style={styles.tabWrap}>
+//       <Section title="Chat">
+//         <Text>Conversation list + thread preview (coming soon).</Text>
+//       </Section>
+//     </View>
+//   );
+// }
+
+// function NotificationTab() {
+//   return (
+//     <View style={styles.tabWrap}>
+//       <Section title="Notifications">
+//         <Text>Unified alerts for requests, bookings, and reviews.</Text>
+//       </Section>
+//     </View>
+//   );
+// }
+
+// /* ---------- styles ---------- */
+
+// const styles = StyleSheet.create({
+//   root: { flex: 1, backgroundColor: '#F1F5F9' },
+//   safe: { flex: 1 },
+//   bodyContainer: { paddingHorizontal: 12, paddingBottom: 84, gap: 12 },
+//   bodyFill: { flex: 1 }, // important for Services tab
+//   webPaddingForFixedHeader: { paddingTop: 120 },
+//   tabWrap: { gap: 12, flex: 1 }, // fill height
+//   h2: { fontSize: 18, fontWeight: '800', color: '#0f172a' },
+//   card: {
+//     backgroundColor: '#fff',
+//     borderWidth: 1,
+//     borderColor: '#E5E7EB',
+//     borderRadius: 16,
+//     padding: 12,
+//   },
+//   banner: {
+//     backgroundColor: '#EFF6FF',
+//     borderColor: '#BFDBFE',
+//     borderWidth: 1,
+//     padding: 10,
+//     borderRadius: 12,
+//   },
+//   bannerText: { color: '#1D4ED8' },
+// });
+
+
+
+
+// screens/VendorDashboard.js
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Platform, ScrollView } from 'react-native'; 
+import { View, Text, StyleSheet, Platform, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import VendorHeader from '../components/VendorDashboard/VendorHeader';
 import VendorBottomNavBar from '../components/VendorDashboard/VendorBottomNavBar';
 import CompleteProfilePrompt from './CompleteProfilePrompt';
-
-
 import VendorProfile from './VendorProfile';
-import My_Services from './Accommodations/My_Services';
-import Add_New_Services from './Accommodations/Add_New_Services';
-import Booking_Requests from './Accommodations/Booking_Requests';
-import Create_Offer from './Accommodations/Create_Offer';
-import Booking_Analytics from './Accommodations/Booking_Analytics';
-import My_Cultural_Listings from './Cultural_exchange/My_Cultural_Listings';
-import Offer_Cultural_Skill from './Cultural_exchange/Offer_Cultural_Skill';
-import Manage_Requests from './Cultural_exchange/Manage_Requests';
-import Traveler_Feedback from './Cultural_exchange/Traveler_Feedback';
-import Cultural_Engagement_Stats from './Cultural_exchange/Cultural_Engagement_Stats';
-import My_Product_Listings from './Product/My_Product_Listings';
-import Add_New_Product from './Product/Add_New_Product';
-import Manage_Orders from './Product/Manage_Orders';
-import Product_Sales_Analytics from './Product/Product_Sales_Analytics';
-import Customer_Feedback from './Product/Customer_Feedback';
-import My_Transport_Listings from './Transport/My_Transport_Listings';
-import Add_New_Transport from './Transport/Add_New_Transport';
-import Transport_Bookings from './Transport/Transport_Bookings';
-import Transport_Offers from './Transport/Transport_Offers';
-import Transport_Analytics from './Transport/Transport_Analytics';
+
+// Cultural Exchange Services Hub
+import CulturalServicesHub from './CulturalExchange/ServicesHub';
 
 const TAB = {
   HOME: 'home',
   SERVICES: 'services',
-  ADD_SERVICES: 'add_services',
   BOOKING: 'booking',
   REQUEST: 'request',
   ANALYSIS: 'analysis',
@@ -46,30 +425,8 @@ const TAB = {
 
 export default function VendorDashboardScreen() {
   const [activeTab, setActiveTab] = useState(TAB.HOME);
-  const [role, setRole] = useState(null);
-  const [vendorType, setVendorType] = useState(null);
-  const [editingProduct, setEditingProduct] = useState(null);
-  const [editingService, setEditingService] = useState(null);
-  const [editingSkill, setEditingSkill] = useState(null);
-  const [editingTransport, setEditingTransport] = useState(null);
   const navigation = useNavigation();
 
-  // Get vendor type from AsyncStorage
-  useEffect(() => {
-    const getVendorType = async () => {
-      try {
-        const type = await AsyncStorage.getItem('vendor_type');
-        setVendorType(type);
-      } catch (error) {
-        console.log('Error getting vendor type:', error);
-      }
-    };
-    getVendorType();
-  }, []);
-
-
-
-  // Keep header/bottom bar and screen in sync via custom event on web
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
     const handler = (e) => {
@@ -80,60 +437,40 @@ export default function VendorDashboardScreen() {
     return () => window.removeEventListener('vendorTabChange', handler);
   }, []);
 
-  const handleTabChange = (key, data = null) => {
-    setActiveTab(key);
-    if (data) {
-      // Determine if it's a product, service, skill, or transport based on vendor type
-      if (vendorType === 'product') {
-        setEditingProduct(data);
-        setEditingService(null);
-        setEditingSkill(null);
-        setEditingTransport(null);
-      } else if (vendorType === 'hotel') {
-        setEditingService(data);
-        setEditingProduct(null);
-        setEditingSkill(null);
-        setEditingTransport(null);
-      } else if (vendorType === 'cultural') {
-        setEditingSkill(data);
-        setEditingProduct(null);
-        setEditingService(null);
-        setEditingTransport(null);
-      } else if (vendorType === 'transport') {
-        setEditingTransport(data);
-        setEditingProduct(null);
-        setEditingService(null);
-        setEditingSkill(null);
-      }
-    } else if (key === 'services') {
-      setEditingProduct(null); // Clear editing product when going back to services
-      setEditingService(null); // Clear editing service when going back to services
-      setEditingSkill(null); // Clear editing skill when going back to services
-      setEditingTransport(null); // Clear editing transport when going back to services
-    }
-  };
+  const handleTabChange = (key) => setActiveTab(key);
 
   return (
     <View style={styles.root}>
       <VendorHeader onTabChange={handleTabChange} />
 
       <SafeAreaView edges={['left', 'right']} style={styles.safe}>
-        <ScrollView
-          contentContainerStyle={[
-            styles.bodyContainer,
-            Platform.OS === 'web' ? styles.webPaddingForFixedHeader : null,
-          ]}
-        >
-          {activeTab === TAB.HOME && <HomeTab role={role} onPreviewRole={setRole} />}
-          {activeTab === TAB.SERVICES && <ServicesTab role={role} vendorType={vendorType} onTabChange={handleTabChange} />}
-          {activeTab === TAB.ADD_SERVICES && <AddServicesTab vendorType={vendorType} editingProduct={editingProduct} editingService={editingService} editingSkill={editingSkill} editingTransport={editingTransport} onBackToServices={() => handleTabChange('services')} />}
-          {activeTab === TAB.BOOKING && <BookingTab role={role} vendorType={vendorType} />}
-          {activeTab === TAB.REQUEST && <RequestTab vendorType={vendorType} />}
-          {activeTab === TAB.ANALYSIS && <AnalysisTab vendorType={vendorType} />}
-          {activeTab === TAB.CHAT && <ChatTab />}
-          {activeTab === TAB.NOTIFICATION && <NotificationTab />}
-          {activeTab === TAB.PROFILE && <VendorProfile />}{/* ← renders inside dashboard */}
-        </ScrollView>
+        {/* Services tab fills the viewport and uses its own spacing (NO bottom padding). */}
+        {activeTab === TAB.SERVICES ? (
+          <View
+            style={[
+              styles.servicesContainer,                    // ← no paddingBottom here
+              Platform.OS === 'web' ? styles.webPaddingForFixedHeader : null,
+            ]}
+          >
+            <ServicesTab />
+          </View>
+        ) : (
+          // Other tabs stay scrollable and use the general container (with bottom padding).
+          <ScrollView
+            contentContainerStyle={[
+              styles.bodyContainer,                       // ← has paddingBottom for scroll tabs
+              Platform.OS === 'web' ? styles.webPaddingForFixedHeader : null,
+            ]}
+          >
+            {activeTab === TAB.HOME && <HomeTab />}
+            {activeTab === TAB.BOOKING && <BookingTab />}
+            {activeTab === TAB.REQUEST && <RequestTab />}
+            {activeTab === TAB.ANALYSIS && <AnalysisTab />}
+            {activeTab === TAB.CHAT && <ChatTab />}
+            {activeTab === TAB.NOTIFICATION && <NotificationTab />}
+            {activeTab === TAB.PROFILE && <VendorProfile />}
+          </ScrollView>
+        )}
       </SafeAreaView>
 
       <CompleteProfilePrompt navigation={navigation} delayMs={5000} />
@@ -142,7 +479,7 @@ export default function VendorDashboardScreen() {
   );
 }
 
-/* ---------- inline demo tab bodies ---------- */
+/* ---------- tabs ---------- */
 
 const Section = ({ title, children }) => (
   <View style={{ gap: 8 }}>
@@ -151,194 +488,67 @@ const Section = ({ title, children }) => (
   </View>
 );
 
-function HomeTab({ role, onPreviewRole }) {
+function HomeTab() {
   return (
     <View style={styles.tabWrap}>
-      {!role && (
-        <View style={styles.banner}>
-          <Text style={styles.bannerText}>
-            No service selected yet. Go to Profile → Select/Change Service.
-          </Text>
-        </View>
-      )}
+      <View style={styles.banner}>
+        <Text style={styles.bannerText}>
+          Tip: Go to Services to add your first cultural experience (class, workshop, city walk).
+        </Text>
+      </View>
 
       <Section title="Quick Stats">
-        <Text>Pending Requests: 7 · Active Bookings: 12 · Active Offers: 3 · Rating: 4.8</Text>
+        <Text>Pending Requests: 0 · Confirmed Bookings: 0 · Avg. Rating: —</Text>
       </Section>
 
       <Section title="My Services">
-        <Text>Show grid/list of vendor services here… (role: {role ?? '—'})</Text>
+        <Text>Your published cultural experiences will appear here.</Text>
       </Section>
 
-      <Section title="Booking Requests">
-        <Text>Compact cards with Approve / Decline actions…</Text>
+      <Section title="Recent Requests">
+        <Text>Approve / Decline requests from travelers once bookings are enabled.</Text>
       </Section>
+    </View>
+  );
+}
 
-      <View style={{ flexDirection: 'row', gap: 8 }}>
-        <Text onPress={() => onPreviewRole(null)} style={styles.link}>Preview: No Role</Text>
-        <Text onPress={() => onPreviewRole('Accommodation Provider')} style={styles.link}>
-          Preview: Accommodation
-        </Text>
+function ServicesTab() {
+  return (
+    <View style={styles.tabFill}>
+      <Text style={styles.h2}>Cultural Exchange — Services</Text>
+      {/* Give the hub all remaining height so its FlatList can scroll */}
+      <View style={{ flex: 1 }}>
+        <CulturalServicesHub />
       </View>
     </View>
   );
 }
 
-function ServicesTab({ role, vendorType, onTabChange }) {
-  // Check if vendor type is accommodation provider
-  if (vendorType === 'hotel') {
-    return <My_Services onAddService={(service) => onTabChange('add_services', service)} />;
-  }
-  
-  // Check if vendor type is cultural exchanger
-  if (vendorType === 'cultural') {
-    return <My_Cultural_Listings onAddService={(skill) => onTabChange('add_services', skill)} />;
-  }
-  
-  // Check if vendor type is product seller
-  if (vendorType === 'product') {
-    return <My_Product_Listings onAddService={(product) => onTabChange('add_services', product)} />;
-  }
-  
-  // Check if vendor type is transport provider
-  if (vendorType === 'transport') {
-    return <My_Transport_Listings onAddService={(transport) => onTabChange('add_services', transport)} />;
-  }
-  
+function BookingTab() {
   return (
     <View style={styles.tabWrap}>
-      {role ? (
-        <Section title={`${role} — Listings`}>
-          <Text>List + Add/Edit controls here…</Text>
-        </Section>
-      ) : (
-        <View style={styles.empty}>
-          <Text style={styles.emptyTitle}>No service selected</Text>
-          <Text style={styles.emptySub}>Pick a primary service to start adding listings.</Text>
-          <Text style={[styles.link, { marginTop: 6 }]}>Go to Profile → Select Service</Text>
-        </View>
-      )}
-    </View>
-  );
-}
-
-function AddServicesTab({ vendorType, editingProduct, editingService, editingSkill, editingTransport, onBackToServices }) {
-  // Check if vendor type is accommodation provider
-  if (vendorType === 'hotel') {
-    return <Add_New_Services onBackToServices={onBackToServices} editingService={editingService} />;
-  }
-  
-  // Check if vendor type is cultural exchanger
-  if (vendorType === 'cultural') {
-    return <Offer_Cultural_Skill onBackToServices={onBackToServices} route={{ params: { skill: editingSkill } }} />;
-  }
-  
-  // Check if vendor type is product seller
-  if (vendorType === 'product') {
-    return <Add_New_Product onBackToServices={onBackToServices} route={{ params: { product: editingProduct } }} />;
-  }
-  
-  // Check if vendor type is transport provider
-  if (vendorType === 'transport') {
-    return <Add_New_Transport onBackToServices={onBackToServices} route={{ params: { transport: editingTransport } }} />;
-  }
-  
-  return (
-    <View style={styles.tabWrap}>
-      <View style={styles.empty}>
-        <Text style={styles.emptyTitle}>Add Services</Text>
-        <Text style={styles.emptySub}>Add new services for {vendorType} vendor type.</Text>
-      </View>
-    </View>
-  );
-}
-
-function BookingTab({ role, vendorType }) {
-  // Check if vendor type is accommodation provider
-  if (vendorType === 'hotel') {
-    return <Booking_Requests onBackToServices={() => {}} />;
-  }
-  
-  // Check if vendor type is cultural exchanger
-  if (vendorType === 'cultural') {
-    return <Manage_Requests onBackToServices={() => {}} />;
-  }
-  
-  // Check if vendor type is product seller
-  if (vendorType === 'product') {
-    return <Manage_Orders onBackToServices={() => {}} />;
-  }
-  
-  // Check if vendor type is transport provider
-  if (vendorType === 'transport') {
-    return <Transport_Bookings onBackToServices={() => {}} />;
-  }
-  
-  const label = role === 'Product Seller' ? 'Orders' : 'Bookings';
-  return (
-    <View style={styles.tabWrap}>
-      <Section title={label}>
-        <Text>Render {label.toLowerCase()} table/list here…</Text>
+      <Section title="Bookings (Cultural Exchange)">
+        <Text>List of bookings will appear here (pending/confirmed/cancelled).</Text>
       </Section>
     </View>
   );
 }
 
-function RequestTab({ vendorType }) {
-  // Check if vendor type is accommodation provider
-  if (vendorType === 'hotel') {
-    return <Create_Offer onBackToServices={() => {}} />;
-  }
-  
-  // Check if vendor type is cultural exchanger
-  if (vendorType === 'cultural') {
-    return <Traveler_Feedback onBackToServices={() => {}} />;
-  }
-  
-  // Check if vendor type is product seller
-  if (vendorType === 'product') {
-    return <Product_Sales_Analytics onBackToServices={() => {}} />;
-  }
-  
-  // Check if vendor type is transport provider
-  if (vendorType === 'transport') {
-    return <Transport_Offers onBackToServices={() => {}} />;
-  }
-  
+function RequestTab() {
   return (
     <View style={styles.tabWrap}>
-      <Section title="Pending Requests">
-        <Text>Requests needing Approve/Decline…</Text>
+      <Section title="Requests">
+        <Text>Incoming requests from travelers (approve/decline, message traveler).</Text>
       </Section>
     </View>
   );
 }
 
-function AnalysisTab({ vendorType }) {
-  // Check if vendor type is accommodation provider
-  if (vendorType === 'hotel') {
-    return <Booking_Analytics onBackToServices={() => {}} />;
-  }
-  
-  // Check if vendor type is cultural exchanger
-  if (vendorType === 'cultural') {
-    return <Cultural_Engagement_Stats onBackToServices={() => {}} />;
-  }
-  
-  // Check if vendor type is product seller
-  if (vendorType === 'product') {
-    return <Customer_Feedback onBackToServices={() => {}} />;
-  }
-  
-  // Check if vendor type is transport provider
-  if (vendorType === 'transport') {
-    return <Transport_Analytics onBackToServices={() => {}} />;
-  }
-  
+function AnalysisTab() {
   return (
     <View style={styles.tabWrap}>
-      <Section title="Analytics Overview">
-        <Text>Small KPI cards + chart placeholder…</Text>
+      <Section title="Analytics">
+        <Text>KPIs: views, requests, confirmations, revenue. Charts to be added later.</Text>
       </Section>
     </View>
   );
@@ -348,7 +558,7 @@ function ChatTab() {
   return (
     <View style={styles.tabWrap}>
       <Section title="Chat">
-        <Text>Conversation list + thread preview…</Text>
+        <Text>Conversation list + thread preview (coming soon).</Text>
       </Section>
     </View>
   );
@@ -358,24 +568,29 @@ function NotificationTab() {
   return (
     <View style={styles.tabWrap}>
       <Section title="Notifications">
-        <Text>Unified alerts list…</Text>
+        <Text>Unified alerts for requests, bookings, and reviews.</Text>
       </Section>
     </View>
   );
 }
 
-/* ------------------------- styles ------------------------- */
+/* ---------- styles ---------- */
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#F1F5F9' },
   safe: { flex: 1 },
-  bodyContainer: {
-    paddingHorizontal: 12,
-    paddingBottom: 84,
-    gap: 12,
-  },
+
+  // Used by scrollable tabs (Home/Booking/Request/Analysis/Chat/Notification/Profile)
+  bodyContainer: { paddingHorizontal: 12, paddingBottom: 84, gap: 12 },
+
+  // Used ONLY by Services tab (no bottom padding so there's no giant gap)
+  servicesContainer: { flex: 1, paddingHorizontal: 12, gap: 12 },
+
   webPaddingForFixedHeader: { paddingTop: 120 },
+
   tabWrap: { gap: 12 },
+  tabFill: { gap: 12, flex: 1 }, // ServicesTab needs to fill height
+
   h2: { fontSize: 18, fontWeight: '800', color: '#0f172a' },
   card: {
     backgroundColor: '#fff',
@@ -385,22 +600,11 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   banner: {
-    backgroundColor: '#FFFBEB',
-    borderColor: '#FDE68A',
+    backgroundColor: '#EFF6FF',
+    borderColor: '#BFDBFE',
     borderWidth: 1,
     padding: 10,
     borderRadius: 12,
   },
-  bannerText: { color: '#B45309' },
-  empty: {
-    alignItems: 'center',
-    padding: 18,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 16,
-  },
-  emptyTitle: { fontWeight: '800', color: '#0f172a' },
-  emptySub: { color: '#475569', marginTop: 4 },
-  link: { color: '#0f172a', fontWeight: '700' },
+  bannerText: { color: '#1D4ED8' },
 });
