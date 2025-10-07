@@ -1,4 +1,6 @@
-// // components/CulturalServiceCard.js
+
+
+// // screens/CulturalExchange/CulturalServiceCard.js
 // import React from 'react';
 // import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 // import { Ionicons } from '@expo/vector-icons';
@@ -14,7 +16,7 @@
 //   pricePerPerson,
 //   groupSize,
 //   rating,
-//   badges = [],                     // e.g. ['Cultural','Budget-friendly']
+//   badges = [],
 //   onView, onEdit, onShare, onDelete
 // }) {
 //   return (
@@ -142,7 +144,6 @@
 // });
 
 
-// screens/CulturalExchange/CulturalServiceCard.js
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';

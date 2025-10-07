@@ -268,7 +268,7 @@ import VendorTypeSelectionScreen from './screens/vendor/VendorTypeSelectionScree
 /* Community / Messages */
 import MessagesScreen from './screens/MessagesScreen';
 
-
+import CulturalServiceDetail from './screens/CulturalExchange/CulturalServiceDetail';
 
 
 
@@ -312,7 +312,7 @@ export default function App() {
     <RoleProvider>
       <SafeAreaProvider>
         <NavigationContainer ref={navRef}>
-          <Stack.Navigator initialRouteName="VendorTypeSelection" screenOptions={{ headerShown: false }}>
+          <Stack.Navigator initialRouteName="Landing Page" screenOptions={{ headerShown: false }}>
             {/* Core Navigation */}
             <Stack.Screen name="Landing Page" component={LandingScreen} />
             <Stack.Screen name="AboutTravelMatePage" component={AboutTravelMatePage} />
@@ -366,6 +366,7 @@ export default function App() {
             <Stack.Screen name="CulturalExchangeScreen" component={CulturalExchangeScreen} />
             <Stack.Screen name="GroupScreen" component={GroupScreen} />
             <Stack.Screen name="GroupDashboard" component={GroupDashboard} />
+            <Stack.Screen name="CulturalServiceDetail" component={CulturalServiceDetail} />
           </Stack.Navigator>
         </NavigationContainer>
       </SafeAreaProvider>

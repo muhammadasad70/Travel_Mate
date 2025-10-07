@@ -55,6 +55,7 @@ func main() {
 	// ✅ NEW: Groups (lists, invites, create, details)
 	routes.RegisterGroupRoutes(router)
 	routes.RegisterEventRoutes(router)
+	routes.RegisterCulturalServiceRoutes(router)
 
 	// Debug: list routes
 	router.GET("/__routes", func(c *gin.Context) {

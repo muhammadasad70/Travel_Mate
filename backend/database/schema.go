@@ -287,6 +287,59 @@ CREATE INDEX IF NOT EXISTS ix_events_city       ON events (city);
 CREATE INDEX IF NOT EXISTS ix_events_category   ON events (category);
 
 
+-- =========================
+-- Cultural Services (Vendor "Cultural Exchange")
+-- =========================
+CREATE TABLE IF NOT EXISTS cultural_services (
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+
+  title TEXT NOT NULL,
+  experience_type TEXT NOT NULL CHECK (experience_type IN ('workshop','walk','home_experience','skill_exchange')),
+  category TEXT,
+  tags TEXT[],
+
+  description TEXT,
+  city TEXT NOT NULL,
+  meeting_point_label TEXT,
+
+  -- schedule (one of)
+  schedule_type TEXT NOT NULL CHECK (schedule_type IN ('fixed_dates','repeat_weekly','on_request')),
+  fixed_dates TEXT[],         -- array of 'YYYY-MM-DD' strings (simpler than DATE[])
+  days_of_week TEXT[],        -- e.g., {'Mon','Wed','Fri'}
+  start_time TEXT,            -- 'HH:MM' for weekly
+  duration_hours DOUBLE PRECISION DEFAULT 0,
+  lead_time_days INT DEFAULT 0,
+
+  -- capacity
+  group_size_max INT DEFAULT 0,
+  languages TEXT[],
+
+  -- pricing
+  pricing_model TEXT NOT NULL CHECK (pricing_model IN ('per_person','per_group','free','exchange')),
+  price_per_person DOUBLE PRECISION,
+  price_per_group DOUBLE PRECISION,
+  group_included_size INT,
+  host_offers TEXT,
+  traveler_can_offer TEXT[],
+  exchange_value_hint TEXT,
+
+  -- extras
+  includes TEXT[],
+  excludes TEXT[],
+  material_requirements TEXT[],
+  accessibility_notes TEXT,
+  age_restriction TEXT,
+  cancellation_policy TEXT NOT NULL CHECK (cancellation_policy IN ('flexible','moderate','strict')),
+
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS ix_cultural_services_user ON cultural_services(user_id);
+CREATE INDEX IF NOT EXISTS ix_cultural_services_city ON cultural_services(city);
+CREATE INDEX IF NOT EXISTS ix_cultural_services_created ON cultural_services(created_at DESC);
+
+
 `
 
 func InitSchema() {
