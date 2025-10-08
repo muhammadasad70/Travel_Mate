@@ -355,6 +355,31 @@ CREATE INDEX IF NOT EXISTS ix_cultural_services_city ON cultural_services(city);
 CREATE INDEX IF NOT EXISTS ix_cultural_services_created ON cultural_services(created_at DESC);
 
 
+-- =========================
+-- Cultural Service Bookings
+-- =========================
+CREATE TABLE IF NOT EXISTS cultural_service_bookings (
+  id BIGSERIAL PRIMARY KEY,
+  service_id BIGINT NOT NULL REFERENCES cultural_services(id) ON DELETE CASCADE,
+  vendor_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,   -- denormalized from service
+  traveler_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+
+  status TEXT NOT NULL CHECK (status IN ('pending','confirmed','declined','cancelled')),
+  chosen_date TEXT,             -- 'YYYY-MM-DD' (for fixed_dates) or null for weekly/on_request
+  participants INT NOT NULL CHECK (participants > 0),
+  message TEXT,
+
+  price_snapshot DOUBLE PRECISION,   -- snapshot at time of request; nullable if exchange/free
+  pricing_model TEXT NOT NULL CHECK (pricing_model IN ('per_person','per_group','free','exchange')),
+
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS ix_csb_vendor ON cultural_service_bookings(vendor_id, status, created_at DESC);
+CREATE INDEX IF NOT EXISTS ix_csb_traveler ON cultural_service_bookings(traveler_id, status, created_at DESC);
+CREATE INDEX IF NOT EXISTS ix_csb_service  ON cultural_service_bookings(service_id);
+
+
 `
 
 func InitSchema() {

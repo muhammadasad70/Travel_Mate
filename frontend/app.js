@@ -254,10 +254,6 @@ import RecommendationScreen from './screens/Recommendations/RecommendationScreen
 import ResetPasswordScreen from './screens/ResetPasswordScreen';
 import ResetPasswordScreen2 from './screens/ResetPasswordScreen2';
 import ItineraryDetailScreen from './screens/ItineraryDetailScreen';
-import TravelerServicesScreen from './screens/VendorServices/TravelerServicesScreen';
-import AccommodationListingScreen from './screens/VendorServices/AccommodationListingScreen';
-import TravelerProductScreen from './screens/VendorServices/TravelerProductScreen';
-import CulturalExchangeScreen from './screens/VendorServices/CulturalExchangeScreen';
 import GroupScreen from './screens/GroupScreen';
 import ProfileCompletionScreen from './screens/ProfileCompletionScreen';
 import ItinerariesHub from './screens/ItinerariesHub';
@@ -272,7 +268,8 @@ import CulturalServiceDetail from './screens/CulturalExchange/CulturalServiceDet
 import AddCulturalServiceForm from './screens/CulturalExchange/AddCulturalServiceForm';
 
 
-
+import CulturalRequests from './screens/vendor/CulturalRequests';
+import CulturalBooked from './screens/vendor/CulturalBooked';
 /* Existing Offline (keep if you still use it elsewhere) */
 import OfflineScreen from './screens/OfflineScreen';
 
@@ -283,6 +280,10 @@ import OfflineEmergency from './components/Offline/OfflineEmergency';
 
 /* Offline hook: start auto-sync once */
 import { startAutoSync } from './hooks/useOfflineItineraries';
+
+import ServicesBrowse from './screens/traveler/ServicesBrowse';
+import ServiceBookingRequest from './screens/traveler/ServiceBookingRequest';
+import MyBookings from './screens/traveler/MyBookings';
 
 const Stack = createNativeStackNavigator();
 
@@ -361,14 +362,15 @@ export default function App() {
             {/* <Stack.Screen name="ItineraryDetails" component={ItineraryDetailsScreen} /> */}
             <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
             <Stack.Screen name="ResetPasswordScreen2" component={ResetPasswordScreen2} />
-            <Stack.Screen name="TravelerServicesScreen" component={TravelerServicesScreen} />
-            <Stack.Screen name="AccommodationListingScreen" component={AccommodationListingScreen} />
-            <Stack.Screen name="TravelerProductScreen" component={TravelerProductScreen} />
-            <Stack.Screen name="CulturalExchangeScreen" component={CulturalExchangeScreen} />
             <Stack.Screen name="GroupScreen" component={GroupScreen} />
             <Stack.Screen name="GroupDashboard" component={GroupDashboard} />
             <Stack.Screen name="CulturalServiceDetail" component={CulturalServiceDetail} />
             <Stack.Screen name="AddCulturalService" component={AddCulturalServiceForm} />
+            <Stack.Screen name="VendorRequests" component={CulturalRequests} />
+            <Stack.Screen name="VendorBooked" component={CulturalBooked}  />
+            <Stack.Screen name="ServiceBookingRequest" component={ServiceBookingRequest} />
+            <Stack.Screen name="MyBookings" component={MyBookings} />
+            <Stack.Screen name="ServicesBrowse" component={ServicesBrowse} />
           </Stack.Navigator>
         </NavigationContainer>
       </SafeAreaProvider>

@@ -56,6 +56,9 @@ func main() {
 	routes.RegisterGroupRoutes(router)
 	routes.RegisterEventRoutes(router)
 	routes.RegisterCulturalServiceRoutes(router)
+	routes.RegisterPublicRoutes(router)
+	// routes.RegisterCulturalServiceRoutes(router)
+	routes.RegisterBookingRoutes(router)
 
 	// Debug: list routes
 	router.GET("/__routes", func(c *gin.Context) {
