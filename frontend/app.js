@@ -269,6 +269,7 @@ import VendorTypeSelectionScreen from './screens/vendor/VendorTypeSelectionScree
 import MessagesScreen from './screens/MessagesScreen';
 
 import CulturalServiceDetail from './screens/CulturalExchange/CulturalServiceDetail';
+import AddCulturalServiceForm from './screens/CulturalExchange/AddCulturalServiceForm';
 
 
 
@@ -367,6 +368,7 @@ export default function App() {
             <Stack.Screen name="GroupScreen" component={GroupScreen} />
             <Stack.Screen name="GroupDashboard" component={GroupDashboard} />
             <Stack.Screen name="CulturalServiceDetail" component={CulturalServiceDetail} />
+            <Stack.Screen name="AddCulturalService" component={AddCulturalServiceForm} />
           </Stack.Navigator>
         </NavigationContainer>
       </SafeAreaProvider>

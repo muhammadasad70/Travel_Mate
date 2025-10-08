@@ -78,37 +78,52 @@ CREATE TABLE IF NOT EXISTS images (
   uploaded_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- =========================
--- Groups
--- =========================
+
 CREATE TABLE IF NOT EXISTS groups (
   id BIGSERIAL PRIMARY KEY,
+  admin_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   description TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- group members
+-- Optional: Index to speed up admin lookups
+CREATE INDEX IF NOT EXISTS idx_groups_admin_id ON groups(admin_id);
+
+-- =========================
+-- Group Members
+-- =========================
 CREATE TABLE IF NOT EXISTS group_members (
   id BIGSERIAL PRIMARY KEY,
   group_id BIGINT NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
   user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  role TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('admin','member')),
+  role TEXT NOT NULL DEFAULT 'member'
+       CHECK (role IN ('admin', 'member')),
+  status TEXT NOT NULL DEFAULT 'active'
+       CHECK (status IN ('active', 'removed')),
   joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE (group_id, user_id)
 );
 
--- invites: creator invites invitee to a group (no codes, only requests)
+CREATE INDEX IF NOT EXISTS idx_group_members_group_id ON group_members(group_id);
+CREATE INDEX IF NOT EXISTS idx_group_members_user_id ON group_members(user_id);
+
+-- =========================
+-- Group Invites
+-- =========================
 CREATE TABLE IF NOT EXISTS group_invites (
   id BIGSERIAL PRIMARY KEY,
   group_id BIGINT NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
-  inviter_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   invitee_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','accepted','declined','cancelled')),
+  invitee_email TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending'
+       CHECK (status IN ('pending', 'accepted', 'declined', 'canceled')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE (group_id, invitee_id)
 );
 
+CREATE INDEX IF NOT EXISTS idx_group_invites_group_id ON group_invites(group_id);
+CREATE INDEX IF NOT EXISTS idx_group_invites_invitee_id ON group_invites(invitee_id);
 
 -- =========================
 -- Constraints for data quality on groups

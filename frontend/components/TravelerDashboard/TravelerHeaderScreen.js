@@ -53,7 +53,6 @@
 //     closeDropdown();
 
 //     switch (key) {
-//       // in-place tabs
 //       case 'explore':
 //       case 'tripplanner':
 //       case 'events':
@@ -107,6 +106,12 @@
 //     }).start();
 //   };
 
+//   // 🔧 CHANGED: direct helper to go to GroupsHome from dropdown
+//   const goToGroupsHome = () => {
+//     closeDropdown();
+//     navigation.navigate('GroupsHome', { from: 'TravelerDashboard' });
+//   };
+
 //   return (
 //     <View style={styles.headerWrapper}>
 //       <View style={[styles.headerInner, { width: width < 900 ? '95%' : '85%' }]}>
@@ -127,8 +132,8 @@
 //               { label: '📝 Trip Planner', key: 'tripplanner' },
 //               { label: '🎉 Events', key: 'events' },
 //               { label: '🛎 Services', key: 'services' },
-//               { label: '👥 Community', key: 'communityHub' },   // NEW
-//               { label: '🧑‍🤝‍🧑 Groups', key: 'groups' },       // NEW
+//               { label: '👥 Community', key: 'communityHub' },
+//               { label: '🧑‍🤝‍🧑 Groups', key: 'groups' },
 //             ].map((item) => (
 //               <TouchableOpacity
 //                 key={item.key}
@@ -141,14 +146,13 @@
 //           </View>
 //         )}
 
-//         {/* Right actions (vendor icon removed; still available in dropdown) */}
+//         {/* Right actions */}
 //         <View style={styles.rightSection}>
 //           <IconWithCaption
 //             icon="notifications-outline"
 //             label="Alerts"
 //             onPress={() => handleItemPress('notification')}
 //           />
-
 //           {isMobile && (
 //             <IconWithCaption
 //               icon="chatbubble-ellipses-outline"
@@ -156,7 +160,6 @@
 //               onPress={() => handleItemPress('messages')}
 //             />
 //           )}
-
 //           {!isMobile && (
 //             <>
 //               <IconAvatar label="Profile" onPress={() => handleItemPress('profile')} />
@@ -189,7 +192,8 @@
 //             <Text style={styles.sectionLabel}>Quick actions</Text>
 //             <View style={styles.menuGrid}>
 //               <MenuTile icon="people-circle-outline" label="Community" onPress={() => handleItemPress('communityHub')} />
-//               <MenuTile icon="chatbubbles-outline" label="Groups" onPress={() => handleItemPress('GroupsHome')} />
+//               {/* 🔧 CHANGED: go straight to GroupsHome from dropdown */}
+//               <MenuTile icon="chatbubbles-outline" label="Groups" onPress={goToGroupsHome} />
 //               <MenuTile icon="heart-outline" label="Saved" onPress={() => handleItemPress('saved')} />
 //               <MenuTile icon="time-outline" label="History" onPress={() => handleItemPress('history')} />
 //             </View>
@@ -199,7 +203,7 @@
 //             <RowAction icon="person-circle-outline" label="Profile" onPress={() => handleItemPress('profile')} />
 //             <RowAction icon="chatbubble-ellipses-outline" label="Messages" onPress={() => handleItemPress('messages')} />
 
-//             {/* CTA (vendor kept here) */}
+//             {/* CTA */}
 //             <TouchableOpacity style={styles.vendorCta} onPress={() => handleItemPress('vendor')} activeOpacity={0.9}>
 //               <Ionicons name="briefcase-outline" size={18} color="#fff" />
 //               <Text style={styles.vendorCtaText} numberOfLines={1}>Become a Vendor</Text>
@@ -219,7 +223,7 @@
 //   );
 // };
 
-// /* ---------- small presentational helpers ---------- */
+// /* ---------- helpers (unchanged) ---------- */
 // const IconWithCaption = ({ icon, label, onPress, isMenu }) => (
 //   <View style={styles.iconWithLabel}>
 //     <TouchableOpacity
@@ -547,11 +551,20 @@ const Header = ({ onTabChange }) => {
     }).start();
   };
 
-  // 🔧 CHANGED: direct helper to go to GroupsHome from dropdown
   const goToGroupsHome = () => {
     closeDropdown();
     navigation.navigate('GroupsHome', { from: 'TravelerDashboard' });
   };
+
+  const ICON_COLOR = '#003366';
+  const MENU_ITEMS = [
+    { label: 'Explore',       key: 'explore',      icon: 'compass-outline' },
+    { label: 'Trip Planner',  key: 'tripplanner',  icon: 'document-text-outline' },
+    { label: 'Events',        key: 'events',       icon: 'calendar-outline' },
+    { label: 'Services',      key: 'services',     icon: 'construct-outline' },
+    { label: 'Community',     key: 'communityHub', icon: 'people-outline' },
+    { label: 'Groups',        key: 'groups',       icon: 'people-circle-outline' },
+  ];
 
   return (
     <View style={styles.headerWrapper}>
@@ -568,19 +581,13 @@ const Header = ({ onTabChange }) => {
         {/* Web: top pills */}
         {!isMobile && (
           <View style={styles.navRow}>
-            {[
-              { label: '🧭 Explore', key: 'explore' },
-              { label: '📝 Trip Planner', key: 'tripplanner' },
-              { label: '🎉 Events', key: 'events' },
-              { label: '🛎 Services', key: 'services' },
-              { label: '👥 Community', key: 'communityHub' },
-              { label: '🧑‍🤝‍🧑 Groups', key: 'groups' },
-            ].map((item) => (
+            {MENU_ITEMS.map((item) => (
               <TouchableOpacity
                 key={item.key}
                 style={[styles.navButton, selectedItem === item.key && styles.activeButton]}
                 onPress={() => handleItemPress(item.key)}
               >
+                <Ionicons name={item.icon} size={16} color={ICON_COLOR} style={{ marginRight: 6 }} />
                 <Text style={styles.navButtonText}>{item.label}</Text>
               </TouchableOpacity>
             ))}
@@ -633,7 +640,6 @@ const Header = ({ onTabChange }) => {
             <Text style={styles.sectionLabel}>Quick actions</Text>
             <View style={styles.menuGrid}>
               <MenuTile icon="people-circle-outline" label="Community" onPress={() => handleItemPress('communityHub')} />
-              {/* 🔧 CHANGED: go straight to GroupsHome from dropdown */}
               <MenuTile icon="chatbubbles-outline" label="Groups" onPress={goToGroupsHome} />
               <MenuTile icon="heart-outline" label="Saved" onPress={() => handleItemPress('saved')} />
               <MenuTile icon="time-outline" label="History" onPress={() => handleItemPress('history')} />
@@ -776,6 +782,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
+    flexDirection: 'row',            // <-- added so icon + text align inline
+    alignItems: 'center',            // <-- added for vertical centering
   },
   activeButton: { backgroundColor: '#e0f4ff', borderColor: '#0077b6' },
   navButtonText: { fontSize: 14, fontWeight: '600', color: '#003366' },

@@ -333,7 +333,8 @@ export default function ManageCulturalServices({ onBack, onAdd }) {
           rating={item.rating}
           badges={item.badges}
           onView={() => navigation.navigate('CulturalServiceDetail', { id: item.id })}
-          onEdit={() => navigation.navigate('AddCulturalService', { editId: item.id })} // if/when you add editing
+          onEdit={() => navigation.navigate('AddCulturalService', { editId: item.id })}
+
           onShare={() => onShareItem(item)}
           onDelete={() => (isDeleting ? null : confirmDelete(item))}
         />
