@@ -36,7 +36,10 @@ type LiveEvent struct {
 //	https://www.meetup.com/<group>/events/ical/
 //	https://calendar.google.com/calendar/ical/<public_calendar_id>/public/basic.ics
 var meetupICS = []string{
-	"https://calendar.google.com/calendar/ical/en.pk%23holiday%40group.v.calendar.google.com/public/basic.ics",
+	// "https://calendar.google.com/calendar/ical/en.pk%23holiday%40group.v.calendar.google.com/public/basic.ics",
+	// "https://calendar.google.com/calendar/ical/en.pk%23holiday%40group.v.calendar.google.com/public/basic.ics",
+	// "https://www.meetup.com/islamabad-Atlassian-Community-Events/events/ical/",
+	"http://localhost:8000/2494e25f-c438-477f-a36c-bb530a82328b.ics", // your real meetup events
 	"https://calendar.google.com/calendar/ical/en.pk%23holiday%40group.v.calendar.google.com/public/basic.ics",
 }
 
