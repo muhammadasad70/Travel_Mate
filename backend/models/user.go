@@ -10,17 +10,18 @@ import (
 )
 
 type User struct {
-	Id                int       `json:"id"`
-	Email             string    `json:"email"`
-	Password          string    `json:"-"`
-	FirstName         string    `json:"first_name"`
-	LastName          string    `json:"last_name"`
-	CountryCode       string    `json:"country_code"`
-	Phone             string    `json:"phone"`
-	Country           string    `json:"country"`
-	Role              string    `json:"role"`
-	IsProfileComplete bool      `json:"is_profile_complete"`
-	CreatedAt         time.Time `json:"created_at"`
+	Id                 int        `json:"id"`
+	Email              string     `json:"email"`
+	Password           string     `json:"-"`
+	FirstName          string     `json:"first_name"`
+	LastName           string     `json:"last_name"`
+	CountryCode        string     `json:"country_code"`
+	Phone              string     `json:"phone"`
+	Country            string     `json:"country"`
+	Role               string     `json:"role"`
+	IsProfileComplete  bool       `json:"is_profile_complete"`
+	CreatedAt          time.Time  `json:"created_at"`
+	WelcomeEmailSentAt *time.Time `json:"welcome_email_sent_at"` // <-- NEW
 }
 
 func EmailExists(email string) (bool, error) {
@@ -70,13 +71,20 @@ func (u *User) UpdateUserProfile() error {
 
 func GetUserByEmail(email string) (*User, error) {
 	const q = `
-		SELECT id, email, password, role, COALESCE(is_profile_complete,false)
+		SELECT id, email, password, role, COALESCE(is_profile_complete,false),
+		       welcome_email_sent_at
 		FROM users
 		WHERE LOWER(email)=LOWER($1)
 		LIMIT 1`
 	var u User
-	if err := database.DB.QueryRow(q, email).Scan(&u.Id, &u.Email, &u.Password, &u.Role, &u.IsProfileComplete); err != nil {
+	var sentAt sql.NullTime
+	if err := database.DB.QueryRow(q, email).
+		Scan(&u.Id, &u.Email, &u.Password, &u.Role, &u.IsProfileComplete, &sentAt); err != nil {
 		return nil, errors.New("user not found")
+	}
+	if sentAt.Valid {
+		t := sentAt.Time
+		u.WelcomeEmailSentAt = &t
 	}
 	return &u, nil
 }
@@ -598,4 +606,8 @@ func nullIfEmpty(s string, fallback string) string {
 		return fallback
 	}
 	return s
+}
+func MarkWelcomeEmailSent(userID int) error {
+	_, err := database.DB.Exec(`UPDATE users SET welcome_email_sent_at = NOW() WHERE id=$1 AND welcome_email_sent_at IS NULL`, userID)
+	return err
 }

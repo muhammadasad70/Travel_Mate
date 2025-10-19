@@ -135,3 +135,15 @@ func sendEmail(to string, subject string, message string) error {
 	fmt.Println("[DEBUG] Email sent successfully to:", to)
 	return nil
 }
+
+func sendWelcomeEmail(to string, displayName string) error {
+	if displayName == "" {
+		displayName = "Traveler"
+	}
+	subject := "Welcome to TravelMate 🎉"
+	body := fmt.Sprintf(
+		"Hi %s!\n\nThanks for joining TravelMate. You can start exploring services, planning itineraries, and booking experiences.\n\nHappy travels!\n— The TravelMate Team",
+		displayName,
+	)
+	return sendEmail(to, subject, body)
+}

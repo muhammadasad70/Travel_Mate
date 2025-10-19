@@ -22,10 +22,13 @@ CREATE UNIQUE INDEX IF NOT EXISTS ux_users_email_lower
 -- 001_alter_users_social.sql  (run once)
 ALTER TABLE users
   ALTER COLUMN password DROP NOT NULL;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS welcome_email_sent_at TIMESTAMPTZ NULL;
+
 
 ALTER TABLE users
   ADD COLUMN IF NOT EXISTS provider TEXT
     CHECK (provider IN ('google','facebook')),
+
 
   ADD COLUMN IF NOT EXISTS provider_id TEXT,
   ADD COLUMN IF NOT EXISTS avatar_url TEXT,
