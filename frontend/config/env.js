@@ -1,15 +1,3 @@
-// import { Platform } from 'react-native';
-
-// const getBaseURL = () => {
-//   if (Platform.OS === 'web') {
-//     return 'http://localhost:8080'; // web localhost
-//   }
-
-//   // ✅ Hardcoded IP — use your actual IP here
-//   return 'http://192.168.110.153:8080'; // IP from your ifconfig
-// };
-
-// export default getBaseURL;
 
 // config/env.js
 import { Platform } from "react-native";
@@ -26,11 +14,11 @@ const getBaseURL = () => {
     // Android emulator needs the 10.0.2.2 magic host
     if (ANDROID_TARGET === "emulator") return "http://10.0.2.2:8080";
     // Physical Android phone on the same Wi-Fi needs your laptop's LAN IP
-    return "http://192.168.130.114:8080"; // <-- your machine IP
+    return "http://192.168.16.114:8080"; // <-- your machine IP
   }
 
   // Fallback (rare platforms)
-  return "http://192.168.130.114:8080";
+  return "http://192.168.16.114:8080";
 };
 
 export default getBaseURL;
