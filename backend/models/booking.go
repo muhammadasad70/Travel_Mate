@@ -125,6 +125,31 @@ type Booking struct {
 	PricingModel  string    `json:"pricing_model"`
 	CreatedAt     time.Time `json:"created_at"`
 }
+type ServiceSummary struct {
+	ID             int      `json:"id"`
+	Title          string   `json:"title"`
+	City           string   `json:"city"`
+	ExperienceType string   `json:"experience_type"`
+	DurationHours  float64  `json:"duration_hours"`
+	PricingModel   string   `json:"pricing_model"`
+	PricePerPerson *float64 `json:"price_per_person,omitempty"`
+	PricePerGroup  *float64 `json:"price_per_group,omitempty"`
+}
+type BookingEnriched struct {
+	Id            int       `json:"id"`
+	ServiceId     int       `json:"service_id"`
+	VendorId      int       `json:"vendor_id"`
+	TravelerId    int       `json:"traveler_id"`
+	Status        string    `json:"status"`
+	ChosenDate    *string   `json:"chosen_date,omitempty"`
+	Participants  int       `json:"participants"`
+	Message       string    `json:"message"`
+	PriceSnapshot *float64  `json:"price_snapshot,omitempty"`
+	PricingModel  string    `json:"pricing_model"`
+	CreatedAt     time.Time `json:"created_at"`
+
+	Service ServiceSummary `json:"service"`
+}
 
 // Keep only ErrForbidden here; ErrNotFound comes from models/errors.go
 var ErrForbidden = errors.New("forbidden")
@@ -161,6 +186,39 @@ func ListTravelerBookings(uid int) ([]Booking, error) {
 			return nil, err
 		}
 		out = append(out, b)
+	}
+	return out, nil
+}
+func ListTravelerBookingsEnriched(uid int) ([]BookingEnriched, error) {
+	const q = `
+	SELECT
+	  b.id, b.service_id, b.vendor_id, b.traveler_id, b.status, b.chosen_date,
+	  b.participants, b.message, b.price_snapshot, b.pricing_model, b.created_at,
+	  s.id, s.title, s.city, s.experience_type, s.duration_hours, s.pricing_model,
+	  s.price_per_person, s.price_per_group
+	FROM cultural_service_bookings b
+	JOIN cultural_services s ON s.id = b.service_id
+	WHERE b.traveler_id = $1
+	ORDER BY b.created_at DESC`
+	rows, err := database.DB.Query(q, uid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []BookingEnriched
+	for rows.Next() {
+		var r BookingEnriched
+		if err := rows.Scan(
+			&r.Id, &r.ServiceId, &r.VendorId, &r.TravelerId, &r.Status, &r.ChosenDate,
+			&r.Participants, &r.Message, &r.PriceSnapshot, &r.PricingModel, &r.CreatedAt,
+			&r.Service.ID, &r.Service.Title, &r.Service.City, &r.Service.ExperienceType,
+			&r.Service.DurationHours, &r.Service.PricingModel,
+			&r.Service.PricePerPerson, &r.Service.PricePerGroup,
+		); err != nil {
+			return nil, err
+		}
+		out = append(out, r)
 	}
 	return out, nil
 }

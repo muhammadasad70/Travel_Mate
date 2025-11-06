@@ -381,6 +381,11 @@ CREATE TABLE IF NOT EXISTS cultural_service_bookings (
 CREATE INDEX IF NOT EXISTS ix_csb_vendor ON cultural_service_bookings(vendor_id, status, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_csb_traveler ON cultural_service_bookings(traveler_id, status, created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_csb_service  ON cultural_service_bookings(service_id);
+-- prevent same traveler booking the same service on the same date (if active)
+CREATE UNIQUE INDEX IF NOT EXISTS ux_csb_service_user_date
+ON cultural_service_bookings(service_id, traveler_id, chosen_date)
+WHERE status IN ('pending','confirmed') AND chosen_date IS NOT NULL;
+
 
 
 `

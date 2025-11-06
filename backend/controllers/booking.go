@@ -4,10 +4,12 @@ package controllers
 import (
 	"net/http"
 	"strings"
+	"time"
 
 	"travel_mate/backend/models"
 
 	"github.com/gin-gonic/gin"
+	"github.com/lib/pq"
 )
 
 type createBookingPayload struct {
@@ -26,11 +28,37 @@ func CreateBooking(c *gin.Context) {
 		return
 	}
 
+	// require a date (YYYY-MM-DD), because the rule is "not same service on same date"
+	if in.ChosenDate == nil || len(strings.TrimSpace(*in.ChosenDate)) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "chosen_date (YYYY-MM-DD) is required"})
+		return
+	}
+	if _, err := time.Parse("2006-01-02", strings.TrimSpace(*in.ChosenDate)); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "chosen_date must be YYYY-MM-DD"})
+		return
+	}
+
 	// fetch service to derive vendor/pricing snapshot
-	svc, err := models.GetCulturalServiceByID(in.ServiceId) // implement a simple public fetch by id in models (no user filter)
+	svc, err := models.GetCulturalServiceByID(in.ServiceId)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "service not found"})
 		return
+	}
+
+	// optional: if the service uses fixed_dates, ensure chosen_date is one of them
+	if svc.ScheduleType == "fixed_dates" {
+		cd := strings.TrimSpace(*in.ChosenDate)
+		ok := false
+		for _, d := range svc.FixedDates {
+			if d == cd {
+				ok = true
+				break
+			}
+		}
+		if !ok {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "selected date is not available for this experience"})
+			return
+		}
 	}
 
 	var snap *float64
@@ -52,7 +80,13 @@ func CreateBooking(c *gin.Context) {
 		PriceSnapshot: snap,
 		PricingModel:  svc.PricingModel,
 	}
+
 	if err := models.CreateBooking(&b); err != nil {
+		// if the DB’s unique index blocked a duplicate, return 409 with a friendly message
+		if pgErr, ok := err.(*pq.Error); ok && pgErr.Code == "23505" {
+			c.JSON(http.StatusConflict, gin.H{"error": "You already booked this service for that date."})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not create booking"})
 		return
 	}
@@ -61,7 +95,7 @@ func CreateBooking(c *gin.Context) {
 
 func ListTravelerBookings(c *gin.Context) {
 	uid := c.GetInt("user_id")
-	list, err := models.ListTravelerBookings(uid)
+	list, err := models.ListTravelerBookingsEnriched(uid)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed"})
 		return
