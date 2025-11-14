@@ -426,6 +426,8 @@ import ItinerariesHub from './screens/ItinerariesHub';
 import completeitinerrarydetail from "./screens/CrowdsourceItineraries/completeitinerrarydetail";
 import CommunityExplorer from "./screens/CrowdsourceItineraries/CommunityExplorerScreen";
 import ServicesHub from './screens/ServicesHub';
+import AIRecommendationsFormScreen from './screens/CrowdsourceItineraries/AIRecommendationsFormScreen';
+import SavedAIItinerariesScreen from './screens/CrowdsourceItineraries/SavedAIItinerariesScreen';
 
 /* Vendor Type Selection */
 import VendorTypeSelectionScreen from './screens/vendor/VendorTypeSelectionScreen';
@@ -543,7 +545,8 @@ export default function App() {
             <Stack.Screen name="CommunityExplorer" component={CommunityExplorer} />
             <Stack.Screen name="ServicesHub" component={ServicesHub} />
             <Stack.Screen name="CulturalServicesExplorerScreen" component={CulturalServicesExplorerScreen} />
-
+            <Stack.Screen name="AIRecommendationsFormScreen" component={AIRecommendationsFormScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="SavedAIItinerariesScreen" component={SavedAIItinerariesScreen} options={{ headerShown: false }} />
           </Stack.Navigator>
         </NavigationContainer>
       </SafeAreaProvider>
