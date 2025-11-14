@@ -72,6 +72,35 @@ CREATE TABLE IF NOT EXISTS itinerary_days (
   activities TEXT NOT NULL
 );
 
+-- AI Recommendations cache (simplified - no search history, no preferences)
+CREATE TABLE IF NOT EXISTS ai_recommendations (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    recommendations JSONB NOT NULL,
+    based_on_data JSONB,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    expires_at TIMESTAMPTZ NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ix_ai_recs_user ON ai_recommendations(user_id);
+CREATE INDEX IF NOT EXISTS ix_ai_recs_expires ON ai_recommendations(expires_at);
+
+CREATE TABLE IF NOT EXISTS saved_ai_itineraries (
+    id BIGSERIAL PRIMARY KEY,           -- ✅ BIGSERIAL (64-bit, matches other tables)
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    description TEXT,
+    city TEXT NOT NULL,
+    budget TEXT,
+    style TEXT,
+    duration TEXT,
+    highlights JSONB,
+    reasoning TEXT,
+    confidence TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS ix_saved_ai_itineraries_user ON saved_ai_itineraries(user_id);
+CREATE INDEX IF NOT EXISTS ix_saved_ai_itineraries_created ON saved_ai_itineraries(created_at DESC);
+
 -- user uploaded images (photos/videos)
 CREATE TABLE IF NOT EXISTS images (
   id BIGSERIAL PRIMARY KEY,

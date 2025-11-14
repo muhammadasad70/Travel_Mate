@@ -250,6 +250,7 @@ func main() {
 	// 7) Routes
 	routes.RegisterUserRoutes(router)
 	routes.RegisterItineraryRoutes(router)
+	routes.RegisterRecommendationRoutes(router)
 	routes.RegisterAssetRoutes(router)
 	routes.RegisterChatRoutes(router)
 	routes.RegisterPostRoutes(router)
