@@ -1,8 +1,10 @@
+// // //models/cultural_services.go
 // // package models
 
 // // import (
 // // 	"database/sql"
 // // 	"errors"
+// // 	"strconv"
 // // 	"time"
 
 // // 	"travel_mate/backend/database"
@@ -109,7 +111,7 @@
 // // 		m.UserId, m.Title, m.ExperienceType, m.Category, pq.Array(m.Tags), m.Description, m.City, m.MeetingPointLabel,
 // // 		m.ScheduleType, pq.Array(m.FixedDates), pq.Array(m.DaysOfWeek), m.StartTime, m.DurationHours, m.LeadTimeDays,
 // // 		m.GroupSizeMax, pq.Array(m.Languages),
-// // 		m.PricingModel, m.PricePerPerson, m.PricePerGroup, m.GroupIncludedSize, m.HostOffers, pq.ArrayPtr(m.TravelerCanOffer), m.ExchangeValueHint,
+// // 		m.PricingModel, m.PricePerPerson, m.PricePerGroup, m.GroupIncludedSize, m.HostOffers, pq.Array(m.TravelerCanOffer), m.ExchangeValueHint,
 // // 		pq.Array(m.Includes), pq.Array(m.Excludes), pq.Array(m.MaterialRequirements), m.AccessibilityNotes, m.AgeRestriction, m.CancellationPolicy,
 // // 	).Scan(&m.Id, &m.CreatedAt)
 // // }
@@ -134,13 +136,14 @@
 // // 	out := []CulturalService{}
 // // 	for rows.Next() {
 // // 		var m CulturalService
-// // 		var tags, fixed, dow, langs, includes, excludes, mats, traveler pq.StringArray
+// // 		var tags, fixed, dow, langs, includes, excludes, traveler pq.StringArray
 // // 		if err := rows.Scan(
 // // 			&m.Id, &m.UserId, &m.Title, &m.ExperienceType, &m.Category, &tags, &m.Description, &m.City, &m.MeetingPointLabel,
 // // 			&m.ScheduleType, &fixed, &dow, &m.StartTime, &m.DurationHours, &m.LeadTimeDays,
 // // 			&m.GroupSizeMax, &langs,
 // // 			&m.PricingModel, &m.PricePerPerson, &m.PricePerGroup, &m.GroupIncludedSize, &m.HostOffers, &traveler, &m.ExchangeValueHint,
-// // 			&includes, &excludes, &m.MaterialRequirements, &m.AccessibilityNotes, &m.AgeRestriction, &m.CancellationPolicy,
+// // 			&includes, &excludes, pq.Array(&m.MaterialRequirements), // <-- scan directly into slice
+// // 			&m.AccessibilityNotes, &m.AgeRestriction, &m.CancellationPolicy,
 // // 			&m.CreatedAt,
 // // 		); err != nil {
 // // 			return nil, err
@@ -170,13 +173,14 @@
 // // 		   created_at
 // // 	FROM cultural_services WHERE id=$1 AND user_id=$2`
 // // 	var m CulturalService
-// // 	var tags, fixed, dow, langs, includes, excludes, mats, traveler pq.StringArray
+// // 	var tags, fixed, dow, langs, includes, excludes, traveler pq.StringArray
 // // 	err := database.DB.QueryRow(q, id, userId).Scan(
 // // 		&m.Id, &m.UserId, &m.Title, &m.ExperienceType, &m.Category, &tags, &m.Description, &m.City, &m.MeetingPointLabel,
 // // 		&m.ScheduleType, &fixed, &dow, &m.StartTime, &m.DurationHours, &m.LeadTimeDays,
 // // 		&m.GroupSizeMax, &langs,
 // // 		&m.PricingModel, &m.PricePerPerson, &m.PricePerGroup, &m.GroupIncludedSize, &m.HostOffers, &traveler, &m.ExchangeValueHint,
-// // 		&includes, &excludes, &m.MaterialRequirements, &m.AccessibilityNotes, &m.AgeRestriction, &m.CancellationPolicy,
+// // 		&includes, &excludes, pq.Array(&m.MaterialRequirements), // <-- scan directly into slice
+// // 		&m.AccessibilityNotes, &m.AgeRestriction, &m.CancellationPolicy,
 // // 		&m.CreatedAt,
 // // 	)
 // // 	if err != nil {
@@ -220,7 +224,7 @@
 // // 		in.Title, in.ExperienceType, in.Category, pq.Array(in.Tags), in.Description, in.City, in.MeetingPointLabel,
 // // 		in.ScheduleType, pq.Array(in.FixedDates), pq.Array(in.DaysOfWeek), in.StartTime, in.DurationHours, in.LeadTimeDays,
 // // 		in.GroupSizeMax, pq.Array(in.Languages),
-// // 		in.PricingModel, in.PricePerPerson, in.PricePerGroup, in.GroupIncludedSize, in.HostOffers, pq.ArrayPtr(in.TravelerCanOffer), in.ExchangeValueHint,
+// // 		in.PricingModel, in.PricePerPerson, in.PricePerGroup, in.GroupIncludedSize, in.HostOffers, pq.Array(in.TravelerCanOffer), in.ExchangeValueHint,
 // // 		pq.Array(in.Includes), pq.Array(in.Excludes), pq.Array(in.MaterialRequirements), in.AccessibilityNotes, in.AgeRestriction, in.CancellationPolicy,
 // // 		id, userId,
 // // 	)
@@ -253,99 +257,99 @@
 // // 	}
 
 // // 	if p.Title != nil {
-// // 		add("title=$"+itoa(idx), *p.Title)
+// // 		add("title=$"+strconv.Itoa(idx), *p.Title)
 // // 	}
 // // 	if p.ExperienceType != nil {
-// // 		add("experience_type=$"+itoa(idx), *p.ExperienceType)
+// // 		add("experience_type=$"+strconv.Itoa(idx), *p.ExperienceType)
 // // 	}
 // // 	if p.Category != nil {
-// // 		add("category=$"+itoa(idx), *p.Category)
+// // 		add("category=$"+strconv.Itoa(idx), *p.Category)
 // // 	}
 // // 	if p.Tags != nil {
-// // 		add("tags=$"+itoa(idx), pq.Array(*p.Tags))
+// // 		add("tags=$"+strconv.Itoa(idx), pq.Array(*p.Tags))
 // // 	}
 // // 	if p.Description != nil {
-// // 		add("description=$"+itoa(idx), *p.Description)
+// // 		add("description=$"+strconv.Itoa(idx), *p.Description)
 // // 	}
 // // 	if p.City != nil {
-// // 		add("city=$"+itoa(idx), *p.City)
+// // 		add("city=$"+strconv.Itoa(idx), *p.City)
 // // 	}
 // // 	if p.MeetingPointLabel != nil {
-// // 		add("meeting_point_label=$"+itoa(idx), *p.MeetingPointLabel)
+// // 		add("meeting_point_label=$"+strconv.Itoa(idx), *p.MeetingPointLabel)
 // // 	}
 
 // // 	if p.ScheduleType != nil {
-// // 		add("schedule_type=$"+itoa(idx), *p.ScheduleType)
+// // 		add("schedule_type=$"+strconv.Itoa(idx), *p.ScheduleType)
 // // 	}
 // // 	if p.FixedDates != nil {
-// // 		add("fixed_dates=$"+itoa(idx), pq.Array(*p.FixedDates))
+// // 		add("fixed_dates=$"+strconv.Itoa(idx), pq.Array(*p.FixedDates))
 // // 	}
 // // 	if p.DaysOfWeek != nil {
-// // 		add("days_of_week=$"+itoa(idx), pq.Array(*p.DaysOfWeek))
+// // 		add("days_of_week=$"+strconv.Itoa(idx), pq.Array(*p.DaysOfWeek))
 // // 	}
 // // 	if p.StartTime != nil {
-// // 		add("start_time=$"+itoa(idx), *p.StartTime)
+// // 		add("start_time=$"+strconv.Itoa(idx), *p.StartTime)
 // // 	}
 // // 	if p.DurationHours != nil {
-// // 		add("duration_hours=$"+itoa(idx), *p.DurationHours)
+// // 		add("duration_hours=$"+strconv.Itoa(idx), *p.DurationHours)
 // // 	}
 // // 	if p.LeadTimeDays != nil {
-// // 		add("lead_time_days=$"+itoa(idx), *p.LeadTimeDays)
+// // 		add("lead_time_days=$"+strconv.Itoa(idx), *p.LeadTimeDays)
 // // 	}
 
 // // 	if p.GroupSizeMax != nil {
-// // 		add("group_size_max=$"+itoa(idx), *p.GroupSizeMax)
+// // 		add("group_size_max=$"+strconv.Itoa(idx), *p.GroupSizeMax)
 // // 	}
 // // 	if p.Languages != nil {
-// // 		add("languages=$"+itoa(idx), pq.Array(*p.Languages))
+// // 		add("languages=$"+strconv.Itoa(idx), pq.Array(*p.Languages))
 // // 	}
 
 // // 	if p.PricingModel != nil {
-// // 		add("pricing_model=$"+itoa(idx), *p.PricingModel)
+// // 		add("pricing_model=$"+strconv.Itoa(idx), *p.PricingModel)
 // // 	}
 // // 	if p.PricePerPerson != nil {
-// // 		add("price_per_person=$"+itoa(idx), *p.PricePerPerson)
+// // 		add("price_per_person=$"+strconv.Itoa(idx), *p.PricePerPerson)
 // // 	}
 // // 	if p.PricePerGroup != nil {
-// // 		add("price_per_group=$"+itoa(idx), *p.PricePerGroup)
+// // 		add("price_per_group=$"+strconv.Itoa(idx), *p.PricePerGroup)
 // // 	}
 // // 	if p.GroupIncludedSize != nil {
-// // 		add("group_included_size=$"+itoa(idx), *p.GroupIncludedSize)
+// // 		add("group_included_size=$"+strconv.Itoa(idx), *p.GroupIncludedSize)
 // // 	}
 // // 	if p.HostOffers != nil {
-// // 		add("host_offers=$"+itoa(idx), *p.HostOffers)
+// // 		add("host_offers=$"+strconv.Itoa(idx), *p.HostOffers)
 // // 	}
 // // 	if p.TravelerCanOffer != nil {
-// // 		add("traveler_can_offer=$"+itoa(idx), pq.Array(*p.TravelerCanOffer))
+// // 		add("traveler_can_offer=$"+strconv.Itoa(idx), pq.Array(*p.TravelerCanOffer))
 // // 	}
 // // 	if p.ExchangeValueHint != nil {
-// // 		add("exchange_value_hint=$"+itoa(idx), *p.ExchangeValueHint)
+// // 		add("exchange_value_hint=$"+strconv.Itoa(idx), *p.ExchangeValueHint)
 // // 	}
 
 // // 	if p.Includes != nil {
-// // 		add("includes=$"+itoa(idx), pq.Array(*p.Includes))
+// // 		add("includes=$"+strconv.Itoa(idx), pq.Array(*p.Includes))
 // // 	}
 // // 	if p.Excludes != nil {
-// // 		add("excludes=$"+itoa(idx), pq.Array(*p.Excludes))
+// // 		add("excludes=$"+strconv.Itoa(idx), pq.Array(*p.Excludes))
 // // 	}
 // // 	if p.MaterialRequirements != nil {
-// // 		add("material_requirements=$"+itoa(idx), pq.Array(*p.MaterialRequirements))
+// // 		add("material_requirements=$"+strconv.Itoa(idx), pq.Array(*p.MaterialRequirements))
 // // 	}
 // // 	if p.AccessibilityNotes != nil {
-// // 		add("accessibility_notes=$"+itoa(idx), *p.AccessibilityNotes)
+// // 		add("accessibility_notes=$"+strconv.Itoa(idx), *p.AccessibilityNotes)
 // // 	}
 // // 	if p.AgeRestriction != nil {
-// // 		add("age_restriction=$"+itoa(idx), *p.AgeRestriction)
+// // 		add("age_restriction=$"+strconv.Itoa(idx), *p.AgeRestriction)
 // // 	}
 // // 	if p.CancellationPolicy != nil {
-// // 		add("cancellation_policy=$"+itoa(idx), *p.CancellationPolicy)
+// // 		add("cancellation_policy=$"+strconv.Itoa(idx), *p.CancellationPolicy)
 // // 	}
 
 // // 	if len(args) == 0 {
 // // 		return GetCulturalServiceByIDForUser(userId, id)
 // // 	}
 
-// // 	q += " WHERE id=$" + itoa(idx) + " AND user_id=$" + itoa(idx+1)
+// // 	q += " WHERE id=$" + strconv.Itoa(idx) + " AND user_id=$" + strconv.Itoa(idx+1)
 // // 	args = append(args, id, userId)
 
 // // 	if _, err := database.DB.Exec(q, args...); err != nil {
@@ -366,22 +370,7 @@
 // // 	return nil
 // // }
 
-// // /* tiny */
-// // func itoa(i int) string {
-// // 	const d = "0123456789"
-// // 	if i == 0 {
-// // 		return "0"
-// // 	}
-// // 	var b [20]byte
-// // 	p := len(b)
-// // 	for i > 0 {
-// // 		p--
-// // 		b[p] = d[i%10]
-// // 		i /= 10
-// // 	}
-// // 	return string(b[p:])
-// // }
-
+// // models/cultural_services.go
 // package models
 
 // import (
@@ -473,44 +462,54 @@
 // 	CancellationPolicy   *string
 // }
 
+// /* ===== helpers ===== */
+
+// // sliceOrNil lets us safely pass nullable *[]string to pq.Array for Exec/QueryRow.
+// // When inserting/updating, pq.Array expects a concrete []string (or nil), not a *[]string.
+// func sliceOrNil(p *[]string) []string {
+// 	if p == nil {
+// 		return nil
+// 	}
+// 	return *p
+// }
+
 // /* ===== DB ===== */
 
 // func CreateCulturalService(m *CulturalService) error {
 // 	const q = `
-// 	INSERT INTO cultural_services
-// 	(user_id, title, experience_type, category, tags, description, city, meeting_point_label,
-// 	 schedule_type, fixed_dates, days_of_week, start_time, duration_hours, lead_time_days,
-// 	 group_size_max, languages,
-// 	 pricing_model, price_per_person, price_per_group, group_included_size, host_offers, traveler_can_offer, exchange_value_hint,
-// 	 includes, excludes, material_requirements, accessibility_notes, age_restriction, cancellation_policy)
-// 	VALUES
-// 	($1,$2,$3,$4,$5,$6,$7,$8,
-// 	 $9,$10,$11,$12,$13,$14,
-// 	 $15,$16,
-// 	 $17,$18,$19,$20,$21,$22,$23,
-// 	 $24,$25,$26,$27,$28,$29)
-// 	RETURNING id, created_at`
+//     INSERT INTO cultural_services
+//     (user_id, title, experience_type, category, tags, description, city, meeting_point_label,
+//      schedule_type, fixed_dates, days_of_week, start_time, duration_hours, lead_time_days,
+//      group_size_max, languages,
+//      pricing_model, price_per_person, price_per_group, group_included_size, host_offers, traveler_can_offer, exchange_value_hint,
+//      includes, excludes, material_requirements, accessibility_notes, age_restriction, cancellation_policy)
+//     VALUES
+//     ($1,$2,$3,$4,$5,$6,$7,$8,
+//      $9,$10,$11,$12,$13,$14,
+//      $15,$16,
+//      $17,$18,$19,$20,$21,$22,$23,
+//      $24,$25,$26,$27,$28,$29)
+//     RETURNING id, created_at`
 // 	return database.DB.QueryRow(q,
 // 		m.UserId, m.Title, m.ExperienceType, m.Category, pq.Array(m.Tags), m.Description, m.City, m.MeetingPointLabel,
 // 		m.ScheduleType, pq.Array(m.FixedDates), pq.Array(m.DaysOfWeek), m.StartTime, m.DurationHours, m.LeadTimeDays,
 // 		m.GroupSizeMax, pq.Array(m.Languages),
-// 		m.PricingModel, m.PricePerPerson, m.PricePerGroup, m.GroupIncludedSize, m.HostOffers, pq.Array(m.TravelerCanOffer), m.ExchangeValueHint,
+// 		m.PricingModel, m.PricePerPerson, m.PricePerGroup, m.GroupIncludedSize, m.HostOffers, pq.Array(sliceOrNil(m.TravelerCanOffer)), m.ExchangeValueHint,
 // 		pq.Array(m.Includes), pq.Array(m.Excludes), pq.Array(m.MaterialRequirements), m.AccessibilityNotes, m.AgeRestriction, m.CancellationPolicy,
 // 	).Scan(&m.Id, &m.CreatedAt)
 // }
 
 // func GetCulturalServicesByUser(userId int) ([]CulturalService, error) {
 // 	const q = `
-// 	SELECT id, user_id, title, experience_type, category, tags, description, city, meeting_point_label,
-// 	       schedule_type, fixed_dates, days_of_week, start_time, duration_hours, lead_time_days,
-// 		   group_size_max, languages,
-// 		   pricing_model, price_per_person, price_per_group, group_included_size, host_offers, traveler_can_offer, exchange_value_hint,
-// 		   includes, excludes, material_requirements, accessibility_notes, age_restriction, cancellation_policy,
-// 		   created_at
-// 	FROM cultural_services
-// 	WHERE user_id=$1
-// 	ORDER BY created_at DESC`
-
+//     SELECT id, user_id, title, experience_type, category, tags, description, city, meeting_point_label,
+//            schedule_type, fixed_dates, days_of_week, start_time, duration_hours, lead_time_days,
+//            group_size_max, languages,
+//            pricing_model, price_per_person, price_per_group, group_included_size, host_offers, traveler_can_offer, exchange_value_hint,
+//            includes, excludes, material_requirements, accessibility_notes, age_restriction, cancellation_policy,
+//            created_at
+//     FROM cultural_services
+//     WHERE user_id=$1
+//     ORDER BY created_at DESC`
 // 	rows, err := database.DB.Query(q, userId)
 // 	if err != nil {
 // 		return nil, err
@@ -521,13 +520,12 @@
 // 	for rows.Next() {
 // 		var m CulturalService
 // 		var tags, fixed, dow, langs, includes, excludes, traveler pq.StringArray
-
 // 		if err := rows.Scan(
 // 			&m.Id, &m.UserId, &m.Title, &m.ExperienceType, &m.Category, &tags, &m.Description, &m.City, &m.MeetingPointLabel,
 // 			&m.ScheduleType, &fixed, &dow, &m.StartTime, &m.DurationHours, &m.LeadTimeDays,
 // 			&m.GroupSizeMax, &langs,
 // 			&m.PricingModel, &m.PricePerPerson, &m.PricePerGroup, &m.GroupIncludedSize, &m.HostOffers, &traveler, &m.ExchangeValueHint,
-// 			&includes, &excludes, pq.Array(&m.MaterialRequirements), // ✅ change here
+// 			&includes, &excludes, pq.Array(&m.MaterialRequirements), // <-- scan directly into slice
 // 			&m.AccessibilityNotes, &m.AgeRestriction, &m.CancellationPolicy,
 // 			&m.CreatedAt,
 // 		); err != nil {
@@ -550,22 +548,21 @@
 
 // func GetCulturalServiceByIDForUser(userId, id int) (CulturalService, error) {
 // 	const q = `
-// 	SELECT id, user_id, title, experience_type, category, tags, description, city, meeting_point_label,
-// 	       schedule_type, fixed_dates, days_of_week, start_time, duration_hours, lead_time_days,
-// 		   group_size_max, languages,
-// 		   pricing_model, price_per_person, price_per_group, group_included_size, host_offers, traveler_can_offer, exchange_value_hint,
-// 		   includes, excludes, material_requirements, accessibility_notes, age_restriction, cancellation_policy,
-// 		   created_at
-// 	FROM cultural_services WHERE id=$1 AND user_id=$2`
+//     SELECT id, user_id, title, experience_type, category, tags, description, city, meeting_point_label,
+//            schedule_type, fixed_dates, days_of_week, start_time, duration_hours, lead_time_days,
+//            group_size_max, languages,
+//            pricing_model, price_per_person, price_per_group, group_included_size, host_offers, traveler_can_offer, exchange_value_hint,
+//            includes, excludes, material_requirements, accessibility_notes, age_restriction, cancellation_policy,
+//            created_at
+//     FROM cultural_services WHERE id=$1 AND user_id=$2`
 // 	var m CulturalService
 // 	var tags, fixed, dow, langs, includes, excludes, traveler pq.StringArray
-
 // 	err := database.DB.QueryRow(q, id, userId).Scan(
 // 		&m.Id, &m.UserId, &m.Title, &m.ExperienceType, &m.Category, &tags, &m.Description, &m.City, &m.MeetingPointLabel,
 // 		&m.ScheduleType, &fixed, &dow, &m.StartTime, &m.DurationHours, &m.LeadTimeDays,
 // 		&m.GroupSizeMax, &langs,
 // 		&m.PricingModel, &m.PricePerPerson, &m.PricePerGroup, &m.GroupIncludedSize, &m.HostOffers, &traveler, &m.ExchangeValueHint,
-// 		&includes, &excludes, pq.Array(&m.MaterialRequirements), // ✅ change here
+// 		&includes, &excludes, pq.Array(&m.MaterialRequirements), // <-- scan directly into slice
 // 		&m.AccessibilityNotes, &m.AgeRestriction, &m.CancellationPolicy,
 // 		&m.CreatedAt,
 // 	)
@@ -599,18 +596,18 @@
 // 	}
 
 // 	const q = `
-// 	UPDATE cultural_services SET
-// 	  title=$1, experience_type=$2, category=$3, tags=$4, description=$5, city=$6, meeting_point_label=$7,
-// 	  schedule_type=$8, fixed_dates=$9, days_of_week=$10, start_time=$11, duration_hours=$12, lead_time_days=$13,
-// 	  group_size_max=$14, languages=$15,
-// 	  pricing_model=$16, price_per_person=$17, price_per_group=$18, group_included_size=$19, host_offers=$20, traveler_can_offer=$21, exchange_value_hint=$22,
-// 	  includes=$23, excludes=$24, material_requirements=$25, accessibility_notes=$26, age_restriction=$27, cancellation_policy=$28
-// 	WHERE id=$29 AND user_id=$30`
+//     UPDATE cultural_services SET
+//       title=$1, experience_type=$2, category=$3, tags=$4, description=$5, city=$6, meeting_point_label=$7,
+//       schedule_type=$8, fixed_dates=$9, days_of_week=$10, start_time=$11, duration_hours=$12, lead_time_days=$13,
+//       group_size_max=$14, languages=$15,
+//       pricing_model=$16, price_per_person=$17, price_per_group=$18, group_included_size=$19, host_offers=$20, traveler_can_offer=$21, exchange_value_hint=$22,
+//       includes=$23, excludes=$24, material_requirements=$25, accessibility_notes=$26, age_restriction=$27, cancellation_policy=$28
+//     WHERE id=$29 AND user_id=$30`
 // 	_, err := database.DB.Exec(q,
 // 		in.Title, in.ExperienceType, in.Category, pq.Array(in.Tags), in.Description, in.City, in.MeetingPointLabel,
 // 		in.ScheduleType, pq.Array(in.FixedDates), pq.Array(in.DaysOfWeek), in.StartTime, in.DurationHours, in.LeadTimeDays,
 // 		in.GroupSizeMax, pq.Array(in.Languages),
-// 		in.PricingModel, in.PricePerPerson, in.PricePerGroup, in.GroupIncludedSize, in.HostOffers, pq.Array(in.TravelerCanOffer), in.ExchangeValueHint,
+// 		in.PricingModel, in.PricePerPerson, in.PricePerGroup, in.GroupIncludedSize, in.HostOffers, pq.Array(sliceOrNil(in.TravelerCanOffer)), in.ExchangeValueHint,
 // 		pq.Array(in.Includes), pq.Array(in.Excludes), pq.Array(in.MaterialRequirements), in.AccessibilityNotes, in.AgeRestriction, in.CancellationPolicy,
 // 		id, userId,
 // 	)
@@ -724,9 +721,19 @@
 // 	if p.AccessibilityNotes != nil {
 // 		add("accessibility_notes=$"+strconv.Itoa(idx), *p.AccessibilityNotes)
 // 	}
+
+// 	// SAFE nulling / setting for **string
 // 	if p.AgeRestriction != nil {
-// 		add("age_restriction=$"+strconv.Itoa(idx), *p.AgeRestriction)
+// 		if *p.AgeRestriction == nil {
+// 			if len(args) > 0 {
+// 				q += ", "
+// 			}
+// 			q += "age_restriction=NULL"
+// 		} else {
+// 			add("age_restriction=$"+strconv.Itoa(idx), **p.AgeRestriction)
+// 		}
 // 	}
+
 // 	if p.CancellationPolicy != nil {
 // 		add("cancellation_policy=$"+strconv.Itoa(idx), *p.CancellationPolicy)
 // 	}
@@ -756,6 +763,7 @@
 // 	return nil
 // }
 
+// models/cultural_services.go
 package models
 
 import (
@@ -847,43 +855,54 @@ type PartialCulturalService struct {
 	CancellationPolicy   *string
 }
 
+/* ===== helpers ===== */
+
+// sliceOrNil lets us safely pass nullable *[]string to pq.Array for Exec/QueryRow.
+// When inserting/updating, pq.Array expects a concrete []string (or nil), not a *[]string.
+func sliceOrNil(p *[]string) []string {
+	if p == nil {
+		return nil
+	}
+	return *p
+}
+
 /* ===== DB ===== */
 
 func CreateCulturalService(m *CulturalService) error {
 	const q = `
-	INSERT INTO cultural_services
-	(user_id, title, experience_type, category, tags, description, city, meeting_point_label,
-	 schedule_type, fixed_dates, days_of_week, start_time, duration_hours, lead_time_days,
-	 group_size_max, languages,
-	 pricing_model, price_per_person, price_per_group, group_included_size, host_offers, traveler_can_offer, exchange_value_hint,
-	 includes, excludes, material_requirements, accessibility_notes, age_restriction, cancellation_policy)
-	VALUES
-	($1,$2,$3,$4,$5,$6,$7,$8,
-	 $9,$10,$11,$12,$13,$14,
-	 $15,$16,
-	 $17,$18,$19,$20,$21,$22,$23,
-	 $24,$25,$26,$27,$28,$29)
-	RETURNING id, created_at`
+    INSERT INTO cultural_services
+    (user_id, title, experience_type, category, tags, description, city, meeting_point_label,
+     schedule_type, fixed_dates, days_of_week, start_time, duration_hours, lead_time_days,
+     group_size_max, languages,
+     pricing_model, price_per_person, price_per_group, group_included_size, host_offers, traveler_can_offer, exchange_value_hint,
+     includes, excludes, material_requirements, accessibility_notes, age_restriction, cancellation_policy)
+    VALUES
+    ($1,$2,$3,$4,$5,$6,$7,$8,
+     $9,$10,$11,$12,$13,$14,
+     $15,$16,
+     $17,$18,$19,$20,$21,$22,$23,
+     $24,$25,$26,$27,$28,$29)
+    RETURNING id, created_at`
 	return database.DB.QueryRow(q,
 		m.UserId, m.Title, m.ExperienceType, m.Category, pq.Array(m.Tags), m.Description, m.City, m.MeetingPointLabel,
 		m.ScheduleType, pq.Array(m.FixedDates), pq.Array(m.DaysOfWeek), m.StartTime, m.DurationHours, m.LeadTimeDays,
 		m.GroupSizeMax, pq.Array(m.Languages),
-		m.PricingModel, m.PricePerPerson, m.PricePerGroup, m.GroupIncludedSize, m.HostOffers, pq.Array(m.TravelerCanOffer), m.ExchangeValueHint,
+		m.PricingModel, m.PricePerPerson, m.PricePerGroup, m.GroupIncludedSize, m.HostOffers, pq.Array(sliceOrNil(m.TravelerCanOffer)), m.ExchangeValueHint,
 		pq.Array(m.Includes), pq.Array(m.Excludes), pq.Array(m.MaterialRequirements), m.AccessibilityNotes, m.AgeRestriction, m.CancellationPolicy,
 	).Scan(&m.Id, &m.CreatedAt)
 }
 
 func GetCulturalServicesByUser(userId int) ([]CulturalService, error) {
 	const q = `
-	SELECT id, user_id, title, experience_type, category, tags, description, city, meeting_point_label,
-	       schedule_type, fixed_dates, days_of_week, start_time, duration_hours, lead_time_days,
-		   group_size_max, languages,
-		   pricing_model, price_per_person, price_per_group, group_included_size, host_offers, traveler_can_offer, exchange_value_hint,
-		   includes, excludes, material_requirements, accessibility_notes, age_restriction, cancellation_policy,
-		   created_at
-	FROM cultural_services
-	WHERE user_id=$1
-	ORDER BY created_at DESC`
+    SELECT id, user_id, title, experience_type, category, tags, description, city, meeting_point_label,
+           schedule_type, fixed_dates, days_of_week, start_time, duration_hours, lead_time_days,
+           group_size_max, languages,
+           pricing_model, price_per_person, price_per_group, group_included_size, host_offers, traveler_can_offer, exchange_value_hint,
+           includes, excludes, material_requirements, accessibility_notes, age_restriction, cancellation_policy,
+           created_at
+    FROM cultural_services
+    WHERE user_id=$1
+    ORDER BY created_at DESC`
 	rows, err := database.DB.Query(q, userId)
 	if err != nil {
 		return nil, err
@@ -922,13 +941,13 @@ func GetCulturalServicesByUser(userId int) ([]CulturalService, error) {
 
 func GetCulturalServiceByIDForUser(userId, id int) (CulturalService, error) {
 	const q = `
-	SELECT id, user_id, title, experience_type, category, tags, description, city, meeting_point_label,
-	       schedule_type, fixed_dates, days_of_week, start_time, duration_hours, lead_time_days,
-		   group_size_max, languages,
-		   pricing_model, price_per_person, price_per_group, group_included_size, host_offers, traveler_can_offer, exchange_value_hint,
-		   includes, excludes, material_requirements, accessibility_notes, age_restriction, cancellation_policy,
-		   created_at
-	FROM cultural_services WHERE id=$1 AND user_id=$2`
+    SELECT id, user_id, title, experience_type, category, tags, description, city, meeting_point_label,
+           schedule_type, fixed_dates, days_of_week, start_time, duration_hours, lead_time_days,
+           group_size_max, languages,
+           pricing_model, price_per_person, price_per_group, group_included_size, host_offers, traveler_can_offer, exchange_value_hint,
+           includes, excludes, material_requirements, accessibility_notes, age_restriction, cancellation_policy,
+           created_at
+    FROM cultural_services WHERE id=$1 AND user_id=$2`
 	var m CulturalService
 	var tags, fixed, dow, langs, includes, excludes, traveler pq.StringArray
 	err := database.DB.QueryRow(q, id, userId).Scan(
@@ -970,18 +989,18 @@ func UpdateCulturalServiceFull(userId, id int, in CulturalService) (CulturalServ
 	}
 
 	const q = `
-	UPDATE cultural_services SET
-	  title=$1, experience_type=$2, category=$3, tags=$4, description=$5, city=$6, meeting_point_label=$7,
-	  schedule_type=$8, fixed_dates=$9, days_of_week=$10, start_time=$11, duration_hours=$12, lead_time_days=$13,
-	  group_size_max=$14, languages=$15,
-	  pricing_model=$16, price_per_person=$17, price_per_group=$18, group_included_size=$19, host_offers=$20, traveler_can_offer=$21, exchange_value_hint=$22,
-	  includes=$23, excludes=$24, material_requirements=$25, accessibility_notes=$26, age_restriction=$27, cancellation_policy=$28
-	WHERE id=$29 AND user_id=$30`
+    UPDATE cultural_services SET
+      title=$1, experience_type=$2, category=$3, tags=$4, description=$5, city=$6, meeting_point_label=$7,
+      schedule_type=$8, fixed_dates=$9, days_of_week=$10, start_time=$11, duration_hours=$12, lead_time_days=$13,
+      group_size_max=$14, languages=$15,
+      pricing_model=$16, price_per_person=$17, price_per_group=$18, group_included_size=$19, host_offers=$20, traveler_can_offer=$21, exchange_value_hint=$22,
+      includes=$23, excludes=$24, material_requirements=$25, accessibility_notes=$26, age_restriction=$27, cancellation_policy=$28
+    WHERE id=$29 AND user_id=$30`
 	_, err := database.DB.Exec(q,
 		in.Title, in.ExperienceType, in.Category, pq.Array(in.Tags), in.Description, in.City, in.MeetingPointLabel,
 		in.ScheduleType, pq.Array(in.FixedDates), pq.Array(in.DaysOfWeek), in.StartTime, in.DurationHours, in.LeadTimeDays,
 		in.GroupSizeMax, pq.Array(in.Languages),
-		in.PricingModel, in.PricePerPerson, in.PricePerGroup, in.GroupIncludedSize, in.HostOffers, pq.Array(in.TravelerCanOffer), in.ExchangeValueHint,
+		in.PricingModel, in.PricePerPerson, in.PricePerGroup, in.GroupIncludedSize, in.HostOffers, pq.Array(sliceOrNil(in.TravelerCanOffer)), in.ExchangeValueHint,
 		pq.Array(in.Includes), pq.Array(in.Excludes), pq.Array(in.MaterialRequirements), in.AccessibilityNotes, in.AgeRestriction, in.CancellationPolicy,
 		id, userId,
 	)
@@ -1095,9 +1114,19 @@ func UpdateCulturalServicePartial(userId, id int, p PartialCulturalService) (Cul
 	if p.AccessibilityNotes != nil {
 		add("accessibility_notes=$"+strconv.Itoa(idx), *p.AccessibilityNotes)
 	}
+
+	// SAFE nulling / setting for **string
 	if p.AgeRestriction != nil {
-		add("age_restriction=$"+strconv.Itoa(idx), *p.AgeRestriction)
+		if *p.AgeRestriction == nil {
+			if len(args) > 0 {
+				q += ", "
+			}
+			q += "age_restriction=NULL"
+		} else {
+			add("age_restriction=$"+strconv.Itoa(idx), **p.AgeRestriction)
+		}
 	}
+
 	if p.CancellationPolicy != nil {
 		add("cancellation_policy=$"+strconv.Itoa(idx), *p.CancellationPolicy)
 	}
