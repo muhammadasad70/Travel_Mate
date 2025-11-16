@@ -1,3 +1,5 @@
+
+
 // // screens/vendor/VendorNotifications.js
 // import React, { useState, useEffect, useCallback } from 'react';
 // import {
@@ -13,17 +15,25 @@
 // import { Feather } from '@expo/vector-icons';
 // import axios from 'axios';
 // import AsyncStorage from '@react-native-async-storage/async-storage';
-// import getBaseURL from '../../config/env'; // ✅ Import your config
+// import getBaseURL from '../../config/env';
 
-// const API_URL = getBaseURL().replace(/\/+$/, ''); // ✅ Use your existing config
+// const API_URL = getBaseURL().replace(/\/+$/, '');
 
-// // Rest of the code remains the same...
+// // ✅ Token helper (matching your other files)
+// const TOKEN_KEYS = ['token', 'auth_token', 'jwt', 'access_token', 'AUTH_TOKEN', 'userToken'];
+// const getAuthToken = async () => {
+//   for (const k of TOKEN_KEYS) {
+//     const v = await AsyncStorage.getItem(k);
+//     if (v) return v;
+//   }
+//   return null;
+// };
 
 // export default function VendorNotifications() {
 //   const [notifications, setNotifications] = useState([]);
 //   const [loading, setLoading] = useState(true);
 //   const [refreshing, setRefreshing] = useState(false);
-//   const [filter, setFilter] = useState('all'); // 'all' or 'unread'
+//   const [filter, setFilter] = useState('all');
 
 //   useEffect(() => {
 //     fetchNotifications();
@@ -32,20 +42,28 @@
 //   const fetchNotifications = async () => {
 //     try {
 //       setLoading(true);
-//       const token = await AsyncStorage.getItem('token');
+//       const token = await getAuthToken(); // ✅ Use token helper
       
+//       if (!token) {
+//         Alert.alert('Error', 'Please log in again');
+//         return;
+//       }
+
 //       const url = filter === 'unread' 
 //         ? `${API_URL}/notifications?unread=true` 
 //         : `${API_URL}/notifications?limit=50`;
 
 //       const response = await axios.get(url, {
 //         headers: { Authorization: `Bearer ${token}` },
+//         timeout: 10000, // ✅ Add timeout
 //       });
 
 //       setNotifications(response.data || []);
 //     } catch (error) {
 //       console.error('Error fetching notifications:', error);
-//       Alert.alert('Error', 'Failed to load notifications');
+//       if (error.code !== 'ECONNABORTED') {
+//         Alert.alert('Error', 'Failed to load notifications');
+//       }
 //     } finally {
 //       setLoading(false);
 //       setRefreshing(false);
@@ -59,7 +77,7 @@
 
 //   const markAsRead = async (notificationId) => {
 //     try {
-//       const token = await AsyncStorage.getItem('token');
+//       const token = await getAuthToken();
       
 //       await axios.patch(
 //         `${API_URL}/notifications/${notificationId}/read`,
@@ -67,7 +85,6 @@
 //         { headers: { Authorization: `Bearer ${token}` } }
 //       );
 
-//       // Update local state
 //       setNotifications((prev) =>
 //         prev.map((n) =>
 //           n.id === notificationId ? { ...n, is_read: true } : n
@@ -80,7 +97,7 @@
 
 //   const markAllAsRead = async () => {
 //     try {
-//       const token = await AsyncStorage.getItem('token');
+//       const token = await getAuthToken();
       
 //       await axios.patch(
 //         `${API_URL}/notifications/read-all`,
@@ -88,7 +105,6 @@
 //         { headers: { Authorization: `Bearer ${token}` } }
 //       );
 
-//       // Update local state
 //       setNotifications((prev) =>
 //         prev.map((n) => ({ ...n, is_read: true }))
 //       );
@@ -102,7 +118,7 @@
 
 //   const deleteNotification = async (notificationId) => {
 //     try {
-//       const token = await AsyncStorage.getItem('token');
+//       const token = await getAuthToken();
       
 //       await axios.delete(
 //         `${API_URL}/notifications/${notificationId}`,
@@ -119,12 +135,6 @@
 //   const handleNotificationPress = (notification) => {
 //     if (!notification.is_read) {
 //       markAsRead(notification.id);
-//     }
-    
-//     // Navigate based on notification type
-//     if (notification.related_type === 'booking') {
-//       // You can add navigation logic here
-//       // navigation.navigate('RequestDetails', { bookingId: notification.related_id });
 //     }
 //   };
 
@@ -171,12 +181,10 @@
 //         activeOpacity={0.7}
 //       >
 //         <View style={styles.notificationContent}>
-//           {/* Icon */}
 //           <View style={[styles.iconContainer, { backgroundColor: `${icon.color}15` }]}>
 //             <Feather name={icon.name} size={20} color={icon.color} />
 //           </View>
 
-//           {/* Content */}
 //           <View style={styles.textContainer}>
 //             <View style={styles.titleRow}>
 //               {!item.is_read && <View style={styles.unreadDot} />}
@@ -186,7 +194,6 @@
 //             <Text style={styles.time}>{formatTime(item.created_at)}</Text>
 //           </View>
 
-//           {/* Actions */}
 //           <View style={styles.actions}>
 //             {!item.is_read && (
 //               <TouchableOpacity
@@ -231,13 +238,13 @@
 //     return (
 //       <View style={styles.centerContainer}>
 //         <ActivityIndicator size="large" color="#3B82F6" />
+//         <Text style={styles.loadingText}>Loading notifications...</Text>
 //       </View>
 //     );
 //   }
 
 //   return (
 //     <View style={styles.container}>
-//       {/* Header */}
 //       <View style={styles.header}>
 //         <View style={styles.filterContainer}>
 //           <TouchableOpacity
@@ -269,7 +276,8 @@
 //                 filter === 'unread' && styles.filterTextActive,
 //               ]}
 //             >
-//               Unread {unreadCount > 0 && `(${unreadCount})`}
+//               {/* ✅ Fixed: Wrap in Text */}
+//               Unread {unreadCount > 0 && <Text>({unreadCount})</Text>}
 //             </Text>
 //           </TouchableOpacity>
 //         </View>
@@ -284,7 +292,6 @@
 //         )}
 //       </View>
 
-//       {/* Notifications List */}
 //       <FlatList
 //         data={notifications}
 //         renderItem={renderNotification}
@@ -316,6 +323,12 @@
 //     flex: 1,
 //     justifyContent: 'center',
 //     alignItems: 'center',
+//     gap: 12, // ✅ Added gap
+//   },
+//   loadingText: { // ✅ Added loading text style
+//     fontSize: 14,
+//     color: '#6B7280',
+//     marginTop: 8,
 //   },
 //   header: {
 //     backgroundColor: '#fff',
@@ -458,7 +471,6 @@ import getBaseURL from '../../config/env';
 
 const API_URL = getBaseURL().replace(/\/+$/, '');
 
-// ✅ Token helper (matching your other files)
 const TOKEN_KEYS = ['token', 'auth_token', 'jwt', 'access_token', 'AUTH_TOKEN', 'userToken'];
 const getAuthToken = async () => {
   for (const k of TOKEN_KEYS) {
@@ -481,7 +493,7 @@ export default function VendorNotifications() {
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-      const token = await getAuthToken(); // ✅ Use token helper
+      const token = await getAuthToken();
       
       if (!token) {
         Alert.alert('Error', 'Please log in again');
@@ -494,7 +506,7 @@ export default function VendorNotifications() {
 
       const response = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` },
-        timeout: 10000, // ✅ Add timeout
+        timeout: 10000,
       });
 
       setNotifications(response.data || []);
@@ -627,9 +639,9 @@ export default function VendorNotifications() {
           <View style={styles.textContainer}>
             <View style={styles.titleRow}>
               {!item.is_read && <View style={styles.unreadDot} />}
-              <Text style={styles.title}>{item.title}</Text>
+              <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
             </View>
-            <Text style={styles.message}>{item.message}</Text>
+            <Text style={styles.message} numberOfLines={2}>{item.message}</Text>
             <Text style={styles.time}>{formatTime(item.created_at)}</Text>
           </View>
 
@@ -715,8 +727,7 @@ export default function VendorNotifications() {
                 filter === 'unread' && styles.filterTextActive,
               ]}
             >
-              {/* ✅ Fixed: Wrap in Text */}
-              Unread {unreadCount > 0 && <Text>({unreadCount})</Text>}
+              Unread{unreadCount > 0 ? ` (${unreadCount})` : ''}
             </Text>
           </TouchableOpacity>
         </View>
@@ -739,6 +750,7 @@ export default function VendorNotifications() {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
+        ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Feather name="bell-off" size={48} color="#D1D5DB" />
@@ -762,29 +774,28 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 12, // ✅ Added gap
   },
-  loadingText: { // ✅ Added loading text style
+  loadingText: {
     fontSize: 14,
     color: '#6B7280',
-    marginTop: 8,
+    marginTop: 12,
   },
   header: {
     backgroundColor: '#fff',
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E7EB',
-    gap: 12,
   },
   filterContainer: {
     flexDirection: 'row',
-    gap: 8,
+    marginBottom: 12,
   },
   filterButton: {
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 20,
     backgroundColor: '#F3F4F6',
+    marginRight: 8,
   },
   filterButtonActive: {
     backgroundColor: '#3B82F6',
@@ -807,7 +818,6 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     padding: 12,
-    gap: 8,
   },
   notificationCard: {
     backgroundColor: '#fff',
@@ -823,7 +833,6 @@ const styles = StyleSheet.create({
   notificationContent: {
     flexDirection: 'row',
     padding: 12,
-    gap: 12,
   },
   iconContainer: {
     width: 40,
@@ -831,21 +840,22 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: 12,
   },
   textContainer: {
     flex: 1,
-    gap: 4,
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    marginBottom: 4,
   },
   unreadDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
     backgroundColor: '#3B82F6',
+    marginRight: 6,
   },
   title: {
     fontSize: 15,
@@ -857,6 +867,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
     lineHeight: 20,
+    marginBottom: 4,
   },
   time: {
     fontSize: 12,
@@ -865,17 +876,17 @@ const styles = StyleSheet.create({
   },
   actions: {
     flexDirection: 'row',
-    gap: 8,
     alignItems: 'flex-start',
+    marginLeft: 8,
   },
   actionButton: {
     padding: 4,
+    marginLeft: 4,
   },
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 60,
-    gap: 8,
   },
   emptyText: {
     fontSize: 18,
@@ -887,5 +898,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#9CA3AF',
     textAlign: 'center',
+    marginTop: 8,
   },
 });
