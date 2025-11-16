@@ -358,7 +358,9 @@ func main() {
 	routes.RegisterFollowRoutes(router)
 	routes.RegisterGroupRoutes(router)
 	routes.RegisterEventRoutes(router)
+	routes.RegisterNotificationRoutes(router)
 	routes.RegisterCulturalServiceRoutes(router)
+
 	// ❌ REMOVE the next line to avoid duplicate /public/cultural/services registration
 	// routes.RegisterPublicRoutes(router)
 	routes.RegisterBookingRoutes(router)

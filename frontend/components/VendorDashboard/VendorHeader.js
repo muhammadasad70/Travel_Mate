@@ -1,3 +1,7 @@
+
+
+
+// // components/VendorDashboard/VendorHeader.js
 // import React, { useState, useEffect } from 'react';
 // import {
 //   View,
@@ -11,8 +15,16 @@
 // } from 'react-native';
 // import { useNavigation } from '@react-navigation/native';
 // import { Ionicons } from '@expo/vector-icons';
+// import axios from 'axios';
+// import AsyncStorage from '@react-native-async-storage/async-storage';
+
+
+// import getBaseURL from '../../config/env';
 
 // const HEADER_DROPDOWN_TOP = Platform.OS === 'web' ? 78 : 70;
+// const API_URL = getBaseURL().replace(/\/+$/, ''); // ✅ Use your existing config
+
+
 
 // const VendorHeader = ({ onTabChange }) => {
 //   const { width } = useWindowDimensions();
@@ -21,7 +33,35 @@
 
 //   const [selectedItem, setSelectedItem] = useState('home');
 //   const [dropdownVisible, setDropdownVisible] = useState(false);
+//   const [unreadCount, setUnreadCount] = useState(0); // ✅ NEW: Unread notification count
 //   const dropdownAnim = useState(new Animated.Value(0))[0];
+
+//   // ✅ NEW: Fetch unread count on mount and poll every 30 seconds
+//   useEffect(() => {
+//     fetchUnreadCount();
+    
+//     const interval = setInterval(() => {
+//       fetchUnreadCount();
+//     }, 30000); // Poll every 30 seconds
+
+//     return () => clearInterval(interval);
+//   }, []);
+
+//   // ✅ NEW: Fetch unread notification count
+//   const fetchUnreadCount = async () => {
+//     try {
+//       const token = await AsyncStorage.getItem('token');
+//       if (!token) return;
+
+//       const response = await axios.get(`${API_URL}/notifications/unread-count`, {
+//         headers: { Authorization: `Bearer ${token}` },
+//       });
+      
+//       setUnreadCount(response.data.unread_count || 0);
+//     } catch (error) {
+//       console.error('Error fetching unread count:', error);
+//     }
+//   };
 
 //   useEffect(() => {
 //     if (Platform.OS === 'web' && typeof window !== 'undefined') {
@@ -50,8 +90,13 @@
 //   const handleItemPress = (key) => {
 //     setSelectedItem(key);
 //     closeDropdown();
+    
+//     // ✅ Refresh count when notification tab is opened
+//     if (key === 'notification') {
+//       fetchUnreadCount();
+//     }
+    
 //     switch (key) {
-//       // Tabs rendered inside dashboard
 //       case 'home':
 //       case 'services':
 //       case 'add_services':
@@ -60,11 +105,9 @@
 //       case 'analysis':
 //       case 'chat':
 //       case 'notification':
-//       case 'profile': // ✅ render inside dashboard like others
+//       case 'profile':
 //         dispatchTab(key);
 //         break;
-
-//       // Standalone screens
 //       case 'settings':
 //         navigation.navigate('ManageVendorProfile');
 //         break;
@@ -74,7 +117,6 @@
 //       case 'logout':
 //         navigation.navigate('Landing Page');
 //         break;
-
 //       default:
 //         break;
 //     }
@@ -101,6 +143,15 @@
 //     }).start();
 //   };
 
+//   const ICON_COLOR = '#003366';
+//   const menuItems = [
+//     { label: 'Home', key: 'home', icon: 'home-outline' },
+//     { label: 'Services', key: 'services', icon: 'construct-outline' },
+//     { label: 'Booking', key: 'booking', icon: 'calendar-outline' },
+//     { label: 'Request', key: 'request', icon: 'download-outline' },
+//     { label: 'Analysis', key: 'analysis', icon: 'stats-chart-outline' },
+//   ];
+
 //   return (
 //     <View style={styles.headerWrapper}>
 //       <View style={[styles.headerInner, { width: width < 900 ? '95%' : '85%' }]}>
@@ -116,18 +167,18 @@
 //         {/* Web: center pills */}
 //         {!isMobile && (
 //           <View style={styles.navRow}>
-//             {[
-//               { label: '🏠 Home', key: 'home' },
-//               { label: '🧰 Services', key: 'services' },
-//               { label: '📅 Booking', key: 'booking' },
-//               { label: '📥 Request', key: 'request' },
-//               { label: '📊 Analysis', key: 'analysis' },
-//             ].map((item) => (
+//             {menuItems.map((item) => (
 //               <TouchableOpacity
 //                 key={item.key}
 //                 style={[styles.navButton, selectedItem === item.key && styles.activeButton]}
 //                 onPress={() => handleItemPress(item.key)}
 //               >
+//                 <Ionicons
+//                   name={item.icon}
+//                   size={16}
+//                   color={ICON_COLOR}
+//                   style={{ marginRight: 6 }}
+//                 />
 //                 <Text style={styles.navButtonText}>{item.label}</Text>
 //               </TouchableOpacity>
 //             ))}
@@ -144,10 +195,12 @@
 //             />
 //           )}
 
+//           {/* ✅ Updated: Notification icon with badge */}
 //           <IconWithCaption
 //             icon="notifications-outline"
 //             label="Notifications"
 //             onPress={() => handleItemPress('notification')}
+//             badgeCount={unreadCount}
 //           />
 
 //           {!isMobile && (
@@ -203,7 +256,9 @@
 // };
 
 // /* helpers + styles */
-// const IconWithCaption = ({ icon, label, onPress, isMenu }) => (
+
+// // ✅ Updated: IconWithCaption with badge support
+// const IconWithCaption = ({ icon, label, onPress, isMenu, badgeCount = 0 }) => (
 //   <View style={styles.iconWithLabel}>
 //     <TouchableOpacity
 //       onPress={onPress}
@@ -211,6 +266,14 @@
 //       activeOpacity={0.85}
 //     >
 //       <Ionicons name={icon} size={isMenu ? 26 : 22} color="#003366" />
+//       {/* ✅ Badge */}
+//       {badgeCount > 0 && (
+//         <View style={styles.badge}>
+//           <Text style={styles.badgeText}>
+//             {badgeCount > 9 ? '9+' : badgeCount}
+//           </Text>
+//         </View>
+//       )}
 //     </TouchableOpacity>
 //     <Text style={styles.iconCaption}>{label}</Text>
 //   </View>
@@ -311,6 +374,8 @@
 //     shadowOffset: { width: 0, height: 1 },
 //     shadowOpacity: 0.1,
 //     shadowRadius: 3,
+//     flexDirection: 'row',
+//     alignItems: 'center',
 //   },
 //   activeButton: { backgroundColor: '#e0f4ff', borderColor: '#0077b6' },
 //   navButtonText: { fontSize: 14, fontWeight: '600', color: '#003366' },
@@ -319,7 +384,29 @@
 
 //   iconWithLabel: { alignItems: 'center', justifyContent: 'center', gap: 2 },
 //   iconCaption: { fontSize: 10, fontWeight: '500', color: '#003366', lineHeight: 12 },
-//   iconNoBg: { padding: 5, backgroundColor: 'transparent' },
+//   iconNoBg: { padding: 5, backgroundColor: 'transparent', position: 'relative' },
+
+//   // ✅ NEW: Badge styles
+//   badge: {
+//     position: 'absolute',
+//     top: 2,
+//     right: 2,
+//     backgroundColor: '#EF4444',
+//     borderRadius: 10,
+//     minWidth: 18,
+//     height: 18,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     paddingHorizontal: 4,
+//     borderWidth: 2,
+//     borderColor: '#fff',
+//   },
+//   badgeText: {
+//     color: '#fff',
+//     fontSize: 10,
+//     fontWeight: '700',
+//     lineHeight: 12,
+//   },
 
 //   profileButton: {
 //     backgroundColor: '#222',
@@ -401,7 +488,7 @@
 // export default VendorHeader;
 
 
-
+// components/VendorDashboard/VendorHeader.js
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -415,8 +502,22 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import getBaseURL from '../../config/env';
 
 const HEADER_DROPDOWN_TOP = Platform.OS === 'web' ? 78 : 70;
+const API_URL = getBaseURL().replace(/\/+$/, '');
+
+// ✅ Token helper
+const TOKEN_KEYS = ['token', 'auth_token', 'jwt', 'access_token', 'AUTH_TOKEN', 'userToken'];
+const getAuthToken = async () => {
+  for (const k of TOKEN_KEYS) {
+    const v = await AsyncStorage.getItem(k);
+    if (v) return v;
+  }
+  return null;
+};
 
 const VendorHeader = ({ onTabChange }) => {
   const { width } = useWindowDimensions();
@@ -425,7 +526,37 @@ const VendorHeader = ({ onTabChange }) => {
 
   const [selectedItem, setSelectedItem] = useState('home');
   const [dropdownVisible, setDropdownVisible] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const dropdownAnim = useState(new Animated.Value(0))[0];
+
+  // Fetch unread count on mount and poll every 30 seconds
+  useEffect(() => {
+    fetchUnreadCount();
+    
+    const interval = setInterval(() => {
+      fetchUnreadCount();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // ✅ Updated: Fetch unread notification count with timeout
+  const fetchUnreadCount = async () => {
+    try {
+      const token = await getAuthToken();
+      if (!token) return;
+
+      const response = await axios.get(`${API_URL}/notifications/unread-count`, {
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 5000,
+      });
+      
+      setUnreadCount(response.data.unread_count || 0);
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+      // Silently fail for badge - don't show alert
+    }
+  };
 
   useEffect(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
@@ -454,8 +585,13 @@ const VendorHeader = ({ onTabChange }) => {
   const handleItemPress = (key) => {
     setSelectedItem(key);
     closeDropdown();
+    
+    // Refresh count when notification tab is opened
+    if (key === 'notification') {
+      fetchUnreadCount();
+    }
+    
     switch (key) {
-      // Tabs rendered inside dashboard
       case 'home':
       case 'services':
       case 'add_services':
@@ -467,8 +603,6 @@ const VendorHeader = ({ onTabChange }) => {
       case 'profile':
         dispatchTab(key);
         break;
-
-      // Standalone screens
       case 'settings':
         navigation.navigate('ManageVendorProfile');
         break;
@@ -478,7 +612,6 @@ const VendorHeader = ({ onTabChange }) => {
       case 'logout':
         navigation.navigate('Landing Page');
         break;
-
       default:
         break;
     }
@@ -505,7 +638,6 @@ const VendorHeader = ({ onTabChange }) => {
     }).start();
   };
 
-  // ✅ Replaced emojis with Ionicons here
   const ICON_COLOR = '#003366';
   const menuItems = [
     { label: 'Home', key: 'home', icon: 'home-outline' },
@@ -518,7 +650,7 @@ const VendorHeader = ({ onTabChange }) => {
   return (
     <View style={styles.headerWrapper}>
       <View style={[styles.headerInner, { width: width < 900 ? '95%' : '85%' }]}>
-        {/* Brand (✈️ kept as-is) */}
+        {/* Brand */}
         <View style={styles.brand}>
           <Text style={styles.logo}>✈️</Text>
           <View>
@@ -562,6 +694,7 @@ const VendorHeader = ({ onTabChange }) => {
             icon="notifications-outline"
             label="Notifications"
             onPress={() => handleItemPress('notification')}
+            badgeCount={unreadCount}
           />
 
           {!isMobile && (
@@ -617,7 +750,8 @@ const VendorHeader = ({ onTabChange }) => {
 };
 
 /* helpers + styles */
-const IconWithCaption = ({ icon, label, onPress, isMenu }) => (
+
+const IconWithCaption = ({ icon, label, onPress, isMenu, badgeCount = 0 }) => (
   <View style={styles.iconWithLabel}>
     <TouchableOpacity
       onPress={onPress}
@@ -625,6 +759,13 @@ const IconWithCaption = ({ icon, label, onPress, isMenu }) => (
       activeOpacity={0.85}
     >
       <Ionicons name={icon} size={isMenu ? 26 : 22} color="#003366" />
+      {badgeCount > 0 && (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>
+            {badgeCount > 9 ? '9+' : badgeCount}
+          </Text>
+        </View>
+      )}
     </TouchableOpacity>
     <Text style={styles.iconCaption}>{label}</Text>
   </View>
@@ -735,7 +876,28 @@ const styles = StyleSheet.create({
 
   iconWithLabel: { alignItems: 'center', justifyContent: 'center', gap: 2 },
   iconCaption: { fontSize: 10, fontWeight: '500', color: '#003366', lineHeight: 12 },
-  iconNoBg: { padding: 5, backgroundColor: 'transparent' },
+  iconNoBg: { padding: 5, backgroundColor: 'transparent', position: 'relative' },
+
+  badge: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    backgroundColor: '#EF4444',
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
+    lineHeight: 12,
+  },
 
   profileButton: {
     backgroundColor: '#222',

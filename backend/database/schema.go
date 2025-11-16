@@ -753,6 +753,21 @@ CREATE INDEX IF NOT EXISTS ix_csb_service  ON cultural_service_bookings(service_
 CREATE UNIQUE INDEX IF NOT EXISTS ux_csb_service_user_date
 ON cultural_service_bookings(service_id, traveler_id, chosen_date)
 WHERE status IN ('pending','confirmed') AND chosen_date IS NOT NULL;
+-- notifications
+CREATE TABLE IF NOT EXISTS notifications (
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  type VARCHAR(50) NOT NULL CHECK (type IN ('booking_request', 'booking_confirmed', 'booking_declined', 'booking_cancelled', 'new_message', 'follow_request', 'system')),
+  title VARCHAR(255) NOT NULL,
+  message TEXT NOT NULL,
+  related_id BIGINT,
+  related_type VARCHAR(50) CHECK (related_type IN ('booking', 'service', 'message', 'post', 'user')),
+  is_read BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_notifications_user_read_created ON notifications(user_id, is_read, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at DESC);
 `
 
 func InitSchema() {

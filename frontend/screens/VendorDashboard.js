@@ -1,4 +1,5 @@
 
+
 // // screens/VendorDashboard.js
 // import React, { useEffect, useState } from 'react';
 // import { View, Text, StyleSheet, Platform, ScrollView } from 'react-native';
@@ -12,6 +13,10 @@
 
 // // Cultural Exchange Services Hub
 // import CulturalServicesHub from './CulturalExchange/ServicesHub';
+
+// // ✅ NEW: vendor request & booking screens
+// import CulturalRequests from './vendor/CulturalRequests';
+// import CulturalBooked from './vendor/CulturalBooked';
 
 // const TAB = {
 //   HOME: 'home',
@@ -40,32 +45,38 @@
 
 //   const handleTabChange = (key) => setActiveTab(key);
 
+//   // Tabs that should occupy the full viewport (these screens render their own FlatLists/scroll)
+//   const isFillTab =
+//     activeTab === TAB.SERVICES ||
+//     activeTab === TAB.BOOKING ||
+//     activeTab === TAB.REQUEST;
+
 //   return (
 //     <View style={styles.root}>
 //       <VendorHeader onTabChange={handleTabChange} />
 
 //       <SafeAreaView edges={['left', 'right']} style={styles.safe}>
-//         {/* Services tab fills the viewport and uses its own spacing (NO bottom padding). */}
-//         {activeTab === TAB.SERVICES ? (
+//         {isFillTab ? (
+//           // ✅ Fill-height container for Services, Bookings, Requests
 //           <View
 //             style={[
-//               styles.servicesContainer,                    // ← no paddingBottom here
+//               styles.fillContainer,
 //               Platform.OS === 'web' ? styles.webPaddingForFixedHeader : null,
 //             ]}
 //           >
-//             <ServicesTab />
+//             {activeTab === TAB.SERVICES && <ServicesTab />}
+//             {activeTab === TAB.BOOKING  && <BookingTab />}
+//             {activeTab === TAB.REQUEST  && <RequestTab />}
 //           </View>
 //         ) : (
-//           // Other tabs stay scrollable and use the general container (with bottom padding).
+//           // Scroll container for the rest
 //           <ScrollView
 //             contentContainerStyle={[
-//               styles.bodyContainer,                       // ← has paddingBottom for scroll tabs
+//               styles.bodyContainer,
 //               Platform.OS === 'web' ? styles.webPaddingForFixedHeader : null,
 //             ]}
 //           >
 //             {activeTab === TAB.HOME && <HomeTab />}
-//             {activeTab === TAB.BOOKING && <BookingTab />}
-//             {activeTab === TAB.REQUEST && <RequestTab />}
 //             {activeTab === TAB.ANALYSIS && <AnalysisTab />}
 //             {activeTab === TAB.CHAT && <ChatTab />}
 //             {activeTab === TAB.NOTIFICATION && <NotificationTab />}
@@ -117,7 +128,6 @@
 //   return (
 //     <View style={styles.tabFill}>
 //       <Text style={styles.h2}>Cultural Exchange — Services</Text>
-//       {/* Give the hub all remaining height so its FlatList can scroll */}
 //       <View style={{ flex: 1 }}>
 //         <CulturalServicesHub />
 //       </View>
@@ -125,22 +135,26 @@
 //   );
 // }
 
+// // ✅ BookingTab now renders the real Booked view (fills height)
 // function BookingTab() {
 //   return (
-//     <View style={styles.tabWrap}>
-//       <Section title="Bookings (Cultural Exchange)">
-//         <Text>List of bookings will appear here (pending/confirmed/cancelled).</Text>
-//       </Section>
+//     <View style={styles.tabFill}>
+//       <Text style={styles.h2}>Bookings</Text>
+//       <View style={{ flex: 1 }}>
+//         <CulturalBooked />
+//       </View>
 //     </View>
 //   );
 // }
 
+// // ✅ RequestTab now renders the real Requests view (fills height)
 // function RequestTab() {
 //   return (
-//     <View style={styles.tabWrap}>
-//       <Section title="Requests">
-//         <Text>Incoming requests from travelers (approve/decline, message traveler).</Text>
-//       </Section>
+//     <View style={styles.tabFill}>
+//       <Text style={styles.h2}>Requests</Text>
+//       <View style={{ flex: 1 }}>
+//         <CulturalRequests />
+//       </View>
 //     </View>
 //   );
 // }
@@ -181,16 +195,16 @@
 //   root: { flex: 1, backgroundColor: '#F1F5F9' },
 //   safe: { flex: 1 },
 
-//   // Used by scrollable tabs (Home/Booking/Request/Analysis/Chat/Notification/Profile)
+//   // Scrollable tabs (Home/Analysis/Chat/Notification/Profile)
 //   bodyContainer: { paddingHorizontal: 12, paddingBottom: 84, gap: 12 },
 
-//   // Used ONLY by Services tab (no bottom padding so there's no giant gap)
-//   servicesContainer: { flex: 1, paddingHorizontal: 12, gap: 12 },
+//   // Fill-height container for Services/Bookings/Requests
+//   fillContainer: { flex: 1, paddingHorizontal: 12, gap: 12 },
 
 //   webPaddingForFixedHeader: { paddingTop: 120 },
 
 //   tabWrap: { gap: 12 },
-//   tabFill: { gap: 12, flex: 1 }, // ServicesTab needs to fill height
+//   tabFill: { gap: 12, flex: 1 },
 
 //   h2: { fontSize: 18, fontWeight: '800', color: '#0f172a' },
 //   card: {
@@ -211,7 +225,6 @@
 // });
 
 
-
 // screens/VendorDashboard.js
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Platform, ScrollView } from 'react-native';
@@ -226,9 +239,12 @@ import VendorProfile from './VendorProfile';
 // Cultural Exchange Services Hub
 import CulturalServicesHub from './CulturalExchange/ServicesHub';
 
-// ✅ NEW: vendor request & booking screens
+// ✅ Vendor request & booking screens
 import CulturalRequests from './vendor/CulturalRequests';
 import CulturalBooked from './vendor/CulturalBooked';
+
+// ✅ NEW: Vendor Notifications
+import VendorNotifications from './vendor/VendorNotifications';
 
 const TAB = {
   HOME: 'home',
@@ -261,7 +277,8 @@ export default function VendorDashboardScreen() {
   const isFillTab =
     activeTab === TAB.SERVICES ||
     activeTab === TAB.BOOKING ||
-    activeTab === TAB.REQUEST;
+    activeTab === TAB.REQUEST ||
+    activeTab === TAB.NOTIFICATION; // ✅ Added NOTIFICATION
 
   return (
     <View style={styles.root}>
@@ -269,7 +286,7 @@ export default function VendorDashboardScreen() {
 
       <SafeAreaView edges={['left', 'right']} style={styles.safe}>
         {isFillTab ? (
-          // ✅ Fill-height container for Services, Bookings, Requests
+          // ✅ Fill-height container for Services, Bookings, Requests, Notifications
           <View
             style={[
               styles.fillContainer,
@@ -279,6 +296,7 @@ export default function VendorDashboardScreen() {
             {activeTab === TAB.SERVICES && <ServicesTab />}
             {activeTab === TAB.BOOKING  && <BookingTab />}
             {activeTab === TAB.REQUEST  && <RequestTab />}
+            {activeTab === TAB.NOTIFICATION && <NotificationTab />} {/* ✅ Updated */}
           </View>
         ) : (
           // Scroll container for the rest
@@ -291,7 +309,6 @@ export default function VendorDashboardScreen() {
             {activeTab === TAB.HOME && <HomeTab />}
             {activeTab === TAB.ANALYSIS && <AnalysisTab />}
             {activeTab === TAB.CHAT && <ChatTab />}
-            {activeTab === TAB.NOTIFICATION && <NotificationTab />}
             {activeTab === TAB.PROFILE && <VendorProfile />}
           </ScrollView>
         )}
@@ -391,12 +408,11 @@ function ChatTab() {
   );
 }
 
+// ✅ Updated NotificationTab to render the full screen
 function NotificationTab() {
   return (
-    <View style={styles.tabWrap}>
-      <Section title="Notifications">
-        <Text>Unified alerts for requests, bookings, and reviews.</Text>
-      </Section>
+    <View style={styles.tabFill}>
+      <VendorNotifications />
     </View>
   );
 }
@@ -407,10 +423,10 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#F1F5F9' },
   safe: { flex: 1 },
 
-  // Scrollable tabs (Home/Analysis/Chat/Notification/Profile)
+  // Scrollable tabs (Home/Analysis/Chat/Profile)
   bodyContainer: { paddingHorizontal: 12, paddingBottom: 84, gap: 12 },
 
-  // Fill-height container for Services/Bookings/Requests
+  // Fill-height container for Services/Bookings/Requests/Notifications
   fillContainer: { flex: 1, paddingHorizontal: 12, gap: 12 },
 
   webPaddingForFixedHeader: { paddingTop: 120 },
