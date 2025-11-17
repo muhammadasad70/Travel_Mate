@@ -768,6 +768,37 @@ CREATE TABLE IF NOT EXISTS notifications (
 CREATE INDEX IF NOT EXISTS idx_notifications_user_read_created ON notifications(user_id, is_read, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at DESC);
+-- Booking-specific conversations (separate from community chat)
+CREATE TABLE IF NOT EXISTS booking_conversations (
+    id BIGSERIAL PRIMARY KEY,
+    booking_id BIGINT NOT NULL REFERENCES cultural_service_bookings(id) ON DELETE CASCADE,
+    traveler_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    vendor_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    service_id BIGINT NOT NULL REFERENCES cultural_services(id) ON DELETE CASCADE,
+    last_message_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(booking_id)
+);
+
+-- Booking chat messages
+CREATE TABLE IF NOT EXISTS booking_messages (
+    id BIGSERIAL PRIMARY KEY,
+    conversation_id BIGINT NOT NULL REFERENCES booking_conversations(id) ON DELETE CASCADE,
+    sender_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    message TEXT NOT NULL,
+    message_type VARCHAR(20) DEFAULT 'text' CHECK (message_type IN ('text', 'image', 'file', 'system')),
+    file_url TEXT,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_booking_conversations_booking ON booking_conversations(booking_id);
+CREATE INDEX IF NOT EXISTS idx_booking_conversations_traveler ON booking_conversations(traveler_id);
+CREATE INDEX IF NOT EXISTS idx_booking_conversations_vendor ON booking_conversations(vendor_id);
+CREATE INDEX IF NOT EXISTS idx_booking_messages_conversation ON booking_messages(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_booking_messages_sender ON booking_messages(sender_id);
+CREATE INDEX IF NOT EXISTS idx_booking_messages_created ON booking_messages(created_at DESC);
 `
 
 func InitSchema() {

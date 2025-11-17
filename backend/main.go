@@ -360,6 +360,7 @@ func main() {
 	routes.RegisterEventRoutes(router)
 	routes.RegisterNotificationRoutes(router)
 	routes.RegisterCulturalServiceRoutes(router)
+	routes.RegisterBookingChatRoutes(router)
 
 	// ❌ REMOVE the next line to avoid duplicate /public/cultural/services registration
 	// routes.RegisterPublicRoutes(router)

@@ -1,4 +1,4 @@
-
+// // frontend/components/TravelerDashboard/TravelerHeaderScreen
 // import React, { useState, useEffect } from 'react';
 // import {
 //   View,
@@ -13,6 +13,7 @@
 // import { useNavigation } from '@react-navigation/native';
 // import { useRole } from '../../RoleContext';
 // import { Ionicons } from '@expo/vector-icons';
+// import NotificationBadge from '../NotificationBadge';
 
 // const HEADER_DROPDOWN_TOP = Platform.OS === 'web' ? 78 : 70;
 
@@ -106,11 +107,20 @@
 //     }).start();
 //   };
 
-//   // 🔧 CHANGED: direct helper to go to GroupsHome from dropdown
 //   const goToGroupsHome = () => {
 //     closeDropdown();
 //     navigation.navigate('GroupsHome', { from: 'TravelerDashboard' });
 //   };
+
+//   const ICON_COLOR = '#003366';
+//   const MENU_ITEMS = [
+//     { label: 'Explore',       key: 'explore',      icon: 'compass-outline' },
+//     { label: 'Trip Planner',  key: 'tripplanner',  icon: 'document-text-outline' },
+//     { label: 'Events',        key: 'events',       icon: 'calendar-outline' },
+//     { label: 'Services',      key: 'services',     icon: 'construct-outline' },
+//     { label: 'Community',     key: 'communityHub', icon: 'people-outline' },
+//     { label: 'Groups',        key: 'groups',       icon: 'people-circle-outline' },
+//   ];
 
 //   return (
 //     <View style={styles.headerWrapper}>
@@ -127,19 +137,13 @@
 //         {/* Web: top pills */}
 //         {!isMobile && (
 //           <View style={styles.navRow}>
-//             {[
-//               { label: '🧭 Explore', key: 'explore' },
-//               { label: '📝 Trip Planner', key: 'tripplanner' },
-//               { label: '🎉 Events', key: 'events' },
-//               { label: '🛎 Services', key: 'services' },
-//               { label: '👥 Community', key: 'communityHub' },
-//               { label: '🧑‍🤝‍🧑 Groups', key: 'groups' },
-//             ].map((item) => (
+//             {MENU_ITEMS.map((item) => (
 //               <TouchableOpacity
 //                 key={item.key}
 //                 style={[styles.navButton, selectedItem === item.key && styles.activeButton]}
 //                 onPress={() => handleItemPress(item.key)}
 //               >
+//                 <Ionicons name={item.icon} size={16} color={ICON_COLOR} style={{ marginRight: 6 }} />
 //                 <Text style={styles.navButtonText}>{item.label}</Text>
 //               </TouchableOpacity>
 //             ))}
@@ -147,12 +151,13 @@
 //         )}
 
 //         {/* Right actions */}
-//         <View style={styles.rightSection}>
-//           <IconWithCaption
-//             icon="notifications-outline"
-//             label="Alerts"
-//             onPress={() => handleItemPress('notification')}
-//           />
+//         <View style={{ position: 'relative' }}>
+//   <IconWithCaption
+//     icon="notifications-outline"
+//     label="Alerts"
+//     onPress={() => handleItemPress('notification')}
+//   />
+//   <NotificationBadge />
 //           {isMobile && (
 //             <IconWithCaption
 //               icon="chatbubble-ellipses-outline"
@@ -192,7 +197,6 @@
 //             <Text style={styles.sectionLabel}>Quick actions</Text>
 //             <View style={styles.menuGrid}>
 //               <MenuTile icon="people-circle-outline" label="Community" onPress={() => handleItemPress('communityHub')} />
-//               {/* 🔧 CHANGED: go straight to GroupsHome from dropdown */}
 //               <MenuTile icon="chatbubbles-outline" label="Groups" onPress={goToGroupsHome} />
 //               <MenuTile icon="heart-outline" label="Saved" onPress={() => handleItemPress('saved')} />
 //               <MenuTile icon="time-outline" label="History" onPress={() => handleItemPress('history')} />
@@ -335,6 +339,8 @@
 //     shadowOffset: { width: 0, height: 1 },
 //     shadowOpacity: 0.1,
 //     shadowRadius: 3,
+//     flexDirection: 'row',            // <-- added so icon + text align inline
+//     alignItems: 'center',            // <-- added for vertical centering
 //   },
 //   activeButton: { backgroundColor: '#e0f4ff', borderColor: '#0077b6' },
 //   navButtonText: { fontSize: 14, fontWeight: '600', color: '#003366' },
@@ -444,6 +450,7 @@
 
 
 
+// frontend/components/TravelerDashboard/TravelerHeaderScreen
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -458,6 +465,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { useRole } from '../../RoleContext';
 import { Ionicons } from '@expo/vector-icons';
+import NotificationBadge from '../NotificationBadge';
 
 const HEADER_DROPDOWN_TOP = Platform.OS === 'web' ? 78 : 70;
 
@@ -596,11 +604,16 @@ const Header = ({ onTabChange }) => {
 
         {/* Right actions */}
         <View style={styles.rightSection}>
-          <IconWithCaption
-            icon="notifications-outline"
-            label="Alerts"
-            onPress={() => handleItemPress('notification')}
-          />
+          {/* Alerts with Badge */}
+          <View style={{ position: 'relative' }}>
+            <IconWithCaption
+              icon="notifications-outline"
+              label="Alerts"
+              onPress={() => handleItemPress('notification')}
+            />
+            <NotificationBadge />
+          </View>
+
           {isMobile && (
             <IconWithCaption
               icon="chatbubble-ellipses-outline"
@@ -782,8 +795,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
-    flexDirection: 'row',            // <-- added so icon + text align inline
-    alignItems: 'center',            // <-- added for vertical centering
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   activeButton: { backgroundColor: '#e0f4ff', borderColor: '#0077b6' },
   navButtonText: { fontSize: 14, fontWeight: '600', color: '#003366' },
