@@ -9,15 +9,9 @@
 // import VendorBottomNavBar from '../components/VendorDashboard/VendorBottomNavBar';
 // import CompleteProfilePrompt from './CompleteProfilePrompt';
 // import VendorProfile from './VendorProfile';
-
-// // Cultural Exchange Services Hub
 // import CulturalServicesHub from './CulturalExchange/ServicesHub';
-
-// // ✅ Vendor request & booking screens
 // import CulturalRequests from './vendor/CulturalRequests';
 // import CulturalBooked from './vendor/CulturalBooked';
-
-// // ✅ NEW: Vendor Notifications
 // import VendorNotifications from './vendor/VendorNotifications';
 
 // const TAB = {
@@ -47,12 +41,11 @@
 
 //   const handleTabChange = (key) => setActiveTab(key);
 
-//   // Tabs that should occupy the full viewport (these screens render their own FlatLists/scroll)
 //   const isFillTab =
 //     activeTab === TAB.SERVICES ||
 //     activeTab === TAB.BOOKING ||
 //     activeTab === TAB.REQUEST ||
-//     activeTab === TAB.NOTIFICATION; // ✅ Added NOTIFICATION
+//     activeTab === TAB.NOTIFICATION;
 
 //   return (
 //     <View style={styles.root}>
@@ -60,7 +53,6 @@
 
 //       <SafeAreaView edges={['left', 'right']} style={styles.safe}>
 //         {isFillTab ? (
-//           // ✅ Fill-height container for Services, Bookings, Requests, Notifications
 //           <View
 //             style={[
 //               styles.fillContainer,
@@ -70,10 +62,9 @@
 //             {activeTab === TAB.SERVICES && <ServicesTab />}
 //             {activeTab === TAB.BOOKING  && <BookingTab />}
 //             {activeTab === TAB.REQUEST  && <RequestTab />}
-//             {activeTab === TAB.NOTIFICATION && <NotificationTab />} {/* ✅ Updated */}
+//             {activeTab === TAB.NOTIFICATION && <NotificationTab />}
 //           </View>
 //         ) : (
-//           // Scroll container for the rest
 //           <ScrollView
 //             contentContainerStyle={[
 //               styles.bodyContainer,
@@ -94,10 +85,8 @@
 //   );
 // }
 
-// /* ---------- tabs ---------- */
-
 // const Section = ({ title, children }) => (
-//   <View style={{ gap: 8 }}>
+//   <View style={{ marginBottom: 12 }}>
 //     <Text style={styles.h2}>{title}</Text>
 //     <View style={styles.card}>{children}</View>
 //   </View>
@@ -138,7 +127,6 @@
 //   );
 // }
 
-// // ✅ BookingTab now renders the real Booked view (fills height)
 // function BookingTab() {
 //   return (
 //     <View style={styles.tabFill}>
@@ -150,7 +138,6 @@
 //   );
 // }
 
-// // ✅ RequestTab now renders the real Requests view (fills height)
 // function RequestTab() {
 //   return (
 //     <View style={styles.tabFill}>
@@ -182,7 +169,6 @@
 //   );
 // }
 
-// // ✅ Updated NotificationTab to render the full screen
 // function NotificationTab() {
 //   return (
 //     <View style={styles.tabFill}>
@@ -191,24 +177,15 @@
 //   );
 // }
 
-// /* ---------- styles ---------- */
-
 // const styles = StyleSheet.create({
 //   root: { flex: 1, backgroundColor: '#F1F5F9' },
 //   safe: { flex: 1 },
-
-//   // Scrollable tabs (Home/Analysis/Chat/Profile)
-//   bodyContainer: { paddingHorizontal: 12, paddingBottom: 84, gap: 12 },
-
-//   // Fill-height container for Services/Bookings/Requests/Notifications
-//   fillContainer: { flex: 1, paddingHorizontal: 12, gap: 12 },
-
+//   bodyContainer: { paddingHorizontal: 12, paddingBottom: 84 },
+//   fillContainer: { flex: 1, paddingHorizontal: 12 },
 //   webPaddingForFixedHeader: { paddingTop: 120 },
-
-//   tabWrap: { gap: 12 },
-//   tabFill: { gap: 12, flex: 1 },
-
-//   h2: { fontSize: 18, fontWeight: '800', color: '#0f172a' },
+//   tabWrap: { paddingVertical: 12 },
+//   tabFill: { flex: 1, paddingVertical: 12 },
+//   h2: { fontSize: 18, fontWeight: '800', color: '#0f172a', marginBottom: 8 },
 //   card: {
 //     backgroundColor: '#fff',
 //     borderWidth: 1,
@@ -222,14 +199,20 @@
 //     borderWidth: 1,
 //     padding: 10,
 //     borderRadius: 12,
+//     marginBottom: 12,
 //   },
 //   bannerText: { color: '#1D4ED8' },
 // });
+// screens/VendorDashboard.js - Updated HomeTab function
+
+// screens/VendorDashboard.js
+
 // screens/VendorDashboard.js
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Platform, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 
 import VendorHeader from '../components/VendorDashboard/VendorHeader';
 import VendorBottomNavBar from '../components/VendorDashboard/VendorBottomNavBar';
@@ -239,6 +222,7 @@ import CulturalServicesHub from './CulturalExchange/ServicesHub';
 import CulturalRequests from './vendor/CulturalRequests';
 import CulturalBooked from './vendor/CulturalBooked';
 import VendorNotifications from './vendor/VendorNotifications';
+import VendorHome from './vendor/VendorHome';
 
 const TAB = {
   HOME: 'home',
@@ -266,6 +250,16 @@ export default function VendorDashboardScreen() {
   }, []);
 
   const handleTabChange = (key) => setActiveTab(key);
+
+  const dispatchTab = (key) => {
+    setActiveTab(key);
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      try {
+        const event = new CustomEvent('vendorTabChange', { detail: { tabKey: key } });
+        window.dispatchEvent(event);
+      } catch {}
+    }
+  };
 
   const isFillTab =
     activeTab === TAB.SERVICES ||
@@ -297,7 +291,7 @@ export default function VendorDashboardScreen() {
               Platform.OS === 'web' ? styles.webPaddingForFixedHeader : null,
             ]}
           >
-            {activeTab === TAB.HOME && <HomeTab />}
+            {activeTab === TAB.HOME && <VendorHome dispatchTab={dispatchTab} navigation={navigation} />}
             {activeTab === TAB.ANALYSIS && <AnalysisTab />}
             {activeTab === TAB.CHAT && <ChatTab />}
             {activeTab === TAB.PROFILE && <VendorProfile />}
@@ -311,36 +305,7 @@ export default function VendorDashboardScreen() {
   );
 }
 
-const Section = ({ title, children }) => (
-  <View style={{ marginBottom: 12 }}>
-    <Text style={styles.h2}>{title}</Text>
-    <View style={styles.card}>{children}</View>
-  </View>
-);
-
-function HomeTab() {
-  return (
-    <View style={styles.tabWrap}>
-      <View style={styles.banner}>
-        <Text style={styles.bannerText}>
-          Tip: Go to Services to add your first cultural experience (class, workshop, city walk).
-        </Text>
-      </View>
-
-      <Section title="Quick Stats">
-        <Text>Pending Requests: 0 · Confirmed Bookings: 0 · Avg. Rating: —</Text>
-      </Section>
-
-      <Section title="My Services">
-        <Text>Your published cultural experiences will appear here.</Text>
-      </Section>
-
-      <Section title="Recent Requests">
-        <Text>Approve / Decline requests from travelers once bookings are enabled.</Text>
-      </Section>
-    </View>
-  );
-}
+/* ---------- Tab Components ---------- */
 
 function ServicesTab() {
   return (
@@ -378,9 +343,15 @@ function RequestTab() {
 function AnalysisTab() {
   return (
     <View style={styles.tabWrap}>
-      <Section title="Analytics">
-        <Text>KPIs: views, requests, confirmations, revenue. Charts to be added later.</Text>
-      </Section>
+      <View style={styles.card}>
+        <View style={styles.comingSoonContainer}>
+          <Ionicons name="stats-chart-outline" size={48} color="#9CA3AF" />
+          <Text style={styles.comingSoonText}>Analytics Dashboard</Text>
+          <Text style={styles.comingSoonSubtext}>
+            Detailed analytics including views, bookings, revenue, and performance metrics coming soon!
+          </Text>
+        </View>
+      </View>
     </View>
   );
 }
@@ -388,9 +359,15 @@ function AnalysisTab() {
 function ChatTab() {
   return (
     <View style={styles.tabWrap}>
-      <Section title="Chat">
-        <Text>Conversation list + thread preview (coming soon).</Text>
-      </Section>
+      <View style={styles.card}>
+        <View style={styles.comingSoonContainer}>
+          <Ionicons name="chatbubble-ellipses-outline" size={48} color="#9CA3AF" />
+          <Text style={styles.comingSoonText}>Messaging System</Text>
+          <Text style={styles.comingSoonSubtext}>
+            Chat with travelers about bookings and answer questions. Coming soon!
+          </Text>
+        </View>
+      </View>
     </View>
   );
 }
@@ -403,6 +380,8 @@ function NotificationTab() {
   );
 }
 
+/* ---------- Styles ---------- */
+
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#F1F5F9' },
   safe: { flex: 1 },
@@ -411,6 +390,7 @@ const styles = StyleSheet.create({
   webPaddingForFixedHeader: { paddingTop: 120 },
   tabWrap: { paddingVertical: 12 },
   tabFill: { flex: 1, paddingVertical: 12 },
+  
   h2: { fontSize: 18, fontWeight: '800', color: '#0f172a', marginBottom: 8 },
   card: {
     backgroundColor: '#fff',
@@ -419,13 +399,23 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 12,
   },
-  banner: {
-    backgroundColor: '#EFF6FF',
-    borderColor: '#BFDBFE',
-    borderWidth: 1,
-    padding: 10,
-    borderRadius: 12,
-    marginBottom: 12,
+
+  comingSoonContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
   },
-  bannerText: { color: '#1D4ED8' },
+  comingSoonText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#6B7280',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  comingSoonSubtext: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    lineHeight: 20,
+    paddingHorizontal: 20,
+  },
 });
