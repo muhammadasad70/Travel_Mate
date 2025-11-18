@@ -33,12 +33,11 @@ const CITIES = [
 
 const BUDGETS = ['Budget-friendly', 'Mid-range', 'Luxury'];
 const STYLES = ['Adventure', 'Cultural', 'Comfort'];
-const DURATIONS = ['2-3 days', '3-5 days', '5-7 days', '1 week+'];
 const INTERESTS = ['Hiking', 'Food', 'Photography', 'History', 'Nature', 'Shopping'];
 
 export default function AIRecommendationsFormScreen() {
   const navigation = useNavigation();
-  const [view, setView] = useState('form'); // 'form' or 'results'
+  const [view, setView] = useState('form');
   const [analysis, setAnalysis] = useState(null);
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -46,10 +45,12 @@ export default function AIRecommendationsFormScreen() {
   const [saving, setSaving] = useState(null);
   const [error, setError] = useState(null);
 
-  const [selectedCities, setSelectedCities] = useState([]);
+  const [selectedCity, setSelectedCity] = useState('');
   const [selectedBudget, setSelectedBudget] = useState('');
   const [selectedStyle, setSelectedStyle] = useState('');
-  const [selectedDuration, setSelectedDuration] = useState('');
+  
+  // ✅ NEW: Number of days (minimum 1)
+  const [numberOfDays, setNumberOfDays] = useState(1);
   const [selectedInterests, setSelectedInterests] = useState([]);
 
   useEffect(() => {
@@ -72,9 +73,19 @@ export default function AIRecommendationsFormScreen() {
     }
   };
 
+  // ✅ NEW: Increment days (maximum 14)
+  const incrementDays = () => {
+    setNumberOfDays(prev => Math.min(14, prev + 1));
+  };
+
+  // ✅ NEW: Decrement days (minimum 1)
+  const decrementDays = () => {
+    setNumberOfDays(prev => Math.max(1, prev - 1));
+  };
+
   const generateRecommendations = async () => {
-    if (selectedCities.length === 0 || !selectedBudget || !selectedStyle) {
-      setError('Please select at least one city, budget, and travel style');
+    if (!selectedCity || !selectedBudget || !selectedStyle || selectedInterests.length === 0) {
+      setError('Please fill in all fields: city, budget, travel style, duration, and at least one interest');
       return;
     }
 
@@ -83,6 +94,10 @@ export default function AIRecommendationsFormScreen() {
 
     try {
       const token = await getAuthToken();
+      
+      // ✅ Format duration as "X day(s)"
+      const durationString = numberOfDays === 1 ? '1 day' : `${numberOfDays} days`;
+      
       const response = await fetch(`${API_BASE}/recommendations/generate`, {
         method: 'POST',
         headers: {
@@ -90,10 +105,10 @@ export default function AIRecommendationsFormScreen() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          preferred_cities: selectedCities,
+          preferred_cities: [selectedCity],
           preferred_budget: selectedBudget,
           preferred_style: selectedStyle,
-          trip_duration: selectedDuration,
+          trip_duration: durationString,
           interests: selectedInterests,
         }),
       });
@@ -141,14 +156,6 @@ export default function AIRecommendationsFormScreen() {
     }
   };
 
-  const toggleCity = (city) => {
-    if (selectedCities.includes(city)) {
-      setSelectedCities(selectedCities.filter(c => c !== city));
-    } else if (selectedCities.length < 3) {
-      setSelectedCities([...selectedCities, city]);
-    }
-  };
-
   const toggleInterest = (interest) => {
     if (selectedInterests.includes(interest)) {
       setSelectedInterests(selectedInterests.filter(i => i !== interest));
@@ -184,23 +191,23 @@ export default function AIRecommendationsFormScreen() {
         )}
 
         <ScrollView style={styles.formScroll} showsVerticalScrollIndicator={false}>
-          <Text style={styles.sectionTitle}>Where do you want to go?</Text>
-          <Text style={styles.sectionSubtitle}>Select up to 3 cities</Text>
+          <Text style={styles.sectionTitle}>Where do you want to go? *</Text>
+          <Text style={styles.sectionSubtitle}>Select one city (we'll generate 3 itineraries for it)</Text>
           <View style={styles.chipContainer}>
             {CITIES.map(city => (
               <TouchableOpacity
                 key={city}
-                style={[styles.chip, selectedCities.includes(city) && styles.chipSelected]}
-                onPress={() => toggleCity(city)}
+                style={[styles.chip, selectedCity === city && styles.chipSelected]}
+                onPress={() => setSelectedCity(city)}
               >
-                <Text style={[styles.chipText, selectedCities.includes(city) && styles.chipTextSelected]}>
+                <Text style={[styles.chipText, selectedCity === city && styles.chipTextSelected]}>
                   {city}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
 
-          <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Budget</Text>
+          <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Budget *</Text>
           <View style={styles.chipContainer}>
             {BUDGETS.map(budget => (
               <TouchableOpacity
@@ -215,7 +222,7 @@ export default function AIRecommendationsFormScreen() {
             ))}
           </View>
 
-          <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Travel Style</Text>
+          <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Travel Style *</Text>
           <View style={styles.chipContainer}>
             {STYLES.map(style => (
               <TouchableOpacity
@@ -230,22 +237,37 @@ export default function AIRecommendationsFormScreen() {
             ))}
           </View>
 
-          <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Trip Duration (Optional)</Text>
-          <View style={styles.chipContainer}>
-            {DURATIONS.map(duration => (
-              <TouchableOpacity
-                key={duration}
-                style={[styles.chip, selectedDuration === duration && styles.chipSelected]}
-                onPress={() => setSelectedDuration(duration)}
-              >
-                <Text style={[styles.chipText, selectedDuration === duration && styles.chipTextSelected]}>
-                  {duration}
-                </Text>
-              </TouchableOpacity>
-            ))}
+          {/* ✅ NEW: Number of days with up/down controls */}
+          <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Trip Duration *</Text>
+          <Text style={styles.sectionSubtitle}>How many days will your trip be?</Text>
+          <View style={styles.daysInputContainer}>
+            <TouchableOpacity 
+              style={styles.daysButton} 
+              onPress={decrementDays}
+              disabled={numberOfDays <= 1}
+            >
+              <Ionicons 
+                name="chevron-down" 
+                size={24} 
+                color={numberOfDays <= 1 ? '#d1d5db' : '#8b5cf6'} 
+              />
+            </TouchableOpacity>
+            
+            <View style={styles.daysDisplayContainer}>
+              <Text style={styles.daysNumber}>{numberOfDays}</Text>
+              <Text style={styles.daysLabel}>{numberOfDays === 1 ? 'day' : 'days'}</Text>
+            </View>
+            
+            <TouchableOpacity 
+              style={styles.daysButton} 
+              onPress={incrementDays}
+            >
+              <Ionicons name="chevron-up" size={24} color="#8b5cf6" />
+            </TouchableOpacity>
           </View>
 
-          <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Interests (Optional)</Text>
+          <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Interests *</Text>
+          <Text style={styles.sectionSubtitle}>Select at least one interest</Text>
           <View style={styles.chipContainer}>
             {INTERESTS.map(interest => (
               <TouchableOpacity
@@ -277,7 +299,7 @@ export default function AIRecommendationsFormScreen() {
             ) : (
               <>
                 <Ionicons name="sparkles" size={20} color="#fff" />
-                <Text style={styles.generateButtonText}>Generate Recommendations</Text>
+                <Text style={styles.generateButtonText}>Generate 3 Recommendations</Text>
               </>
             )}
           </TouchableOpacity>
@@ -450,6 +472,40 @@ const styles = StyleSheet.create({
   },
   chipTextSelected: {
     color: '#fff',
+  },
+  // ✅ NEW: Days input styles
+  daysInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: '#d1d5db',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    alignSelf: 'flex-start',
+    minWidth: 160,
+  },
+  daysButton: {
+    padding: 8,
+  },
+  daysDisplayContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 60,
+    marginHorizontal: 12,
+  },
+  daysNumber: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#8b5cf6',
+  },
+  daysLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6b7280',
+    marginTop: -4,
   },
   errorBanner: {
     flexDirection: 'row',
