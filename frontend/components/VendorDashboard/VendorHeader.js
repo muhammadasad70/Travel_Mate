@@ -16,6 +16,7 @@
 // import axios from 'axios';
 // import AsyncStorage from '@react-native-async-storage/async-storage';
 // import getBaseURL from '../../config/env';
+// import BookingChatBadge from '../BookingChatBadge';
 
 // const HEADER_DROPDOWN_TOP = Platform.OS === 'web' ? 78 : 70;
 // const API_URL = getBaseURL().replace(/\/+$/, '');
@@ -41,7 +42,7 @@
 
 //   useEffect(() => {
 //     fetchUnreadCount();
-    
+
 //     const interval = setInterval(() => {
 //       fetchUnreadCount();
 //     }, 30000);
@@ -58,7 +59,7 @@
 //         headers: { Authorization: `Bearer ${token}` },
 //         timeout: 5000,
 //       });
-      
+
 //       setUnreadCount(response.data.unread_count || 0);
 //     } catch (error) {
 //       console.error('Error fetching unread count:', error);
@@ -92,18 +93,17 @@
 //   const handleItemPress = (key) => {
 //     setSelectedItem(key);
 //     closeDropdown();
-    
+
 //     if (key === 'notification') {
 //       fetchUnreadCount();
 //     }
-    
+
 //     switch (key) {
 //       case 'home':
 //       case 'services':
 //       case 'add_services':
 //       case 'booking':
 //       case 'request':
-//       case 'analysis':
 //       case 'chat':
 //       case 'notification':
 //       case 'profile':
@@ -145,12 +145,13 @@
 //   };
 
 //   const ICON_COLOR = '#003366';
+
+//   // 🔹 Removed "Analysis" option
 //   const menuItems = [
 //     { label: 'Home', key: 'home', icon: 'home-outline' },
 //     { label: 'Services', key: 'services', icon: 'construct-outline' },
 //     { label: 'Booking', key: 'booking', icon: 'calendar-outline' },
 //     { label: 'Request', key: 'request', icon: 'download-outline' },
-//     { label: 'Analysis', key: 'analysis', icon: 'stats-chart-outline' },
 //   ];
 
 //   return (
@@ -172,7 +173,7 @@
 //                 style={[
 //                   styles.navButton,
 //                   selectedItem === item.key && styles.activeButton,
-//                   index > 0 && { marginLeft: 12 }
+//                   index > 0 && { marginLeft: 12 },
 //                 ]}
 //                 onPress={() => handleItemPress(item.key)}
 //               >
@@ -189,30 +190,36 @@
 //         )}
 
 //         <View style={styles.rightSection}>
-//           {Platform.OS === 'web' && !isMobile && (
-//             <IconWithCaption
-//               icon="chatbubble-ellipses-outline"
-//               label="Chat"
-//               onPress={() => handleItemPress('chat')}
-//             />
-//           )}
+//   {/* Web: Chat with Badge */}
+//   {Platform.OS === 'web' && !isMobile && (
+//     <View style={{ position: 'relative' }}>
+//       <IconWithCaption
+//         icon="chatbubble-ellipses-outline"
+//         label="Chat"
+//         onPress={() => handleItemPress('chat')}
+//       />
+//       <BookingChatBadge />
+//     </View>
+//   )}
 
-//           <IconWithCaption
-//             icon="notifications-outline"
-//             label="Notifications"
-//             onPress={() => handleItemPress('notification')}
-//             badgeCount={unreadCount}
-//           />
+//   {/* Notifications */}
+//   <IconWithCaption
+//     icon="notifications-outline"
+//     label="Notifications"
+//     onPress={() => handleItemPress('notification')}
+//     badgeCount={unreadCount}
+//   />
 
-//           {!isMobile && (
-//             <>
-//               <IconAvatar label="Profile" onPress={() => handleItemPress('profile')} />
-//               <IconWithCaption icon="menu" label="Menu" onPress={toggleDropdown} isMenu />
-//             </>
-//           )}
-//         </View>
+//   {!isMobile && (
+//     <>
+//       <IconAvatar label="Profile" onPress={() => handleItemPress('profile')} />
+//       <IconWithCaption icon="menu" label="Menu" onPress={toggleDropdown} isMenu />
+//     </>
+//   )}
+// </View>
 //       </View>
 
+//       {/* 🔹 Dropdown menu (Analytics removed) */}
 //       {!isMobile && dropdownVisible && (
 //         <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={closeDropdown}>
 //           <Animated.View
@@ -236,7 +243,6 @@
 //               <MenuTile icon="add-circle-outline" label="Add Service" onPress={() => handleItemPress('services')} />
 //               <MenuTile icon="list-outline" label="Booking Requests" onPress={() => handleItemPress('request')} />
 //               <MenuTile icon="calendar-outline" label="Bookings" onPress={() => handleItemPress('booking')} />
-//               <MenuTile icon="stats-chart-outline" label="Analytics" onPress={() => handleItemPress('analysis')} />
 //             </View>
 
 //             <Text style={[styles.sectionLabel, { marginTop: 12 }]}>Your tools</Text>
@@ -265,9 +271,7 @@
 //       <Ionicons name={icon} size={isMenu ? 26 : 22} color="#003366" />
 //       {badgeCount > 0 && (
 //         <View style={styles.badge}>
-//           <Text style={styles.badgeText}>
-//             {badgeCount > 9 ? '9+' : badgeCount}
-//           </Text>
+//           <Text style={styles.badgeText}>{badgeCount > 9 ? '9+' : badgeCount}</Text>
 //         </View>
 //       )}
 //     </TouchableOpacity>
@@ -337,6 +341,7 @@
 // );
 
 // const styles = StyleSheet.create({
+//   /* 🎨 Styles unchanged */
 //   headerWrapper: {
 //     backgroundColor: '#ffffff',
 //     paddingTop: 28,
@@ -345,7 +350,9 @@
 //     alignItems: 'center',
 //     ...(Platform.OS === 'web' && {
 //       position: 'fixed',
-//       top: 0, left: 0, right: 0,
+//       top: 0,
+//       left: 0,
+//       right: 0,
 //       zIndex: 999,
 //       width: '100%',
 //       boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)',
@@ -356,7 +363,6 @@
 //   logo: { fontSize: 38, marginRight: 12 },
 //   appTitle: { fontSize: 30, fontWeight: '700', color: '#003366', lineHeight: 32 },
 //   tagline: { fontSize: 12, color: '#555', marginTop: 2, fontWeight: '600' },
-
 //   navRow: { flexDirection: 'row', alignItems: 'center' },
 //   navButton: {
 //     backgroundColor: '#f9f9f9',
@@ -375,13 +381,10 @@
 //   },
 //   activeButton: { backgroundColor: '#e0f4ff', borderColor: '#0077b6' },
 //   navButtonText: { fontSize: 14, fontWeight: '600', color: '#003366' },
-
 //   rightSection: { flexDirection: 'row', alignItems: 'center', marginLeft: 12 },
-
 //   iconWithLabel: { alignItems: 'center', justifyContent: 'center', marginLeft: 12 },
 //   iconCaption: { fontSize: 10, fontWeight: '500', color: '#003366', lineHeight: 12, marginTop: 2 },
 //   iconNoBg: { padding: 5, backgroundColor: 'transparent', position: 'relative' },
-
 //   badge: {
 //     position: 'absolute',
 //     top: 2,
@@ -396,22 +399,17 @@
 //     borderWidth: 2,
 //     borderColor: '#fff',
 //   },
-//   badgeText: {
-//     color: '#fff',
-//     fontSize: 10,
-//     fontWeight: '700',
-//     lineHeight: 12,
-//   },
-
+//   badgeText: { color: '#fff', fontSize: 10, fontWeight: '700', lineHeight: 12 },
 //   profileButton: {
 //     backgroundColor: '#222',
-//     width: 35, height: 35, borderRadius: 20,
-//     justifyContent: 'center', alignItems: 'center',
+//     width: 35,
+//     height: 35,
+//     borderRadius: 20,
+//     justifyContent: 'center',
+//     alignItems: 'center',
 //   },
 //   profileText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
-
 //   overlay: { position: 'absolute', top: 0, bottom: -500, left: 0, right: 0, backgroundColor: 'transparent' },
-
 //   menuPanel: {
 //     position: 'absolute',
 //     top: HEADER_DROPDOWN_TOP,
@@ -426,9 +424,7 @@
 //     minWidth: 420,
 //     ...(Platform.OS === 'web' && { boxShadow: '0 18px 40px rgba(0,0,0,0.16)' }),
 //   },
-
 //   sectionLabel: { fontSize: 12, letterSpacing: 0.3, fontWeight: '800', color: '#6B7280', marginBottom: 8 },
-
 //   menuGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
 //   tile: {
 //     width: '48%',
@@ -444,13 +440,15 @@
 //   },
 //   tileHover: { borderColor: '#cfe2ff', backgroundColor: '#f6faff' },
 //   tileIconCircle: {
-//     width: 34, height: 34, borderRadius: 17,
+//     width: 34,
+//     height: 34,
+//     borderRadius: 17,
 //     backgroundColor: '#f0f6ff',
-//     alignItems: 'center', justifyContent: 'center',
+//     alignItems: 'center',
+//     justifyContent: 'center',
 //     marginBottom: 8,
 //   },
 //   tileText: { fontWeight: '700', color: '#0F172A' },
-
 //   rowAction: {
 //     height: 48,
 //     borderRadius: 12,
@@ -463,13 +461,15 @@
 //     marginTop: 8,
 //   },
 //   rowIconWrap: {
-//     width: 30, height: 30, borderRadius: 15,
-//     alignItems: 'center', justifyContent: 'center',
+//     width: 30,
+//     height: 30,
+//     borderRadius: 15,
+//     alignItems: 'center',
+//     justifyContent: 'center',
 //     backgroundColor: '#F3F6FA',
 //     marginRight: 10,
 //   },
 //   rowActionText: { fontWeight: '700', color: '#0F172A', flex: 1 },
-
 //   footerItem: {
 //     height: 42,
 //     borderRadius: 10,
@@ -481,7 +481,6 @@
 // });
 
 // export default VendorHeader;
-
 
 
 
@@ -502,6 +501,7 @@ import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import getBaseURL from '../../config/env';
+import BookingChatBadge from '../BookingChatBadge';
 
 const HEADER_DROPDOWN_TOP = Platform.OS === 'web' ? 78 : 70;
 const API_URL = getBaseURL().replace(/\/+$/, '');
@@ -631,7 +631,7 @@ const VendorHeader = ({ onTabChange }) => {
 
   const ICON_COLOR = '#003366';
 
-  // 🔹 Removed "Analysis" option
+  // top nav buttons in the middle
   const menuItems = [
     { label: 'Home', key: 'home', icon: 'home-outline' },
     { label: 'Services', key: 'services', icon: 'construct-outline' },
@@ -650,6 +650,7 @@ const VendorHeader = ({ onTabChange }) => {
           </View>
         </View>
 
+        {/* middle nav (only web / large) */}
         {!isMobile && (
           <View style={styles.navRow}>
             {menuItems.map((item, index) => (
@@ -674,15 +675,21 @@ const VendorHeader = ({ onTabChange }) => {
           </View>
         )}
 
+        {/* right side icons */}
         <View style={styles.rightSection}>
+          {/* Web: Chat with Badge */}
           {Platform.OS === 'web' && !isMobile && (
-            <IconWithCaption
-              icon="chatbubble-ellipses-outline"
-              label="Chat"
-              onPress={() => handleItemPress('chat')}
-            />
+            <View style={{ position: 'relative' }}>
+              <IconWithCaption
+                icon="chatbubble-ellipses-outline"
+                label="Chat"
+                onPress={() => handleItemPress('chat')}
+              />
+              <BookingChatBadge />
+            </View>
           )}
 
+          {/* Notifications */}
           <IconWithCaption
             icon="notifications-outline"
             label="Notifications"
@@ -690,6 +697,7 @@ const VendorHeader = ({ onTabChange }) => {
             badgeCount={unreadCount}
           />
 
+          {/* Profile + Menu (web only, no menu on mobile) */}
           {!isMobile && (
             <>
               <IconAvatar label="Profile" onPress={() => handleItemPress('profile')} />
@@ -699,7 +707,7 @@ const VendorHeader = ({ onTabChange }) => {
         </View>
       </View>
 
-      {/* 🔹 Dropdown menu (Analytics removed) */}
+      {/* 🔻 Dropdown menu – now ONLY Logout on web, nothing on mobile */}
       {!isMobile && dropdownVisible && (
         <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={closeDropdown}>
           <Animated.View
@@ -718,22 +726,12 @@ const VendorHeader = ({ onTabChange }) => {
               },
             ]}
           >
-            <Text style={styles.sectionLabel}>Quick actions</Text>
-            <View style={styles.menuGrid}>
-              <MenuTile icon="add-circle-outline" label="Add Service" onPress={() => handleItemPress('services')} />
-              <MenuTile icon="list-outline" label="Booking Requests" onPress={() => handleItemPress('request')} />
-              <MenuTile icon="calendar-outline" label="Bookings" onPress={() => handleItemPress('booking')} />
-            </View>
-
-            <Text style={[styles.sectionLabel, { marginTop: 12 }]}>Your tools</Text>
-            <RowAction icon="person-circle-outline" label="Profile" onPress={() => handleItemPress('profile')} />
-            <RowAction icon="chatbubble-ellipses-outline" label="Chat" onPress={() => handleItemPress('chat')} />
-
-            <Text style={[styles.sectionLabel, { marginTop: 12 }]}>More</Text>
-            <FooterItem icon="settings-outline" label="Account Settings" onPress={() => handleItemPress('settings')} />
-            <FooterItem icon="help-circle-outline" label="Help & Support" onPress={() => handleItemPress('support')} />
-            <FooterItem icon="notifications-outline" label="System Notifications" onPress={() => handleItemPress('notification')} />
-            <FooterItem icon="log-out-outline" label="Logout" onPress={() => handleItemPress('logout')} />
+            {/* Only Logout item kept */}
+            <FooterItem
+              icon="log-out-outline"
+              label="Logout"
+              onPress={() => handleItemPress('logout')}
+            />
           </Animated.View>
         </TouchableOpacity>
       )}
@@ -773,6 +771,9 @@ const IconAvatar = ({ label, onPress }) => (
   </View>
 );
 
+/* These are now unused, but kept in case you need them later
+   (safe to delete if you want to clean warnings)
+*/
 const MenuTile = ({ icon, label, onPress }) => {
   const [hovered, setHovered] = useState(false);
   return (
@@ -821,7 +822,6 @@ const FooterItem = ({ icon, label, onPress }) => (
 );
 
 const styles = StyleSheet.create({
-  /* 🎨 Styles unchanged */
   headerWrapper: {
     backgroundColor: '#ffffff',
     paddingTop: 28,
@@ -838,7 +838,11 @@ const styles = StyleSheet.create({
       boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)',
     }),
   },
-  headerInner: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  headerInner: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   brand: { flexDirection: 'row', alignItems: 'center' },
   logo: { fontSize: 38, marginRight: 12 },
   appTitle: { fontSize: 30, fontWeight: '700', color: '#003366', lineHeight: 32 },
@@ -889,7 +893,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   profileText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
-  overlay: { position: 'absolute', top: 0, bottom: -500, left: 0, right: 0, backgroundColor: 'transparent' },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    bottom: -500,
+    left: 0,
+    right: 0,
+    backgroundColor: 'transparent',
+  },
   menuPanel: {
     position: 'absolute',
     top: HEADER_DROPDOWN_TOP,
@@ -899,12 +910,16 @@ const styles = StyleSheet.create({
     padding: 14,
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    width: 400,
-    maxWidth: '42vw',
-    minWidth: 420,
+    width: 260,          // smaller since only logout now
     ...(Platform.OS === 'web' && { boxShadow: '0 18px 40px rgba(0,0,0,0.16)' }),
   },
-  sectionLabel: { fontSize: 12, letterSpacing: 0.3, fontWeight: '800', color: '#6B7280', marginBottom: 8 },
+  sectionLabel: {
+    fontSize: 12,
+    letterSpacing: 0.3,
+    fontWeight: '800',
+    color: '#6B7280',
+    marginBottom: 8,
+  },
   menuGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   tile: {
     width: '48%',

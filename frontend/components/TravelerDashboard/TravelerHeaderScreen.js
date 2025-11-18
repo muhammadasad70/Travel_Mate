@@ -1,3 +1,4 @@
+
 // // frontend/components/TravelerDashboard/TravelerHeaderScreen
 // import React, { useState, useEffect } from 'react';
 // import {
@@ -151,13 +152,17 @@
 //         )}
 
 //         {/* Right actions */}
-//         <View style={{ position: 'relative' }}>
-//   <IconWithCaption
-//     icon="notifications-outline"
-//     label="Alerts"
-//     onPress={() => handleItemPress('notification')}
-//   />
-//   <NotificationBadge />
+//         <View style={styles.rightSection}>
+//           {/* Alerts with Badge */}
+//           <View style={{ position: 'relative' }}>
+//             <IconWithCaption
+//               icon="notifications-outline"
+//               label="Alerts"
+//               onPress={() => handleItemPress('notification')}
+//             />
+//             <NotificationBadge />
+//           </View>
+
 //           {isMobile && (
 //             <IconWithCaption
 //               icon="chatbubble-ellipses-outline"
@@ -339,8 +344,8 @@
 //     shadowOffset: { width: 0, height: 1 },
 //     shadowOpacity: 0.1,
 //     shadowRadius: 3,
-//     flexDirection: 'row',            // <-- added so icon + text align inline
-//     alignItems: 'center',            // <-- added for vertical centering
+//     flexDirection: 'row',
+//     alignItems: 'center',
 //   },
 //   activeButton: { backgroundColor: '#e0f4ff', borderColor: '#0077b6' },
 //   navButtonText: { fontSize: 14, fontWeight: '600', color: '#003366' },
@@ -448,9 +453,7 @@
 
 // export default Header;
 
-
-
-// frontend/components/TravelerDashboard/TravelerHeaderScreen
+// frontend/components/TravelerDashboard/TravelerHeaderScreen.js
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -466,6 +469,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useRole } from '../../RoleContext';
 import { Ionicons } from '@expo/vector-icons';
 import NotificationBadge from '../NotificationBadge';
+import BookingChatBadge from '../BookingChatBadge';
 
 const HEADER_DROPDOWN_TOP = Platform.OS === 'web' ? 78 : 70;
 
@@ -519,7 +523,12 @@ const Header = ({ onTabChange }) => {
         break;
 
       case 'notification':
-        dispatchTab('notification'); break;
+        dispatchTab('notification'); 
+        break;
+
+      case 'bookingChat':
+        dispatchTab('bookingChat'); 
+        break;
 
       // dedicated screens
       case 'saved': navigation.navigate('SavedScreen'); break;
@@ -614,13 +623,19 @@ const Header = ({ onTabChange }) => {
             <NotificationBadge />
           </View>
 
+          {/* Mobile: Messages */}
           {isMobile && (
-            <IconWithCaption
-              icon="chatbubble-ellipses-outline"
-              label="Messages"
-              onPress={() => handleItemPress('messages')}
-            />
+            <View style={{ position: 'relative' }}>
+              <IconWithCaption
+                icon="chatbubble-ellipses-outline"
+                label="Chat"
+                onPress={() => handleItemPress('bookingChat')}
+              />
+              <BookingChatBadge />
+            </View>
           )}
+
+          {/* Desktop: Profile & Menu */}
           {!isMobile && (
             <>
               <IconAvatar label="Profile" onPress={() => handleItemPress('profile')} />
@@ -662,6 +677,11 @@ const Header = ({ onTabChange }) => {
             <Text style={[styles.sectionLabel, { marginTop: 12 }]}>Your tools</Text>
             <RowAction icon="person-circle-outline" label="Profile" onPress={() => handleItemPress('profile')} />
             <RowAction icon="chatbubble-ellipses-outline" label="Messages" onPress={() => handleItemPress('messages')} />
+            <RowActionWithBadge 
+              icon="chatbubbles-outline" 
+              label="Booking Chats" 
+              onPress={() => handleItemPress('bookingChat')} 
+            />
 
             {/* CTA */}
             <TouchableOpacity style={styles.vendorCta} onPress={() => handleItemPress('vendor')} activeOpacity={0.9}>
@@ -683,7 +703,7 @@ const Header = ({ onTabChange }) => {
   );
 };
 
-/* ---------- helpers (unchanged) ---------- */
+/* ---------- helpers ---------- */
 const IconWithCaption = ({ icon, label, onPress, isMenu }) => (
   <View style={styles.iconWithLabel}>
     <TouchableOpacity
@@ -741,6 +761,21 @@ const RowAction = ({ icon, label, onPress }) => (
   >
     <View style={styles.rowIconWrap}>
       <Ionicons name={icon} size={18} color="#0F3A6B" />
+    </View>
+    <Text style={styles.rowActionText} numberOfLines={1}>{label}</Text>
+    <Ionicons name="chevron-forward" size={18} color="#9aa3af" />
+  </TouchableOpacity>
+);
+
+const RowActionWithBadge = ({ icon, label, onPress }) => (
+  <TouchableOpacity
+    activeOpacity={0.9}
+    onPress={onPress}
+    style={[styles.rowAction, Platform.OS === 'web' && { cursor: 'pointer' }]}
+  >
+    <View style={[styles.rowIconWrap, { position: 'relative' }]}>
+      <Ionicons name={icon} size={18} color="#0F3A6B" />
+      <BookingChatBadge />
     </View>
     <Text style={styles.rowActionText} numberOfLines={1}>{label}</Text>
     <Ionicons name="chevron-forward" size={18} color="#9aa3af" />
@@ -816,7 +851,6 @@ const styles = StyleSheet.create({
 
   overlay: { position: 'absolute', top: 0, bottom: -500, left: 0, right: 0, backgroundColor: 'transparent' },
 
-  /* menu */
   menuPanel: {
     position: 'absolute',
     top: HEADER_DROPDOWN_TOP,

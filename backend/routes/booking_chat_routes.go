@@ -23,6 +23,9 @@ func RegisterBookingChatRoutes(router *gin.Engine) {
 		// Send a message
 		g.POST("/conversations/:conversation_id/messages", controllers.SendBookingMessage)
 
+		// ✅ ADD THIS ONE LINE - Mark messages as read
+		g.POST("/conversations/:conversation_id/read", controllers.MarkConversationAsRead)
+
 		// Get unread count
 		g.GET("/unread-count", controllers.GetUnreadBookingCount)
 	}

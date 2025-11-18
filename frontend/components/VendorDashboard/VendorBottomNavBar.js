@@ -1,4 +1,5 @@
 
+
 // // components/VendorDashboard/VendorBottomNavBar.js
 // import React, { useEffect, useMemo, useRef, useState } from 'react';
 // import {
@@ -12,6 +13,7 @@
 // } from 'react-native';
 // import { Ionicons } from '@expo/vector-icons';
 // import { SafeAreaView } from 'react-native-safe-area-context';
+// import BookingChatBadge from '../BookingChatBadge';
 
 // const ACTIVE_COLOR = '#003366';
 // const INACTIVE_COLOR = '#6B7280';
@@ -45,13 +47,13 @@
 //   const isMobile = useIsMobile();
 //   const [activeKey, setActiveKey] = useState(currentTab || 'home');
 
+//   // 🔹 Removed "Analysis" option
 //   const navItems = useMemo(
 //     () => [
 //       { label: 'Home',     icon: 'home-outline',                key: 'home' },
 //       { label: 'Services', icon: 'briefcase-outline',           key: 'services' },
 //       { label: 'Booking',  icon: 'calendar-outline',            key: 'booking' },
 //       { label: 'Requests', icon: 'list-outline',                key: 'request' },
-//       { label: 'Analysis', icon: 'stats-chart-outline',         key: 'analysis' },
 //       { label: 'Chat',     icon: 'chatbubble-ellipses-outline', key: 'chat' },
 //       { label: 'Profile',  icon: 'person-circle-outline',       key: 'profile' },
 //     ],
@@ -111,7 +113,7 @@
 //   );
 // };
 
-// const NavButton = ({ item, active, onPress }) => {
+// const NavButton = ({ item, active, onPress, showBadge }) => {
 //   const scale = useRef(new Animated.Value(1)).current;
 
 //   const onPressIn = () => {
@@ -142,12 +144,13 @@
 //       accessibilityState={{ selected: !!active }}
 //       accessibilityLabel={item.label}
 //     >
-//       <Animated.View style={{ transform: [{ scale }] }}>
+//       <Animated.View style={{ transform: [{ scale }], position: 'relative' }}>
 //         <Ionicons
 //           name={item.icon}
 //           size={22}
 //           color={active ? ACTIVE_COLOR : INACTIVE_COLOR}
 //         />
+//         {showBadge && <BookingChatBadge />}
 //       </Animated.View>
 //       <Text style={[styles.label, { color: active ? ACTIVE_COLOR : INACTIVE_COLOR }]}>
 //         {item.label}
@@ -166,13 +169,11 @@
 //   },
 //   hidden: { opacity: 0, height: 0 },
 //   safeArea: { backgroundColor: 'transparent' },
-
 //   bar: {
 //     backgroundColor: BAR_BG,
 //     borderTopWidth: 1,
 //     borderTopColor: BORDER,
 //   },
-
 //   container: {
 //     height: 64,
 //     paddingBottom: Platform.OS === 'android' ? 6 : 2,
@@ -181,14 +182,12 @@
 //     justifyContent: 'space-between',
 //     alignItems: 'center',
 //   },
-
 //   navItem: {
 //     alignItems: 'center',
 //     justifyContent: 'center',
 //     minWidth: 50,
 //     ...(Platform.OS === 'web' && { cursor: 'pointer' }),
 //   },
-
 //   label: {
 //     fontSize: 10,
 //     fontWeight: '600',
@@ -197,7 +196,6 @@
 // });
 
 // export default VendorBottomNavBar;
-
 
 
 // components/VendorDashboard/VendorBottomNavBar.js
@@ -213,6 +211,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import BookingChatBadge from '../BookingChatBadge';
 
 const ACTIVE_COLOR = '#003366';
 const INACTIVE_COLOR = '#6B7280';
@@ -246,14 +245,13 @@ const VendorBottomNavBar = ({ onTabChange, currentTab }) => {
   const isMobile = useIsMobile();
   const [activeKey, setActiveKey] = useState(currentTab || 'home');
 
-  // 🔹 Removed "Analysis" option
   const navItems = useMemo(
     () => [
       { label: 'Home',     icon: 'home-outline',                key: 'home' },
       { label: 'Services', icon: 'briefcase-outline',           key: 'services' },
       { label: 'Booking',  icon: 'calendar-outline',            key: 'booking' },
       { label: 'Requests', icon: 'list-outline',                key: 'request' },
-      { label: 'Chat',     icon: 'chatbubble-ellipses-outline', key: 'chat' },
+      { label: 'Chat',     icon: 'chatbubble-ellipses-outline', key: 'chat', showBadge: true },
       { label: 'Profile',  icon: 'person-circle-outline',       key: 'profile' },
     ],
     []
@@ -301,6 +299,7 @@ const VendorBottomNavBar = ({ onTabChange, currentTab }) => {
                   key={item.key}
                   item={item}
                   active={!!active}
+                  showBadge={item.showBadge}
                   onPress={() => handlePress(item)}
                 />
               );
@@ -312,7 +311,7 @@ const VendorBottomNavBar = ({ onTabChange, currentTab }) => {
   );
 };
 
-const NavButton = ({ item, active, onPress }) => {
+const NavButton = ({ item, active, onPress, showBadge }) => {
   const scale = useRef(new Animated.Value(1)).current;
 
   const onPressIn = () => {
@@ -343,13 +342,16 @@ const NavButton = ({ item, active, onPress }) => {
       accessibilityState={{ selected: !!active }}
       accessibilityLabel={item.label}
     >
-      <Animated.View style={{ transform: [{ scale }] }}>
-        <Ionicons
-          name={item.icon}
-          size={22}
-          color={active ? ACTIVE_COLOR : INACTIVE_COLOR}
-        />
-      </Animated.View>
+      <View style={styles.iconContainer}>
+        <Animated.View style={{ transform: [{ scale }] }}>
+          <Ionicons
+            name={item.icon}
+            size={22}
+            color={active ? ACTIVE_COLOR : INACTIVE_COLOR}
+          />
+        </Animated.View>
+        {showBadge && <BookingChatBadge />}
+      </View>
       <Text style={[styles.label, { color: active ? ACTIVE_COLOR : INACTIVE_COLOR }]}>
         {item.label}
       </Text>
@@ -385,6 +387,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minWidth: 50,
     ...(Platform.OS === 'web' && { cursor: 'pointer' }),
+  },
+  iconContainer: {
+    position: 'relative',
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   label: {
     fontSize: 10,
