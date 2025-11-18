@@ -1,4 +1,6 @@
 
+
+// // components/VendorDashboard/VendorBottomNavBar.js
 // import React, { useEffect, useMemo, useRef, useState } from 'react';
 // import {
 //   View,
@@ -11,6 +13,7 @@
 // } from 'react-native';
 // import { Ionicons } from '@expo/vector-icons';
 // import { SafeAreaView } from 'react-native-safe-area-context';
+// import BookingChatBadge from '../BookingChatBadge';
 
 // const ACTIVE_COLOR = '#003366';
 // const INACTIVE_COLOR = '#6B7280';
@@ -43,17 +46,16 @@
 // const VendorBottomNavBar = ({ onTabChange, currentTab }) => {
 //   const isMobile = useIsMobile();
 //   const [activeKey, setActiveKey] = useState(currentTab || 'home');
-//   const [moreOpen, setMoreOpen] = useState(false);
 
-//   // Primary vendor tabs
+//   // 🔹 Removed "Analysis" option
 //   const navItems = useMemo(
 //     () => [
-//       { label: 'Home',     icon: 'home-outline',                   key: 'home',     isTab: true  },
-//       { label: 'Services', icon: 'briefcase-outline',              key: 'services', isTab: true  },
-//       { label: 'Booking',  icon: 'calendar-outline',               key: 'booking',  isTab: true  },
-//       { label: 'Chat',     icon: 'chatbubble-ellipses-outline',    key: 'chat',     isTab: true  },
-//       { label: 'Profile',  icon: 'person-circle-outline',          key: 'profile',  isTab: true  },
-//       { label: 'More',     icon: 'ellipsis-horizontal-circle-outline', key: 'more', isTab: false },
+//       { label: 'Home',     icon: 'home-outline',                key: 'home' },
+//       { label: 'Services', icon: 'briefcase-outline',           key: 'services' },
+//       { label: 'Booking',  icon: 'calendar-outline',            key: 'booking' },
+//       { label: 'Requests', icon: 'list-outline',                key: 'request' },
+//       { label: 'Chat',     icon: 'chatbubble-ellipses-outline', key: 'chat' },
+//       { label: 'Profile',  icon: 'person-circle-outline',       key: 'profile' },
 //     ],
 //     []
 //   );
@@ -62,7 +64,6 @@
 //     if (currentTab && currentTab !== activeKey) setActiveKey(currentTab);
 //   }, [currentTab]);
 
-//   // Listen to vendor tab changes (web)
 //   useEffect(() => {
 //     const handler = (e) => {
 //       const key = e?.detail?.tabKey && String(e.detail.tabKey).split('-')[0];
@@ -85,18 +86,8 @@
 //   };
 
 //   const handlePress = (item) => {
-//     if (item.isTab) {
-//       setActiveKey(item.key);
-//       dispatchVendorTab(item.key);
-//       return;
-//     }
-//     if (item.key === 'more') setMoreOpen(true);
-//   };
-
-//   const pickExtra = (key) => {
-//     setMoreOpen(false);
-//     setActiveKey(key);
-//     dispatchVendorTab(key);
+//     setActiveKey(item.key);
+//     dispatchVendorTab(item.key);
 //   };
 
 //   return (
@@ -105,7 +96,7 @@
 //         <View style={styles.bar}>
 //           <View style={styles.container}>
 //             {navItems.map((item) => {
-//               const active = item.isTab && item.key === activeKey;
+//               const active = item.key === activeKey;
 //               return (
 //                 <NavButton
 //                   key={item.key}
@@ -118,25 +109,11 @@
 //           </View>
 //         </View>
 //       </SafeAreaView>
-
-//       {/* More sheet (Request, Analysis, Notification) */}
-//       {moreOpen && (
-//         <View style={styles.sheetOverlay}>
-//           <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setMoreOpen(false)} />
-//           <View style={styles.sheet}>
-//             <View style={styles.sheetHandle} />
-//             <SheetRow icon="list-outline" label="Request" onPress={() => pickExtra('request')} />
-//             <SheetRow icon="stats-chart-outline" label="Analysis" onPress={() => pickExtra('analysis')} />
-//             <SheetRow icon="notifications-outline" label="Notification" onPress={() => pickExtra('notification')} />
-//             <View style={{ height: 6 }} />
-//           </View>
-//         </View>
-//       )}
 //     </View>
 //   );
 // };
 
-// const NavButton = ({ item, active, onPress }) => {
+// const NavButton = ({ item, active, onPress, showBadge }) => {
 //   const scale = useRef(new Animated.Value(1)).current;
 
 //   const onPressIn = () => {
@@ -167,12 +144,13 @@
 //       accessibilityState={{ selected: !!active }}
 //       accessibilityLabel={item.label}
 //     >
-//       <Animated.View style={{ transform: [{ scale }] }}>
+//       <Animated.View style={{ transform: [{ scale }], position: 'relative' }}>
 //         <Ionicons
 //           name={item.icon}
 //           size={22}
 //           color={active ? ACTIVE_COLOR : INACTIVE_COLOR}
 //         />
+//         {showBadge && <BookingChatBadge />}
 //       </Animated.View>
 //       <Text style={[styles.label, { color: active ? ACTIVE_COLOR : INACTIVE_COLOR }]}>
 //         {item.label}
@@ -180,14 +158,6 @@
 //     </TouchableOpacity>
 //   );
 // };
-
-// const SheetRow = ({ icon, label, onPress }) => (
-//   <TouchableOpacity style={styles.sheetRow} onPress={onPress} activeOpacity={0.9}>
-//     <Ionicons name={icon} size={20} color="#0f172a" />
-//     <Text style={styles.sheetRowText}>{label}</Text>
-//     <Ionicons name="chevron-forward" size={18} color="#94a3b8" />
-//   </TouchableOpacity>
-// );
 
 // const styles = StyleSheet.create({
 //   root: {
@@ -199,65 +169,33 @@
 //   },
 //   hidden: { opacity: 0, height: 0 },
 //   safeArea: { backgroundColor: 'transparent' },
-
 //   bar: {
 //     backgroundColor: BAR_BG,
 //     borderTopWidth: 1,
 //     borderTopColor: BORDER,
 //   },
-
 //   container: {
 //     height: 64,
 //     paddingBottom: Platform.OS === 'android' ? 6 : 2,
+//     paddingHorizontal: 6,
 //     flexDirection: 'row',
-//     justifyContent: 'space-around',
+//     justifyContent: 'space-between',
 //     alignItems: 'center',
 //   },
-
 //   navItem: {
 //     alignItems: 'center',
 //     justifyContent: 'center',
-//     minWidth: 54,
-//     gap: 4,
+//     minWidth: 50,
 //     ...(Platform.OS === 'web' && { cursor: 'pointer' }),
 //   },
-
 //   label: {
-//     fontSize: 11,
+//     fontSize: 10,
 //     fontWeight: '600',
+//     marginTop: 4,
 //   },
-
-//   // More sheet
-//   sheetOverlay: {
-//     position: 'fixed',
-//     left: 0, right: 0, bottom: 0, top: 0,
-//     backgroundColor: 'rgba(0,0,0,0.2)',
-//     justifyContent: 'flex-end',
-//   },
-//   sheet: {
-//     backgroundColor: '#fff',
-//     borderTopLeftRadius: 16,
-//     borderTopRightRadius: 16,
-//     padding: 12,
-//     borderTopWidth: 1,
-//     borderColor: '#E5E7EB',
-//   },
-//   sheetHandle: {
-//     alignSelf: 'center',
-//     width: 40, height: 4, borderRadius: 2, backgroundColor: '#CBD5E1', marginBottom: 6,
-//   },
-//   sheetRow: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     gap: 10,
-//     paddingVertical: 12,
-//     paddingHorizontal: 4,
-//   },
-//   sheetRowText: { fontSize: 16, color: '#0f172a', flex: 1 },
 // });
 
 // export default VendorBottomNavBar;
-
 
 
 // components/VendorDashboard/VendorBottomNavBar.js
@@ -273,6 +211,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import BookingChatBadge from '../BookingChatBadge';
 
 const ACTIVE_COLOR = '#003366';
 const INACTIVE_COLOR = '#6B7280';
@@ -306,15 +245,13 @@ const VendorBottomNavBar = ({ onTabChange, currentTab }) => {
   const isMobile = useIsMobile();
   const [activeKey, setActiveKey] = useState(currentTab || 'home');
 
-  // Exact vendor tabs (all are tabs)
   const navItems = useMemo(
     () => [
       { label: 'Home',     icon: 'home-outline',                key: 'home' },
       { label: 'Services', icon: 'briefcase-outline',           key: 'services' },
       { label: 'Booking',  icon: 'calendar-outline',            key: 'booking' },
       { label: 'Requests', icon: 'list-outline',                key: 'request' },
-      { label: 'Analysis', icon: 'stats-chart-outline',         key: 'analysis' },
-      { label: 'Chat',     icon: 'chatbubble-ellipses-outline', key: 'chat' },
+      { label: 'Chat',     icon: 'chatbubble-ellipses-outline', key: 'chat', showBadge: true },
       { label: 'Profile',  icon: 'person-circle-outline',       key: 'profile' },
     ],
     []
@@ -324,7 +261,6 @@ const VendorBottomNavBar = ({ onTabChange, currentTab }) => {
     if (currentTab && currentTab !== activeKey) setActiveKey(currentTab);
   }, [currentTab]);
 
-  // Listen to vendor tab changes (web)
   useEffect(() => {
     const handler = (e) => {
       const key = e?.detail?.tabKey && String(e.detail.tabKey).split('-')[0];
@@ -363,6 +299,7 @@ const VendorBottomNavBar = ({ onTabChange, currentTab }) => {
                   key={item.key}
                   item={item}
                   active={!!active}
+                  showBadge={item.showBadge}
                   onPress={() => handlePress(item)}
                 />
               );
@@ -374,7 +311,7 @@ const VendorBottomNavBar = ({ onTabChange, currentTab }) => {
   );
 };
 
-const NavButton = ({ item, active, onPress }) => {
+const NavButton = ({ item, active, onPress, showBadge }) => {
   const scale = useRef(new Animated.Value(1)).current;
 
   const onPressIn = () => {
@@ -405,13 +342,16 @@ const NavButton = ({ item, active, onPress }) => {
       accessibilityState={{ selected: !!active }}
       accessibilityLabel={item.label}
     >
-      <Animated.View style={{ transform: [{ scale }] }}>
-        <Ionicons
-          name={item.icon}
-          size={22}
-          color={active ? ACTIVE_COLOR : INACTIVE_COLOR}
-        />
-      </Animated.View>
+      <View style={styles.iconContainer}>
+        <Animated.View style={{ transform: [{ scale }] }}>
+          <Ionicons
+            name={item.icon}
+            size={22}
+            color={active ? ACTIVE_COLOR : INACTIVE_COLOR}
+          />
+        </Animated.View>
+        {showBadge && <BookingChatBadge />}
+      </View>
       <Text style={[styles.label, { color: active ? ACTIVE_COLOR : INACTIVE_COLOR }]}>
         {item.label}
       </Text>
@@ -429,33 +369,36 @@ const styles = StyleSheet.create({
   },
   hidden: { opacity: 0, height: 0 },
   safeArea: { backgroundColor: 'transparent' },
-
   bar: {
     backgroundColor: BAR_BG,
     borderTopWidth: 1,
     borderTopColor: BORDER,
   },
-
   container: {
     height: 64,
     paddingBottom: Platform.OS === 'android' ? 6 : 2,
     paddingHorizontal: 6,
     flexDirection: 'row',
-    justifyContent: 'space-between', // 7 items need tighter spacing
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
-
   navItem: {
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 44, // tightened to fit 7 items
-    gap: 4,
+    minWidth: 50,
     ...(Platform.OS === 'web' && { cursor: 'pointer' }),
   },
-
+  iconContainer: {
+    position: 'relative',
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   label: {
-    fontSize: 10, // slightly smaller to fit
+    fontSize: 10,
     fontWeight: '600',
+    marginTop: 4,
   },
 });
 

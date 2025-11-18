@@ -1,5 +1,3 @@
-
-
 import React, { useEffect, useState, useLayoutEffect } from 'react';
 import {
   View,
@@ -9,7 +7,10 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Alert,
+  Platform,
+  StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../../api';
 import Avatar from '../../components/avatar';
@@ -29,17 +30,17 @@ function formatPhone(code, phone) {
   return [cc || '', phone || ''].filter(Boolean).join(' ');
 }
 
-// Accepts DB/API timestamp and formats it pretty
 function normalizeDateInput(d) {
   if (!d) return null;
   if (d instanceof Date) return d;
-  if (typeof d === 'number') return new Date(d); // epoch ms
+  if (typeof d === 'number') return new Date(d);
   const s = String(d).trim();
   const withT = s.replace(/^(\d{4}-\d{2}-\d{2})\s+/, '$1T');
   const isoTZ = withT.replace(/([+-]\d{2})(\d{2})$/, '$1:$2');
   const dt = new Date(isoTZ);
   return isNaN(dt.getTime()) ? null : dt;
 }
+
 function formatDatePretty(dLike) {
   const dt = normalizeDateInput(dLike);
   if (!dt) return '—';
@@ -55,17 +56,7 @@ export default function ProfileDetailScreen({ navigation }) {
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerLeft: () => (
-        <TouchableOpacity
-          onPress={() => navigation.navigate('VendorDashboard')}
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-          style={{ paddingHorizontal: 8, paddingVertical: 4 }}
-        >
-          <Text style={{ fontSize: 16 }}>‹ Back</Text>
-        </TouchableOpacity>
-      ),
-      title: 'Profile',
+      headerShown: false, // disable native header since we're using custom layout
     });
   }, [navigation]);
 
@@ -91,7 +82,7 @@ export default function ProfileDetailScreen({ navigation }) {
   }, []);
 
   const handleEdit = () => {
-    navigation.navigate('ManageTravelerProfile'); // if you have a vendor-specific screen, update this
+    navigation.navigate('ManageTravelerProfile');
   };
 
   const handleDelete = async () => {
@@ -125,33 +116,36 @@ export default function ProfileDetailScreen({ navigation }) {
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" />
-        <Text style={styles.muted}>Loading profile…</Text>
-      </View>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" />
+          <Text style={styles.muted}>Loading profile…</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   if (error || !user) {
     return (
-      <ScrollView style={styles.page} contentContainerStyle={{ flexGrow: 1, padding: 16 }}>
-        <View style={[styles.container, styles.maxWidth]}>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('VendorDashboard')}
-            style={styles.backPill}
-          >
-            <Text style={styles.backPillText}>‹ Back</Text>
-          </TouchableOpacity>
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView style={styles.page} contentContainerStyle={styles.contentContainer}>
+          <View style={[styles.container, styles.maxWidth]}>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('VendorDashboard')}
+              style={styles.backPill}
+            >
+              <Text style={styles.backPillText}>‹ Back</Text>
+            </TouchableOpacity>
 
-          <View style={[styles.banner, styles.bannerDanger]}>
-            <Text style={styles.bannerText}>{error || 'Failed to load profile.'}</Text>
+            <View style={[styles.banner, styles.bannerDanger]}>
+              <Text style={styles.bannerText}>{error || 'Failed to load profile.'}</Text>
+            </View>
           </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </SafeAreaView>
     );
   }
 
-  // snake_case & camelCase support
   const firstName = user.first_name ?? user.firstName;
   const lastName = user.last_name ?? user.lastName;
   const countryCode = user.country_code ?? user.countryCode;
@@ -161,95 +155,107 @@ export default function ProfileDetailScreen({ navigation }) {
   const initials = getInitials(firstName, lastName);
 
   return (
-    <ScrollView style={styles.page} contentContainerStyle={{ flexGrow: 1, padding: 16 }}>
-      <View style={[styles.container, styles.maxWidth]}>
-        {/* back pill */}
-        <TouchableOpacity
-          onPress={() => navigation.navigate('VendorDashboard')}
-          style={styles.backPill}
-        >
-          <Text style={styles.backPillText}>‹ Back</Text>
-        </TouchableOpacity>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView
+        style={styles.page}
+        contentContainerStyle={[
+          styles.contentContainer,
+          Platform.OS !== 'web' && { paddingBottom: 40 },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={[styles.container, styles.maxWidth]}>
+          
+          {/* Back Button */}
+          <View style={styles.backBtnWrapper}>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('VendorDashboard')}
+              style={styles.backPill}
+            >
+              <Text style={styles.backPillText}>‹ Back</Text>
+            </TouchableOpacity>
+          </View>
 
-        {/* header card */}
-        <View style={styles.card}>
-          <View style={styles.headerRow}>
-            <Avatar
-              size={64}
-              uri={user.avatar_url ?? user.avatarUrl}
-              initials={initials}
-              email={user.email}
-              ring
-            />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.title}>{name}</Text>
-              <View style={styles.chipsRow}>
-                <View style={[styles.chip, styles.chipNeutral]}>
-                  <Text style={styles.chipText}>{roleLabel}</Text>
-                </View>
-                <View
-                  style={[
-                    styles.chip,
-                    user.is_profile_complete ? styles.chipSuccess : styles.chipDanger,
-                  ]}
-                >
-                  <Text
+          {/* header card */}
+          <View style={styles.card}>
+            <View style={styles.headerRow}>
+              <Avatar
+                size={64}
+                uri={user.avatar_url ?? user.avatarUrl}
+                initials={initials}
+                email={user.email}
+                ring
+              />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.title}>{name}</Text>
+                <View style={styles.chipsRow}>
+                  <View style={[styles.chip, styles.chipNeutral]}>
+                    <Text style={styles.chipText}>{roleLabel}</Text>
+                  </View>
+                  <View
                     style={[
-                      styles.chipText,
-                      user.is_profile_complete ? styles.chipTextDark : styles.chipTextLight,
+                      styles.chip,
+                      user.is_profile_complete ? styles.chipSuccess : styles.chipDanger,
                     ]}
                   >
-                    {user.is_profile_complete ? 'Profile Complete' : 'Profile Incomplete'}
-                  </Text>
+                    <Text
+                      style={[
+                        styles.chipText,
+                        user.is_profile_complete ? styles.chipTextDark : styles.chipTextLight,
+                      ]}
+                    >
+                      {user.is_profile_complete ? 'Profile Complete' : 'Profile Incomplete'}
+                    </Text>
+                  </View>
                 </View>
               </View>
             </View>
           </View>
+
+          {/* contact */}
+          <Section title="Contact">
+            <Field label="Email" value={user.email || '—'} />
+            <Divider />
+            <Field label="Phone" value={formatPhone(countryCode, user.phone)} />
+          </Section>
+
+          {/* personal */}
+          <Section title="Personal">
+            <Field label="First name" value={firstName || '—'} />
+            <Divider />
+            <Field label="Last name" value={lastName || '—'} />
+          </Section>
+
+          {/* location */}
+          <Section title="Location">
+            <Field label="Country" value={user.country || '—'} />
+          </Section>
+
+          {/* role */}
+          <Section title="Role">
+            <Field label="Current role" value={roleLabel} />
+            <Divider />
+            <Field label="Member since" value={formatDatePretty(user.created_at ?? user.createdAt)} />
+          </Section>
+
+          {/* footer actions */}
+          <View style={styles.actionsRow}>
+            <TouchableOpacity style={[styles.btn, styles.btnPrimary]} onPress={handleEdit}>
+              <Text style={[styles.btnText, styles.btnTextLight]}>Edit Profile</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.btn, styles.btnDanger]}
+              onPress={handleDelete}
+              disabled={deleting}
+            >
+              <Text style={[styles.btnText, styles.btnTextLight]}>
+                {deleting ? 'Deleting…' : 'Delete Account'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
-
-        {/* contact */}
-        <Section title="Contact">
-          <Field label="Email" value={user.email || '—'} />
-          <Divider />
-          <Field label="Phone" value={formatPhone(countryCode, user.phone)} />
-        </Section>
-
-        {/* personal */}
-        <Section title="Personal">
-          <Field label="First name" value={firstName || '—'} />
-          <Divider />
-          <Field label="Last name" value={lastName || '—'} />
-        </Section>
-
-        {/* location */}
-        <Section title="Location">
-          <Field label="Country" value={user.country || '—'} />
-        </Section>
-
-        {/* role */}
-        <Section title="Role">
-          <Field label="Current role" value={roleLabel} />
-          <Divider />
-          <Field label="Member since" value={formatDatePretty(user.created_at ?? user.createdAt)} />
-        </Section>
-
-        {/* footer actions */}
-        <View style={styles.actionsRow}>
-          <TouchableOpacity style={[styles.btn, styles.btnPrimary]} onPress={handleEdit}>
-            <Text style={[styles.btnText, styles.btnTextLight]}>Edit Profile</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.btn, styles.btnDanger]}
-            onPress={handleDelete}
-            disabled={deleting}
-          >
-            <Text style={[styles.btnText, styles.btnTextLight]}>
-              {deleting ? 'Deleting…' : 'Delete Account'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -276,20 +282,34 @@ function Divider() {
 
 /* ---------- styles ---------- */
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#fff',
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 25 : 0,
+  },
   page: { flex: 1, backgroundColor: '#fff' },
+  contentContainer: { flexGrow: 1, padding: 16 },
   container: { width: '100%' },
   maxWidth: { maxWidth: 920, alignSelf: 'center' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   muted: { marginTop: 8, color: '#6b7280' },
+
+  backBtnWrapper: {
+    width: '100%',
+    maxWidth: 920,
+    alignSelf: 'center',
+    marginBottom: 10,
+    marginTop: 4,
+  },
   backPill: {
     alignSelf: 'flex-start',
     backgroundColor: '#F1F5F9',
     borderRadius: 999,
     paddingVertical: 6,
     paddingHorizontal: 12,
-    marginBottom: 12,
   },
-  backPillText: { fontWeight: '600', color: '#0f172a' },
+  backPillText: { fontWeight: '600', color: '#0f172a', fontSize: 16 },
+
   banner: { padding: 12, borderRadius: 10, marginBottom: 16 },
   bannerDanger: { backgroundColor: '#DC2626' },
   bannerText: { color: 'white', fontWeight: '600' },

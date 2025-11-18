@@ -753,6 +753,52 @@ CREATE INDEX IF NOT EXISTS ix_csb_service  ON cultural_service_bookings(service_
 CREATE UNIQUE INDEX IF NOT EXISTS ux_csb_service_user_date
 ON cultural_service_bookings(service_id, traveler_id, chosen_date)
 WHERE status IN ('pending','confirmed') AND chosen_date IS NOT NULL;
+-- notifications
+CREATE TABLE IF NOT EXISTS notifications (
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  type VARCHAR(50) NOT NULL CHECK (type IN ('booking_request', 'booking_confirmed', 'booking_declined', 'booking_cancelled', 'new_message', 'follow_request', 'system')),
+  title VARCHAR(255) NOT NULL,
+  message TEXT NOT NULL,
+  related_id BIGINT,
+  related_type VARCHAR(50) CHECK (related_type IN ('booking', 'service', 'message', 'post', 'user')),
+  is_read BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_notifications_user_read_created ON notifications(user_id, is_read, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at DESC);
+-- Booking-specific conversations (separate from community chat)
+CREATE TABLE IF NOT EXISTS booking_conversations (
+    id BIGSERIAL PRIMARY KEY,
+    booking_id BIGINT NOT NULL REFERENCES cultural_service_bookings(id) ON DELETE CASCADE,
+    traveler_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    vendor_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    service_id BIGINT NOT NULL REFERENCES cultural_services(id) ON DELETE CASCADE,
+    last_message_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(booking_id)
+);
+
+-- Booking chat messages
+CREATE TABLE IF NOT EXISTS booking_messages (
+    id BIGSERIAL PRIMARY KEY,
+    conversation_id BIGINT NOT NULL REFERENCES booking_conversations(id) ON DELETE CASCADE,
+    sender_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    message TEXT NOT NULL,
+    message_type VARCHAR(20) DEFAULT 'text' CHECK (message_type IN ('text', 'image', 'file', 'system')),
+    file_url TEXT,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_booking_conversations_booking ON booking_conversations(booking_id);
+CREATE INDEX IF NOT EXISTS idx_booking_conversations_traveler ON booking_conversations(traveler_id);
+CREATE INDEX IF NOT EXISTS idx_booking_conversations_vendor ON booking_conversations(vendor_id);
+CREATE INDEX IF NOT EXISTS idx_booking_messages_conversation ON booking_messages(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_booking_messages_sender ON booking_messages(sender_id);
+CREATE INDEX IF NOT EXISTS idx_booking_messages_created ON booking_messages(created_at DESC);
 `
 
 func InitSchema() {

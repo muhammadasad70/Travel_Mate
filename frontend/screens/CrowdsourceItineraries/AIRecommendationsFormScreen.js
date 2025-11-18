@@ -111,9 +111,11 @@ export default function AIRecommendationsFormScreen() {
           trip_duration: durationString,
           interests: selectedInterests,
         }),
+        
       });
 
       const data = await response.json();
+      console.log(data)
 
       if (response.ok) {
         setRecommendations(data.recommendations || []);

@@ -1,3 +1,5 @@
+
+// // components/VendorDashboard/VendorHeader.js
 // import React, { useState, useEffect } from 'react';
 // import {
 //   View,
@@ -11,8 +13,22 @@
 // } from 'react-native';
 // import { useNavigation } from '@react-navigation/native';
 // import { Ionicons } from '@expo/vector-icons';
+// import axios from 'axios';
+// import AsyncStorage from '@react-native-async-storage/async-storage';
+// import getBaseURL from '../../config/env';
+// import BookingChatBadge from '../BookingChatBadge';
 
 // const HEADER_DROPDOWN_TOP = Platform.OS === 'web' ? 78 : 70;
+// const API_URL = getBaseURL().replace(/\/+$/, '');
+
+// const TOKEN_KEYS = ['token', 'auth_token', 'jwt', 'access_token', 'AUTH_TOKEN', 'userToken'];
+// const getAuthToken = async () => {
+//   for (const k of TOKEN_KEYS) {
+//     const v = await AsyncStorage.getItem(k);
+//     if (v) return v;
+//   }
+//   return null;
+// };
 
 // const VendorHeader = ({ onTabChange }) => {
 //   const { width } = useWindowDimensions();
@@ -21,7 +37,34 @@
 
 //   const [selectedItem, setSelectedItem] = useState('home');
 //   const [dropdownVisible, setDropdownVisible] = useState(false);
+//   const [unreadCount, setUnreadCount] = useState(0);
 //   const dropdownAnim = useState(new Animated.Value(0))[0];
+
+//   useEffect(() => {
+//     fetchUnreadCount();
+
+//     const interval = setInterval(() => {
+//       fetchUnreadCount();
+//     }, 30000);
+
+//     return () => clearInterval(interval);
+//   }, []);
+
+//   const fetchUnreadCount = async () => {
+//     try {
+//       const token = await getAuthToken();
+//       if (!token) return;
+
+//       const response = await axios.get(`${API_URL}/notifications/unread-count`, {
+//         headers: { Authorization: `Bearer ${token}` },
+//         timeout: 5000,
+//       });
+
+//       setUnreadCount(response.data.unread_count || 0);
+//     } catch (error) {
+//       console.error('Error fetching unread count:', error);
+//     }
+//   };
 
 //   useEffect(() => {
 //     if (Platform.OS === 'web' && typeof window !== 'undefined') {
@@ -50,21 +93,22 @@
 //   const handleItemPress = (key) => {
 //     setSelectedItem(key);
 //     closeDropdown();
+
+//     if (key === 'notification') {
+//       fetchUnreadCount();
+//     }
+
 //     switch (key) {
-//       // Tabs rendered inside dashboard
 //       case 'home':
 //       case 'services':
 //       case 'add_services':
 //       case 'booking':
 //       case 'request':
-//       case 'analysis':
 //       case 'chat':
 //       case 'notification':
-//       case 'profile': // ✅ render inside dashboard like others
+//       case 'profile':
 //         dispatchTab(key);
 //         break;
-
-//       // Standalone screens
 //       case 'settings':
 //         navigation.navigate('ManageVendorProfile');
 //         break;
@@ -74,7 +118,6 @@
 //       case 'logout':
 //         navigation.navigate('Landing Page');
 //         break;
-
 //       default:
 //         break;
 //     }
@@ -101,10 +144,19 @@
 //     }).start();
 //   };
 
+//   const ICON_COLOR = '#003366';
+
+//   // 🔹 Removed "Analysis" option
+//   const menuItems = [
+//     { label: 'Home', key: 'home', icon: 'home-outline' },
+//     { label: 'Services', key: 'services', icon: 'construct-outline' },
+//     { label: 'Booking', key: 'booking', icon: 'calendar-outline' },
+//     { label: 'Request', key: 'request', icon: 'download-outline' },
+//   ];
+
 //   return (
 //     <View style={styles.headerWrapper}>
 //       <View style={[styles.headerInner, { width: width < 900 ? '95%' : '85%' }]}>
-//         {/* Brand */}
 //         <View style={styles.brand}>
 //           <Text style={styles.logo}>✈️</Text>
 //           <View>
@@ -113,53 +165,61 @@
 //           </View>
 //         </View>
 
-//         {/* Web: center pills */}
 //         {!isMobile && (
 //           <View style={styles.navRow}>
-//             {[
-//               { label: '🏠 Home', key: 'home' },
-//               { label: '🧰 Services', key: 'services' },
-//               { label: '📅 Booking', key: 'booking' },
-//               { label: '📥 Request', key: 'request' },
-//               { label: '📊 Analysis', key: 'analysis' },
-//             ].map((item) => (
+//             {menuItems.map((item, index) => (
 //               <TouchableOpacity
 //                 key={item.key}
-//                 style={[styles.navButton, selectedItem === item.key && styles.activeButton]}
+//                 style={[
+//                   styles.navButton,
+//                   selectedItem === item.key && styles.activeButton,
+//                   index > 0 && { marginLeft: 12 },
+//                 ]}
 //                 onPress={() => handleItemPress(item.key)}
 //               >
+//                 <Ionicons
+//                   name={item.icon}
+//                   size={16}
+//                   color={ICON_COLOR}
+//                   style={{ marginRight: 6 }}
+//                 />
 //                 <Text style={styles.navButtonText}>{item.label}</Text>
 //               </TouchableOpacity>
 //             ))}
 //           </View>
 //         )}
 
-//         {/* Right actions */}
 //         <View style={styles.rightSection}>
-//           {Platform.OS === 'web' && !isMobile && (
-//             <IconWithCaption
-//               icon="chatbubble-ellipses-outline"
-//               label="Chat"
-//               onPress={() => handleItemPress('chat')}
-//             />
-//           )}
+//   {/* Web: Chat with Badge */}
+//   {Platform.OS === 'web' && !isMobile && (
+//     <View style={{ position: 'relative' }}>
+//       <IconWithCaption
+//         icon="chatbubble-ellipses-outline"
+//         label="Chat"
+//         onPress={() => handleItemPress('chat')}
+//       />
+//       <BookingChatBadge />
+//     </View>
+//   )}
 
-//           <IconWithCaption
-//             icon="notifications-outline"
-//             label="Notifications"
-//             onPress={() => handleItemPress('notification')}
-//           />
+//   {/* Notifications */}
+//   <IconWithCaption
+//     icon="notifications-outline"
+//     label="Notifications"
+//     onPress={() => handleItemPress('notification')}
+//     badgeCount={unreadCount}
+//   />
 
-//           {!isMobile && (
-//             <>
-//               <IconAvatar label="Profile" onPress={() => handleItemPress('profile')} />
-//               <IconWithCaption icon="menu" label="Menu" onPress={toggleDropdown} isMenu />
-//             </>
-//           )}
-//         </View>
+//   {!isMobile && (
+//     <>
+//       <IconAvatar label="Profile" onPress={() => handleItemPress('profile')} />
+//       <IconWithCaption icon="menu" label="Menu" onPress={toggleDropdown} isMenu />
+//     </>
+//   )}
+// </View>
 //       </View>
 
-//       {/* Web: dropdown */}
+//       {/* 🔹 Dropdown menu (Analytics removed) */}
 //       {!isMobile && dropdownVisible && (
 //         <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={closeDropdown}>
 //           <Animated.View
@@ -183,7 +243,6 @@
 //               <MenuTile icon="add-circle-outline" label="Add Service" onPress={() => handleItemPress('services')} />
 //               <MenuTile icon="list-outline" label="Booking Requests" onPress={() => handleItemPress('request')} />
 //               <MenuTile icon="calendar-outline" label="Bookings" onPress={() => handleItemPress('booking')} />
-//               <MenuTile icon="stats-chart-outline" label="Analytics" onPress={() => handleItemPress('analysis')} />
 //             </View>
 
 //             <Text style={[styles.sectionLabel, { marginTop: 12 }]}>Your tools</Text>
@@ -202,8 +261,7 @@
 //   );
 // };
 
-// /* helpers + styles */
-// const IconWithCaption = ({ icon, label, onPress, isMenu }) => (
+// const IconWithCaption = ({ icon, label, onPress, isMenu, badgeCount = 0 }) => (
 //   <View style={styles.iconWithLabel}>
 //     <TouchableOpacity
 //       onPress={onPress}
@@ -211,6 +269,11 @@
 //       activeOpacity={0.85}
 //     >
 //       <Ionicons name={icon} size={isMenu ? 26 : 22} color="#003366" />
+//       {badgeCount > 0 && (
+//         <View style={styles.badge}>
+//           <Text style={styles.badgeText}>{badgeCount > 9 ? '9+' : badgeCount}</Text>
+//         </View>
+//       )}
 //     </TouchableOpacity>
 //     <Text style={styles.iconCaption}>{label}</Text>
 //   </View>
@@ -272,12 +335,13 @@
 //     onPress={onPress}
 //     style={[styles.footerItem, Platform.OS === 'web' && { cursor: 'pointer' }]}
 //   >
-//     <Ionicons name={icon} size={18} color="#0F3A6B" />
+//     <Ionicons name={icon} size={18} color="#0F3A6B" style={{ marginRight: 10 }} />
 //     <Text style={styles.footerItemText}>{label}</Text>
 //   </TouchableOpacity>
 // );
 
 // const styles = StyleSheet.create({
+//   /* 🎨 Styles unchanged */
 //   headerWrapper: {
 //     backgroundColor: '#ffffff',
 //     paddingTop: 28,
@@ -286,7 +350,9 @@
 //     alignItems: 'center',
 //     ...(Platform.OS === 'web' && {
 //       position: 'fixed',
-//       top: 0, left: 0, right: 0,
+//       top: 0,
+//       left: 0,
+//       right: 0,
 //       zIndex: 999,
 //       width: '100%',
 //       boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)',
@@ -297,8 +363,7 @@
 //   logo: { fontSize: 38, marginRight: 12 },
 //   appTitle: { fontSize: 30, fontWeight: '700', color: '#003366', lineHeight: 32 },
 //   tagline: { fontSize: 12, color: '#555', marginTop: 2, fontWeight: '600' },
-
-//   navRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+//   navRow: { flexDirection: 'row', alignItems: 'center' },
 //   navButton: {
 //     backgroundColor: '#f9f9f9',
 //     paddingVertical: 8,
@@ -311,25 +376,40 @@
 //     shadowOffset: { width: 0, height: 1 },
 //     shadowOpacity: 0.1,
 //     shadowRadius: 3,
+//     flexDirection: 'row',
+//     alignItems: 'center',
 //   },
 //   activeButton: { backgroundColor: '#e0f4ff', borderColor: '#0077b6' },
 //   navButtonText: { fontSize: 14, fontWeight: '600', color: '#003366' },
-
-//   rightSection: { flexDirection: 'row', alignItems: 'center', gap: 12, marginLeft: 12 },
-
-//   iconWithLabel: { alignItems: 'center', justifyContent: 'center', gap: 2 },
-//   iconCaption: { fontSize: 10, fontWeight: '500', color: '#003366', lineHeight: 12 },
-//   iconNoBg: { padding: 5, backgroundColor: 'transparent' },
-
+//   rightSection: { flexDirection: 'row', alignItems: 'center', marginLeft: 12 },
+//   iconWithLabel: { alignItems: 'center', justifyContent: 'center', marginLeft: 12 },
+//   iconCaption: { fontSize: 10, fontWeight: '500', color: '#003366', lineHeight: 12, marginTop: 2 },
+//   iconNoBg: { padding: 5, backgroundColor: 'transparent', position: 'relative' },
+//   badge: {
+//     position: 'absolute',
+//     top: 2,
+//     right: 2,
+//     backgroundColor: '#EF4444',
+//     borderRadius: 10,
+//     minWidth: 18,
+//     height: 18,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     paddingHorizontal: 4,
+//     borderWidth: 2,
+//     borderColor: '#fff',
+//   },
+//   badgeText: { color: '#fff', fontSize: 10, fontWeight: '700', lineHeight: 12 },
 //   profileButton: {
 //     backgroundColor: '#222',
-//     width: 35, height: 35, borderRadius: 20,
-//     justifyContent: 'center', alignItems: 'center',
+//     width: 35,
+//     height: 35,
+//     borderRadius: 20,
+//     justifyContent: 'center',
+//     alignItems: 'center',
 //   },
 //   profileText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
-
 //   overlay: { position: 'absolute', top: 0, bottom: -500, left: 0, right: 0, backgroundColor: 'transparent' },
-
 //   menuPanel: {
 //     position: 'absolute',
 //     top: HEADER_DROPDOWN_TOP,
@@ -342,12 +422,10 @@
 //     width: 400,
 //     maxWidth: '42vw',
 //     minWidth: 420,
-//     boxShadow: Platform.OS === 'web' ? '0 18px 40px rgba(0,0,0,0.16)' : undefined,
+//     ...(Platform.OS === 'web' && { boxShadow: '0 18px 40px rgba(0,0,0,0.16)' }),
 //   },
-
 //   sectionLabel: { fontSize: 12, letterSpacing: 0.3, fontWeight: '800', color: '#6B7280', marginBottom: 8 },
-
-//   menuGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'space-between' },
+//   menuGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
 //   tile: {
 //     width: '48%',
 //     height: 76,
@@ -357,17 +435,20 @@
 //     backgroundColor: '#FAFCFF',
 //     paddingHorizontal: 12,
 //     justifyContent: 'center',
-//     gap: 8,
+//     marginBottom: 10,
 //     ...(Platform.OS === 'web' && { transition: 'background-color .15s, border-color .15s' }),
 //   },
 //   tileHover: { borderColor: '#cfe2ff', backgroundColor: '#f6faff' },
 //   tileIconCircle: {
-//     width: 34, height: 34, borderRadius: 17,
+//     width: 34,
+//     height: 34,
+//     borderRadius: 17,
 //     backgroundColor: '#f0f6ff',
-//     alignItems: 'center', justifyContent: 'center',
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//     marginBottom: 8,
 //   },
 //   tileText: { fontWeight: '700', color: '#0F172A' },
-
 //   rowAction: {
 //     height: 48,
 //     borderRadius: 12,
@@ -377,23 +458,24 @@
 //     paddingHorizontal: 12,
 //     alignItems: 'center',
 //     flexDirection: 'row',
-//     gap: 10,
 //     marginTop: 8,
 //   },
 //   rowIconWrap: {
-//     width: 30, height: 30, borderRadius: 15,
-//     alignItems: 'center', justifyContent: 'center',
+//     width: 30,
+//     height: 30,
+//     borderRadius: 15,
+//     alignItems: 'center',
+//     justifyContent: 'center',
 //     backgroundColor: '#F3F6FA',
+//     marginRight: 10,
 //   },
 //   rowActionText: { fontWeight: '700', color: '#0F172A', flex: 1 },
-
 //   footerItem: {
 //     height: 42,
 //     borderRadius: 10,
 //     paddingHorizontal: 10,
 //     alignItems: 'center',
 //     flexDirection: 'row',
-//     gap: 10,
 //   },
 //   footerItemText: { fontWeight: '700', color: '#0F172A' },
 // });
@@ -402,6 +484,7 @@
 
 
 
+// components/VendorDashboard/VendorHeader.js
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -415,8 +498,22 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import getBaseURL from '../../config/env';
+import BookingChatBadge from '../BookingChatBadge';
 
 const HEADER_DROPDOWN_TOP = Platform.OS === 'web' ? 78 : 70;
+const API_URL = getBaseURL().replace(/\/+$/, '');
+
+const TOKEN_KEYS = ['token', 'auth_token', 'jwt', 'access_token', 'AUTH_TOKEN', 'userToken'];
+const getAuthToken = async () => {
+  for (const k of TOKEN_KEYS) {
+    const v = await AsyncStorage.getItem(k);
+    if (v) return v;
+  }
+  return null;
+};
 
 const VendorHeader = ({ onTabChange }) => {
   const { width } = useWindowDimensions();
@@ -425,7 +522,34 @@ const VendorHeader = ({ onTabChange }) => {
 
   const [selectedItem, setSelectedItem] = useState('home');
   const [dropdownVisible, setDropdownVisible] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const dropdownAnim = useState(new Animated.Value(0))[0];
+
+  useEffect(() => {
+    fetchUnreadCount();
+
+    const interval = setInterval(() => {
+      fetchUnreadCount();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const token = await getAuthToken();
+      if (!token) return;
+
+      const response = await axios.get(`${API_URL}/notifications/unread-count`, {
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 5000,
+      });
+
+      setUnreadCount(response.data.unread_count || 0);
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+    }
+  };
 
   useEffect(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
@@ -454,21 +578,22 @@ const VendorHeader = ({ onTabChange }) => {
   const handleItemPress = (key) => {
     setSelectedItem(key);
     closeDropdown();
+
+    if (key === 'notification') {
+      fetchUnreadCount();
+    }
+
     switch (key) {
-      // Tabs rendered inside dashboard
       case 'home':
       case 'services':
       case 'add_services':
       case 'booking':
       case 'request':
-      case 'analysis':
       case 'chat':
       case 'notification':
       case 'profile':
         dispatchTab(key);
         break;
-
-      // Standalone screens
       case 'settings':
         navigation.navigate('ManageVendorProfile');
         break;
@@ -478,7 +603,6 @@ const VendorHeader = ({ onTabChange }) => {
       case 'logout':
         navigation.navigate('Landing Page');
         break;
-
       default:
         break;
     }
@@ -505,20 +629,19 @@ const VendorHeader = ({ onTabChange }) => {
     }).start();
   };
 
-  // ✅ Replaced emojis with Ionicons here
   const ICON_COLOR = '#003366';
+
+  // top nav buttons in the middle
   const menuItems = [
     { label: 'Home', key: 'home', icon: 'home-outline' },
     { label: 'Services', key: 'services', icon: 'construct-outline' },
     { label: 'Booking', key: 'booking', icon: 'calendar-outline' },
     { label: 'Request', key: 'request', icon: 'download-outline' },
-    { label: 'Analysis', key: 'analysis', icon: 'stats-chart-outline' },
   ];
 
   return (
     <View style={styles.headerWrapper}>
       <View style={[styles.headerInner, { width: width < 900 ? '95%' : '85%' }]}>
-        {/* Brand (✈️ kept as-is) */}
         <View style={styles.brand}>
           <Text style={styles.logo}>✈️</Text>
           <View>
@@ -527,13 +650,17 @@ const VendorHeader = ({ onTabChange }) => {
           </View>
         </View>
 
-        {/* Web: center pills */}
+        {/* middle nav (only web / large) */}
         {!isMobile && (
           <View style={styles.navRow}>
-            {menuItems.map((item) => (
+            {menuItems.map((item, index) => (
               <TouchableOpacity
                 key={item.key}
-                style={[styles.navButton, selectedItem === item.key && styles.activeButton]}
+                style={[
+                  styles.navButton,
+                  selectedItem === item.key && styles.activeButton,
+                  index > 0 && { marginLeft: 12 },
+                ]}
                 onPress={() => handleItemPress(item.key)}
               >
                 <Ionicons
@@ -548,22 +675,29 @@ const VendorHeader = ({ onTabChange }) => {
           </View>
         )}
 
-        {/* Right actions */}
+        {/* right side icons */}
         <View style={styles.rightSection}>
+          {/* Web: Chat with Badge */}
           {Platform.OS === 'web' && !isMobile && (
-            <IconWithCaption
-              icon="chatbubble-ellipses-outline"
-              label="Chat"
-              onPress={() => handleItemPress('chat')}
-            />
+            <View style={{ position: 'relative' }}>
+              <IconWithCaption
+                icon="chatbubble-ellipses-outline"
+                label="Chat"
+                onPress={() => handleItemPress('chat')}
+              />
+              <BookingChatBadge />
+            </View>
           )}
 
+          {/* Notifications */}
           <IconWithCaption
             icon="notifications-outline"
             label="Notifications"
             onPress={() => handleItemPress('notification')}
+            badgeCount={unreadCount}
           />
 
+          {/* Profile + Menu (web only, no menu on mobile) */}
           {!isMobile && (
             <>
               <IconAvatar label="Profile" onPress={() => handleItemPress('profile')} />
@@ -573,7 +707,7 @@ const VendorHeader = ({ onTabChange }) => {
         </View>
       </View>
 
-      {/* Web: dropdown */}
+      {/* 🔻 Dropdown menu – now ONLY Logout on web, nothing on mobile */}
       {!isMobile && dropdownVisible && (
         <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={closeDropdown}>
           <Animated.View
@@ -592,23 +726,12 @@ const VendorHeader = ({ onTabChange }) => {
               },
             ]}
           >
-            <Text style={styles.sectionLabel}>Quick actions</Text>
-            <View style={styles.menuGrid}>
-              <MenuTile icon="add-circle-outline" label="Add Service" onPress={() => handleItemPress('services')} />
-              <MenuTile icon="list-outline" label="Booking Requests" onPress={() => handleItemPress('request')} />
-              <MenuTile icon="calendar-outline" label="Bookings" onPress={() => handleItemPress('booking')} />
-              <MenuTile icon="stats-chart-outline" label="Analytics" onPress={() => handleItemPress('analysis')} />
-            </View>
-
-            <Text style={[styles.sectionLabel, { marginTop: 12 }]}>Your tools</Text>
-            <RowAction icon="person-circle-outline" label="Profile" onPress={() => handleItemPress('profile')} />
-            <RowAction icon="chatbubble-ellipses-outline" label="Chat" onPress={() => handleItemPress('chat')} />
-
-            <Text style={[styles.sectionLabel, { marginTop: 12 }]}>More</Text>
-            <FooterItem icon="settings-outline" label="Account Settings" onPress={() => handleItemPress('settings')} />
-            <FooterItem icon="help-circle-outline" label="Help & Support" onPress={() => handleItemPress('support')} />
-            <FooterItem icon="notifications-outline" label="System Notifications" onPress={() => handleItemPress('notification')} />
-            <FooterItem icon="log-out-outline" label="Logout" onPress={() => handleItemPress('logout')} />
+            {/* Only Logout item kept */}
+            <FooterItem
+              icon="log-out-outline"
+              label="Logout"
+              onPress={() => handleItemPress('logout')}
+            />
           </Animated.View>
         </TouchableOpacity>
       )}
@@ -616,8 +739,7 @@ const VendorHeader = ({ onTabChange }) => {
   );
 };
 
-/* helpers + styles */
-const IconWithCaption = ({ icon, label, onPress, isMenu }) => (
+const IconWithCaption = ({ icon, label, onPress, isMenu, badgeCount = 0 }) => (
   <View style={styles.iconWithLabel}>
     <TouchableOpacity
       onPress={onPress}
@@ -625,6 +747,11 @@ const IconWithCaption = ({ icon, label, onPress, isMenu }) => (
       activeOpacity={0.85}
     >
       <Ionicons name={icon} size={isMenu ? 26 : 22} color="#003366" />
+      {badgeCount > 0 && (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{badgeCount > 9 ? '9+' : badgeCount}</Text>
+        </View>
+      )}
     </TouchableOpacity>
     <Text style={styles.iconCaption}>{label}</Text>
   </View>
@@ -644,6 +771,9 @@ const IconAvatar = ({ label, onPress }) => (
   </View>
 );
 
+/* These are now unused, but kept in case you need them later
+   (safe to delete if you want to clean warnings)
+*/
 const MenuTile = ({ icon, label, onPress }) => {
   const [hovered, setHovered] = useState(false);
   return (
@@ -686,7 +816,7 @@ const FooterItem = ({ icon, label, onPress }) => (
     onPress={onPress}
     style={[styles.footerItem, Platform.OS === 'web' && { cursor: 'pointer' }]}
   >
-    <Ionicons name={icon} size={18} color="#0F3A6B" />
+    <Ionicons name={icon} size={18} color="#0F3A6B" style={{ marginRight: 10 }} />
     <Text style={styles.footerItemText}>{label}</Text>
   </TouchableOpacity>
 );
@@ -700,19 +830,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     ...(Platform.OS === 'web' && {
       position: 'fixed',
-      top: 0, left: 0, right: 0,
+      top: 0,
+      left: 0,
+      right: 0,
       zIndex: 999,
       width: '100%',
       boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)',
     }),
   },
-  headerInner: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  headerInner: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   brand: { flexDirection: 'row', alignItems: 'center' },
   logo: { fontSize: 38, marginRight: 12 },
   appTitle: { fontSize: 30, fontWeight: '700', color: '#003366', lineHeight: 32 },
   tagline: { fontSize: 12, color: '#555', marginTop: 2, fontWeight: '600' },
-
-  navRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  navRow: { flexDirection: 'row', alignItems: 'center' },
   navButton: {
     backgroundColor: '#f9f9f9',
     paddingVertical: 8,
@@ -730,22 +865,42 @@ const styles = StyleSheet.create({
   },
   activeButton: { backgroundColor: '#e0f4ff', borderColor: '#0077b6' },
   navButtonText: { fontSize: 14, fontWeight: '600', color: '#003366' },
-
-  rightSection: { flexDirection: 'row', alignItems: 'center', gap: 12, marginLeft: 12 },
-
-  iconWithLabel: { alignItems: 'center', justifyContent: 'center', gap: 2 },
-  iconCaption: { fontSize: 10, fontWeight: '500', color: '#003366', lineHeight: 12 },
-  iconNoBg: { padding: 5, backgroundColor: 'transparent' },
-
+  rightSection: { flexDirection: 'row', alignItems: 'center', marginLeft: 12 },
+  iconWithLabel: { alignItems: 'center', justifyContent: 'center', marginLeft: 12 },
+  iconCaption: { fontSize: 10, fontWeight: '500', color: '#003366', lineHeight: 12, marginTop: 2 },
+  iconNoBg: { padding: 5, backgroundColor: 'transparent', position: 'relative' },
+  badge: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    backgroundColor: '#EF4444',
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  badgeText: { color: '#fff', fontSize: 10, fontWeight: '700', lineHeight: 12 },
   profileButton: {
     backgroundColor: '#222',
-    width: 35, height: 35, borderRadius: 20,
-    justifyContent: 'center', alignItems: 'center',
+    width: 35,
+    height: 35,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   profileText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
-
-  overlay: { position: 'absolute', top: 0, bottom: -500, left: 0, right: 0, backgroundColor: 'transparent' },
-
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    bottom: -500,
+    left: 0,
+    right: 0,
+    backgroundColor: 'transparent',
+  },
   menuPanel: {
     position: 'absolute',
     top: HEADER_DROPDOWN_TOP,
@@ -755,15 +910,17 @@ const styles = StyleSheet.create({
     padding: 14,
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    width: 400,
-    maxWidth: '42vw',
-    minWidth: 420,
-    boxShadow: Platform.OS === 'web' ? '0 18px 40px rgba(0,0,0,0.16)' : undefined,
+    width: 260,          // smaller since only logout now
+    ...(Platform.OS === 'web' && { boxShadow: '0 18px 40px rgba(0,0,0,0.16)' }),
   },
-
-  sectionLabel: { fontSize: 12, letterSpacing: 0.3, fontWeight: '800', color: '#6B7280', marginBottom: 8 },
-
-  menuGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'space-between' },
+  sectionLabel: {
+    fontSize: 12,
+    letterSpacing: 0.3,
+    fontWeight: '800',
+    color: '#6B7280',
+    marginBottom: 8,
+  },
+  menuGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   tile: {
     width: '48%',
     height: 76,
@@ -773,17 +930,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAFCFF',
     paddingHorizontal: 12,
     justifyContent: 'center',
-    gap: 8,
+    marginBottom: 10,
     ...(Platform.OS === 'web' && { transition: 'background-color .15s, border-color .15s' }),
   },
   tileHover: { borderColor: '#cfe2ff', backgroundColor: '#f6faff' },
   tileIconCircle: {
-    width: 34, height: 34, borderRadius: 17,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: '#f0f6ff',
-    alignItems: 'center', justifyContent: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
   },
   tileText: { fontWeight: '700', color: '#0F172A' },
-
   rowAction: {
     height: 48,
     borderRadius: 12,
@@ -793,23 +953,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 10,
     marginTop: 8,
   },
   rowIconWrap: {
-    width: 30, height: 30, borderRadius: 15,
-    alignItems: 'center', justifyContent: 'center',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: '#F3F6FA',
+    marginRight: 10,
   },
   rowActionText: { fontWeight: '700', color: '#0F172A', flex: 1 },
-
   footerItem: {
     height: 42,
     borderRadius: 10,
     paddingHorizontal: 10,
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 10,
   },
   footerItemText: { fontWeight: '700', color: '#0F172A' },
 });
