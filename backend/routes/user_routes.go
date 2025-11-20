@@ -60,7 +60,6 @@ func RegisterUserRoutes(router *gin.Engine) {
 	{
 		auth.POST("/signup", controllers.SignupUser)
 		auth.POST("/login", controllers.LoginUser)
-		auth.POST("/social", controllers.SocialLogin)
 		auth.POST("/complete-registration", controllers.CompleteRegistration) // deprecated
 		auth.POST("/email-varification", controllers.ForgetPasswordHandler)   // step 1
 		auth.POST("/verify-code", controllers.VerifyCodeHandler)              // step 2
@@ -81,6 +80,13 @@ func RegisterUserRoutes(router *gin.Engine) {
 		profile.PATCH("/profile/me", controllers.UpdateProfile)
 		profile.GET("/profile/me", controllers.GetMyProfile)
 		profile.GET("/profile-status", controllers.GetProfileStatus)
+	}
+
+	// ---------- VENDOR ROUTES ----------
+	vendor := router.Group("/vendor")
+	vendor.Use(middlewares.AuthMiddleware())
+	{
+		vendor.GET("/profile/me", controllers.GetVendorProfile)
 	}
 
 	// ---------- AUTH + PROFILE COMPLETE ----------
