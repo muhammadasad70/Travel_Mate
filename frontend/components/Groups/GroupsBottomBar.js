@@ -240,7 +240,6 @@ export default function GroupsBottomBar({ groupId, onTabChange, currentTab = 'ov
   const items = useMemo(
     () => [
       { k: 'overview', label: 'Overview', icon: 'grid-outline' },
-      { k: 'plans',    label: 'Plans',    icon: 'map-outline' },
       { k: 'polls',    label: 'Polls',    icon: 'stats-chart-outline' },
       { k: 'members',  label: 'Members',  icon: 'people-outline' },
       { k: 'settings', label: 'Settings', icon: 'settings-outline' },

@@ -254,7 +254,7 @@ Returns a slice of map[string]interface{} so we don’t introduce new DTO struct
 Keys: id, email, first_name, last_name, country_code, phone, country, role,
 is_profile_complete, created_at, relevance_score
 */
-func SearchUsersBasic(q string, limit int) ([]map[string]interface{}, error) {
+func SearchUsersBasic(q string, limit int, excludeUserID ...int) ([]map[string]interface{}, error) {
 	if limit <= 0 || limit > 100 {
 		limit = 20
 	}
@@ -272,6 +272,13 @@ func SearchUsersBasic(q string, limit int) ([]map[string]interface{}, error) {
 
 	// Build "all words in full name" condition with $4..$N
 	allWordsCond, params := buildAllWordsInFullNameCond(params, words, 4)
+
+	// Exclude current user if provided
+	excludeClause := ""
+	if len(excludeUserID) > 0 && excludeUserID[0] > 0 {
+		excludeClause = fmt.Sprintf(" AND id != $%d", len(params)+1)
+		params = append(params, excludeUserID[0])
+	}
 
 	// Relevance scoring over email + name_concat
 	// name_concat = LOWER(COALESCE(first_name,'') || ' ' || COALESCE(last_name,''))
@@ -302,7 +309,7 @@ func SearchUsersBasic(q string, limit int) ([]map[string]interface{}, error) {
 				END
 			) AS relevance_score
 		FROM src
-		WHERE
+		WHERE (
 			LOWER(email) LIKE $3
 			OR name_concat LIKE $3
 			OR LOWER(first_name) LIKE $3
@@ -314,6 +321,8 @@ func SearchUsersBasic(q string, limit int) ([]map[string]interface{}, error) {
 		sb.WriteString(allWordsCond)
 		sb.WriteString(")")
 	}
+	sb.WriteString(")")
+	sb.WriteString(excludeClause)
 	// Order & limit
 	sb.WriteString(`
 		ORDER BY relevance_score DESC, id ASC

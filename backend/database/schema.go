@@ -514,17 +514,20 @@ CREATE TABLE IF NOT EXISTS group_members (
   user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   role TEXT NOT NULL DEFAULT 'member'
        CHECK (role IN ('admin', 'member')),
-  status TEXT NOT NULL DEFAULT 'active'
-       CHECK (status IN ('active', 'removed')),
   joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE (group_id, user_id)
 );
 CREATE INDEX IF NOT EXISTS idx_group_members_group_id ON group_members(group_id);
 CREATE INDEX IF NOT EXISTS idx_group_members_user_id ON group_members(user_id);
 
+ALTER TABLE group_members
+  ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active'
+    CHECK (status IN ('active','removed'));
+
 CREATE TABLE IF NOT EXISTS group_invites (
   id BIGSERIAL PRIMARY KEY,
   group_id BIGINT NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+  inviter_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   invitee_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   invitee_email TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'pending'
@@ -532,8 +535,105 @@ CREATE TABLE IF NOT EXISTS group_invites (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE (group_id, invitee_id)
 );
+
+-- Add inviter_id column if it doesn't exist (for existing databases)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'group_invites' 
+    AND column_name = 'inviter_id'
+  ) THEN
+    ALTER TABLE group_invites
+      ADD COLUMN inviter_id BIGINT REFERENCES users(id) ON DELETE CASCADE;
+    
+    -- Update existing NULL values to admin_id from groups table
+    UPDATE group_invites gi
+    SET inviter_id = g.admin_id
+    FROM groups g
+    WHERE gi.group_id = g.id AND gi.inviter_id IS NULL;
+    
+    -- Make it NOT NULL after populating values
+    ALTER TABLE group_invites
+      ALTER COLUMN inviter_id SET NOT NULL;
+  END IF;
+END$$;
 CREATE INDEX IF NOT EXISTS idx_group_invites_group_id ON group_invites(group_id);
 CREATE INDEX IF NOT EXISTS idx_group_invites_invitee_id ON group_invites(invitee_id);
+
+-- group polls
+CREATE TABLE IF NOT EXISTS group_polls (
+  id BIGSERIAL PRIMARY KEY,
+  group_id BIGINT NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+  creator_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  question TEXT NOT NULL,
+  options TEXT[] NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_group_polls_group_id ON group_polls(group_id);
+
+CREATE TABLE IF NOT EXISTS group_poll_votes (
+  id BIGSERIAL PRIMARY KEY,
+  poll_id BIGINT NOT NULL REFERENCES group_polls(id) ON DELETE CASCADE,
+  voter_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  option_index INT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (poll_id, voter_id)
+);
+CREATE INDEX IF NOT EXISTS idx_group_poll_votes_poll_id ON group_poll_votes(poll_id);
+CREATE INDEX IF NOT EXISTS idx_group_poll_votes_voter_id ON group_poll_votes(voter_id);
+
+-- group polls
+CREATE TABLE IF NOT EXISTS group_polls (
+  id BIGSERIAL PRIMARY KEY,
+  group_id BIGINT NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+  creator_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  question TEXT NOT NULL,
+  options TEXT[] NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_group_polls_group_id ON group_polls(group_id);
+
+CREATE TABLE IF NOT EXISTS group_poll_votes (
+  id BIGSERIAL PRIMARY KEY,
+  poll_id BIGINT NOT NULL REFERENCES group_polls(id) ON DELETE CASCADE,
+  voter_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  option_index INT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (poll_id, voter_id)
+);
+CREATE INDEX IF NOT EXISTS idx_group_poll_votes_poll_id ON group_poll_votes(poll_id);
+CREATE INDEX IF NOT EXISTS idx_group_poll_votes_voter_id ON group_poll_votes(voter_id);
+
+-- group plans (trip plans)
+CREATE TABLE IF NOT EXISTS group_plans (
+  id BIGSERIAL PRIMARY KEY,
+  group_id BIGINT NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+  creator_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  description TEXT,
+  destination TEXT,
+  start_date DATE,
+  end_date DATE,
+  budget TEXT,
+  status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'active', 'completed', 'cancelled')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_group_plans_group_id ON group_plans(group_id);
+CREATE INDEX IF NOT EXISTS idx_group_plans_creator_id ON group_plans(creator_id);
+CREATE INDEX IF NOT EXISTS idx_group_plans_status ON group_plans(status);
+
+-- group plan comments
+CREATE TABLE IF NOT EXISTS group_plan_comments (
+  id BIGSERIAL PRIMARY KEY,
+  plan_id BIGINT NOT NULL REFERENCES group_plans(id) ON DELETE CASCADE,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  comment TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_group_plan_comments_plan_id ON group_plan_comments(plan_id);
+CREATE INDEX IF NOT EXISTS idx_group_plan_comments_user_id ON group_plan_comments(user_id);
 
 DO $$
 BEGIN
@@ -757,14 +857,144 @@ WHERE status IN ('pending','confirmed') AND chosen_date IS NOT NULL;
 CREATE TABLE IF NOT EXISTS notifications (
   id BIGSERIAL PRIMARY KEY,
   user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  type VARCHAR(50) NOT NULL CHECK (type IN ('booking_request', 'booking_confirmed', 'booking_declined', 'booking_cancelled', 'new_message', 'follow_request', 'system')),
+  type VARCHAR(50) NOT NULL,
   title VARCHAR(255) NOT NULL,
   message TEXT NOT NULL,
   related_id BIGINT,
-  related_type VARCHAR(50) CHECK (related_type IN ('booking', 'service', 'message', 'post', 'user')),
+  related_type VARCHAR(50),
   is_read BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Update notifications table CHECK constraints (create if not exists, update if needed)
+DO $$
+DECLARE
+  constraint_name text;
+  constraint_def text;
+  has_new_types boolean;
+BEGIN
+  -- Only proceed if notifications table exists
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE tablename = 'notifications') THEN
+    -- Handle type constraint
+    -- First, check if notifications_type_check already exists and has new types
+    has_new_types := false;
+    IF EXISTS (
+      SELECT 1 FROM pg_constraint 
+      WHERE conrelid = 'notifications'::regclass 
+      AND conname = 'notifications_type_check'
+    ) THEN
+      -- Get the constraint definition to check if it has new types
+      SELECT pg_get_constraintdef(oid) INTO constraint_def
+      FROM pg_constraint
+      WHERE conrelid = 'notifications'::regclass 
+      AND conname = 'notifications_type_check';
+      
+      -- Check if it contains the new notification types
+      has_new_types := constraint_def LIKE '%group_poll_created%';
+    END IF;
+    
+    -- If constraint doesn't exist or doesn't have new types, update it
+    IF NOT has_new_types THEN
+      -- Drop the specific constraint by name if it exists
+      BEGIN
+        ALTER TABLE notifications DROP CONSTRAINT IF EXISTS notifications_type_check;
+      EXCEPTION WHEN OTHERS THEN
+        -- Ignore errors if constraint doesn't exist
+        NULL;
+      END;
+      
+      -- Drop any other type-related constraints (in case they have different names)
+      FOR constraint_name IN
+        SELECT conname
+        FROM pg_constraint c
+        JOIN pg_class t ON c.conrelid = t.oid
+        WHERE t.relname = 'notifications'
+          AND c.contype = 'c'
+          AND c.conname != 'notifications_type_check'
+          AND pg_get_constraintdef(c.oid) LIKE '%type IN%'
+          AND pg_get_constraintdef(c.oid) NOT LIKE '%group_poll_created%'
+      LOOP
+        BEGIN
+          EXECUTE format('ALTER TABLE notifications DROP CONSTRAINT IF EXISTS %I', constraint_name);
+        EXCEPTION WHEN OTHERS THEN
+          NULL;
+        END;
+      END LOOP;
+      
+      -- Add new type constraint (only if it doesn't exist)
+      BEGIN
+        ALTER TABLE notifications 
+        ADD CONSTRAINT notifications_type_check 
+        CHECK (type IN ('booking_request', 'booking_confirmed', 'booking_declined', 'booking_cancelled', 'new_message', 'follow_request', 'system', 'group_invite', 'group_member_joined', 'group_poll_created', 'group_poll_voted'));
+      EXCEPTION WHEN duplicate_object THEN
+        -- Constraint already exists, skip
+        NULL;
+      WHEN OTHERS THEN
+        -- Other error, skip
+        NULL;
+      END;
+    END IF;
+    
+    -- Handle related_type constraint
+    has_new_types := false;
+    IF EXISTS (
+      SELECT 1 FROM pg_constraint 
+      WHERE conrelid = 'notifications'::regclass 
+      AND conname = 'notifications_related_type_check'
+    ) THEN
+      SELECT pg_get_constraintdef(oid) INTO constraint_def
+      FROM pg_constraint
+      WHERE conrelid = 'notifications'::regclass 
+      AND conname = 'notifications_related_type_check';
+      
+      has_new_types := constraint_def LIKE '%group%';
+    END IF;
+    
+    -- If constraint doesn't exist or doesn't have 'group', update it
+    IF NOT has_new_types THEN
+      -- Drop the specific constraint by name if it exists
+      BEGIN
+        ALTER TABLE notifications DROP CONSTRAINT IF EXISTS notifications_related_type_check;
+      EXCEPTION WHEN OTHERS THEN
+        NULL;
+      END;
+      
+      -- Drop any other related_type constraints
+      FOR constraint_name IN
+        SELECT conname
+        FROM pg_constraint c
+        JOIN pg_class t ON c.conrelid = t.oid
+        WHERE t.relname = 'notifications'
+          AND c.contype = 'c'
+          AND c.conname != 'notifications_related_type_check'
+          AND pg_get_constraintdef(c.oid) LIKE '%related_type%'
+          AND pg_get_constraintdef(c.oid) NOT LIKE '%group%'
+      LOOP
+        BEGIN
+          EXECUTE format('ALTER TABLE notifications DROP CONSTRAINT IF EXISTS %I', constraint_name);
+        EXCEPTION WHEN OTHERS THEN
+          NULL;
+        END;
+      END LOOP;
+      
+      -- Add new related_type constraint
+      BEGIN
+        ALTER TABLE notifications 
+        ADD CONSTRAINT notifications_related_type_check 
+        CHECK (related_type IN ('booking', 'service', 'message', 'post', 'user', 'group') OR related_type IS NULL);
+      EXCEPTION WHEN duplicate_object THEN
+        NULL;
+      WHEN OTHERS THEN
+        NULL;
+      END;
+    END IF;
+  END IF;
+EXCEPTION
+  WHEN OTHERS THEN
+    -- Ignore any errors during migration
+    NULL;
+END$$;
+
 CREATE INDEX IF NOT EXISTS idx_notifications_user_read_created ON notifications(user_id, is_read, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at DESC);

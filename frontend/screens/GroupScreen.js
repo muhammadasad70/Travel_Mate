@@ -229,6 +229,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import InvitationsScreen from '../components/Groups/InvitationsScreen';
 
 const dummyGroups = [
   { id: '1', name: 'Family Vacation' },
@@ -310,6 +311,12 @@ const GroupScreen = ({ inPage = false }) => {
     </View>
   );
 
+  const renderInvitations = () => (
+    <View style={styles.tabContent}>
+      <InvitationsScreen />
+    </View>
+  );
+
   return (
     <View style={[styles.container, inPage && styles.containerInPage]}>
       {/* Hide the back arrow when embedded in the Dashboard */}
@@ -324,7 +331,7 @@ const GroupScreen = ({ inPage = false }) => {
           style={[styles.toggleButton, activeTab === 'create' && styles.toggleActive]}
           onPress={() => setActiveTab('create')}
         >
-          <Text style={activeTab === 'create' ? styles.toggleTextActive : styles.toggleText}>
+          <Text style={activeTab === 'create' ? styles.toggleTextActive : styles.toggleText} numberOfLines={1}>
             Create Group
           </Text>
         </TouchableOpacity>
@@ -332,13 +339,21 @@ const GroupScreen = ({ inPage = false }) => {
           style={[styles.toggleButton, activeTab === 'view' && styles.toggleActive]}
           onPress={() => setActiveTab('view')}
         >
-          <Text style={activeTab === 'view' ? styles.toggleTextActive : styles.toggleText}>
+          <Text style={activeTab === 'view' ? styles.toggleTextActive : styles.toggleText} numberOfLines={1}>
             View Groups
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.toggleButton, activeTab === 'invitations' && styles.toggleActive]}
+          onPress={() => setActiveTab('invitations')}
+        >
+          <Text style={activeTab === 'invitations' ? styles.toggleTextActive : styles.toggleText} numberOfLines={1}>
+            Invitations
           </Text>
         </TouchableOpacity>
       </View>
 
-      {activeTab === 'create' ? renderCreateForm() : renderGroupList()}
+      {activeTab === 'create' ? renderCreateForm() : activeTab === 'view' ? renderGroupList() : renderInvitations()}
     </View>
   );
 };
@@ -364,17 +379,21 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     borderWidth: 1,
     borderColor: '#ccc',
-    width: 300,
+    width: '100%',
+    maxWidth: 600,
+    backgroundColor: '#f0f0f0',
   },
   toggleButton: {
     flex: 1,
-    padding: 14,
-    backgroundColor: '#f0f0f0',
+    padding: 12,
+    backgroundColor: 'transparent',
     alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 0,
   },
   toggleActive: { backgroundColor: '#007bff' },
-  toggleText: { fontWeight: '600', color: '#333' },
-  toggleTextActive: { fontWeight: '600', color: '#fff' },
+  toggleText: { fontWeight: '600', color: '#333', fontSize: 13 },
+  toggleTextActive: { fontWeight: '600', color: '#fff', fontSize: 13 },
   sectionTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 16 },
   formContainer: { width: '100%', maxWidth: 500, alignSelf: 'center' },
   input: {

@@ -3,6 +3,8 @@ package models
 import (
 	"database/sql"
 	"errors"
+	"fmt"
+	"log"
 	"travel_mate/backend/database"
 )
 
@@ -13,57 +15,59 @@ type Group struct {
 	Description  string  `json:"description"`
 	MembersCount *int    `json:"membersCount,omitempty"`
 	LastActivity *string `json:"lastActivity,omitempty"`
-	UnreadCount  *int    `json:"unreadCount,omitempty"` // frontend safe; always null/0 for now
+	UnreadCount  *int    `json:"unreadCount,omitempty"`
 }
 
-// func CreateGroup(creatorID int, name, description string) (int, error) {
-// 	const q1 = `INSERT INTO groups (name, description) VALUES ($1,$2) RETURNING id`
-// 	var gid int
-// 	if err := database.DB.QueryRow(q1, name, description).Scan(&gid); err != nil {
-// 		return 0, err
-// 	}
-// 	// add creator as admin
-// 	const q2 = `INSERT INTO group_members (group_id, user_id, role) VALUES ($1,$2,'admin')`
-// 	if _, err := database.DB.Exec(q2, gid, creatorID); err != nil {
-// 		return 0, err
-// 	}
-// 	return gid, nil
-// }
-
-// ---- SCENARIO 1: Create group; creator becomes admin ----
+// CreateGroup - with detailed logging
 func CreateGroup(creatorID int, name, description string) (int, error) {
+	log.Printf("[CreateGroup] Starting transaction - creatorID=%d, name=%q, desc=%q", creatorID, name, description)
+
 	tx, err := database.DB.Begin()
 	if err != nil {
-		return 0, err
+		log.Printf("[CreateGroup] Failed to begin transaction: %v", err)
+		return 0, fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer func() {
 		if err != nil {
+			log.Printf("[CreateGroup] Rolling back transaction due to error: %v", err)
 			_ = tx.Rollback()
 		}
 	}()
 
-	// If your groups table has admin_id, prefer inserting it too.
-	// CREATE TABLE groups(id serial PK, name text, description text, admin_id int, created_at timestamptz default now());
 	const qInsertGroup = `
 		INSERT INTO groups (name, description, admin_id)
-		VALUES ($1,$2,$3)
+		VALUES ($1, $2, $3)
 		RETURNING id`
+
+	log.Printf("[CreateGroup] Executing INSERT INTO groups...")
 	var gid int
 	if err = tx.QueryRow(qInsertGroup, name, description, creatorID).Scan(&gid); err != nil {
-		return 0, err
+		log.Printf("[CreateGroup] Failed to insert group: %v", err)
+		log.Printf("[CreateGroup] Query: %s", qInsertGroup)
+		log.Printf("[CreateGroup] Params: name=%q, desc=%q, admin_id=%d", name, description, creatorID)
+		return 0, fmt.Errorf("failed to insert group: %w", err)
 	}
+	log.Printf("[CreateGroup] Group inserted successfully with id=%d", gid)
 
-	// Add creator as admin member
 	const qInsertAdmin = `
-		INSERT INTO group_members (group_id, user_id, role, status, joined_at)
-		VALUES ($1,$2,'admin','active', now())`
+		INSERT INTO group_members (group_id, user_id, role, joined_at)
+		VALUES ($1, $2, 'admin', now())`
+
+	log.Printf("[CreateGroup] Adding creator as admin member...")
 	if _, err = tx.Exec(qInsertAdmin, gid, creatorID); err != nil {
-		return 0, err
+		log.Printf("[CreateGroup] Failed to insert admin member: %v", err)
+		log.Printf("[CreateGroup] Query: %s", qInsertAdmin)
+		log.Printf("[CreateGroup] Params: group_id=%d, user_id=%d", gid, creatorID)
+		return 0, fmt.Errorf("failed to add admin member: %w", err)
 	}
+	log.Printf("[CreateGroup] Admin member added successfully")
 
 	if err = tx.Commit(); err != nil {
-		return 0, err
+		log.Printf("[CreateGroup] Failed to commit transaction: %v", err)
+		return 0, fmt.Errorf("failed to commit transaction: %w", err)
 	}
+
+	log.Printf("[CreateGroup] SUCCESS - Group %d created by user %d", gid, creatorID)
 	return gid, nil
 }
 
@@ -97,7 +101,7 @@ func GetGroupsByUser(userID int) ([]Group, error) {
 			g.MembersCount = &cnt
 			g.LastActivity = &last
 			z := 0
-			g.UnreadCount = &z // no unread logic yet
+			g.UnreadCount = &z
 			out = append(out, g)
 		}
 	}
@@ -122,7 +126,6 @@ func GetGroupByID(id int) (Group, error) {
 	return g, nil
 }
 
-// Optional helper if you later need admin checks
 func IsAdmin(groupID, userID int) (bool, error) {
 	const q = `SELECT 1 FROM group_members WHERE group_id=$1 AND user_id=$2 AND role='admin' LIMIT 1`
 	var one int
@@ -133,7 +136,6 @@ func IsAdmin(groupID, userID int) (bool, error) {
 	return err == nil, err
 }
 
-// Return the group_id for an invite (used to check admin on cancel/list)
 func GetGroupIDByInvite(inviteID int) (int, error) {
 	const q = `SELECT group_id FROM group_invites WHERE id=$1`
 	var gid int
@@ -141,7 +143,6 @@ func GetGroupIDByInvite(inviteID int) (int, error) {
 	return gid, err
 }
 
-// Used by GET /groups/invites (invitee inbox)
 type MyInviteRow struct {
 	Id        int    `json:"id"`
 	GroupID   int    `json:"group_id"`
@@ -177,7 +178,6 @@ func GetPendingInvitesForUser(userID int) ([]MyInviteRow, error) {
 	return out, rows.Err()
 }
 
-// Ensure the acting user owns the invite they’re accepting/declining
 func IsInviteForUser(inviteID, userID int) (bool, error) {
 	const q = `SELECT 1 FROM group_invites WHERE id=$1 AND invitee_id=$2 LIMIT 1`
 	var one int
@@ -186,4 +186,37 @@ func IsInviteForUser(inviteID, userID int) (bool, error) {
 		return false, nil
 	}
 	return err == nil, err
+}
+
+// UpdateGroupName updates the name of a group
+func UpdateGroupName(groupID int, name string) error {
+	const q = `UPDATE groups SET name = $1 WHERE id = $2`
+	_, err := database.DB.Exec(q, name, groupID)
+	if err != nil {
+		log.Printf("[UpdateGroupName] Error updating group name: %v", err)
+		return fmt.Errorf("failed to update group name: %w", err)
+	}
+	return nil
+}
+
+// DeleteGroup deletes a group and all related data (cascade)
+func DeleteGroup(groupID int) error {
+	// Delete group (CASCADE will handle related records)
+	const q = `DELETE FROM groups WHERE id = $1`
+	result, err := database.DB.Exec(q, groupID)
+	if err != nil {
+		log.Printf("[DeleteGroup] Error deleting group: %v", err)
+		return fmt.Errorf("failed to delete group: %w", err)
+	}
+	
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to check rows affected: %w", err)
+	}
+	
+	if rowsAffected == 0 {
+		return errors.New("group not found")
+	}
+	
+	return nil
 }
