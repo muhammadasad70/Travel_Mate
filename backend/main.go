@@ -125,6 +125,12 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found (using process env)")
 	}
+	if os.Getenv("OPENWEATHER_API_KEY") == "" {
+		log.Println("⚠️  WARNING: OPENWEATHER_API_KEY not set - weather features unavailable")
+	}
+	if os.Getenv("MISTRAL_API_KEY") == "" {
+		log.Println("⚠️  WARNING: MISTRAL_API_KEY not set - AI features unavailable")
+	}
 
 	// Sanity logs
 	if os.Getenv("GOOGLE_WEB_CLIENT_ID") == "" {

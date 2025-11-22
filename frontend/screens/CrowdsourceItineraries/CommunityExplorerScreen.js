@@ -1,3 +1,5 @@
+
+
 // import React from 'react';
 // import {
 //   View,
@@ -7,9 +9,11 @@
 //   ScrollView,
 //   useWindowDimensions,
 //   Platform,
+//   StatusBar,
 // } from 'react-native';
 // import { Ionicons } from '@expo/vector-icons';
 // import { useNavigation } from '@react-navigation/native';
+// import { SafeAreaView } from 'react-native-safe-area-context';
 
 // const COLORS = {
 //   bg: '#F7F9FC',
@@ -29,86 +33,93 @@
 //   const isNarrow = width < 720;
 
 //   return (
-//     <View style={styles.container}>
-//       {/* Header */}
-//       <View style={styles.header}>
-//         <TouchableOpacity onPress={() => navigation.goBack()}>
-//           <Ionicons name="arrow-back" size={24} color={COLORS.text} />
-//         </TouchableOpacity>
-//         <Text style={styles.headerTitle}>AI Recommendations</Text>
-//         <View style={{ width: 24 }} />
-//       </View>
-
-//       <ScrollView 
-//         style={styles.scrollView} 
-//         contentContainerStyle={styles.scrollContent}
-//         showsVerticalScrollIndicator={false}
-//       >
-//         {/* Subtitle */}
-//         <Text style={styles.subtitle}>
-//           Create personalized itineraries or explore your saved AI recommendations
-//         </Text>
-
-//         {/* Two Cards Grid */}
-//         <View style={[styles.grid, isNarrow && { flexDirection: 'column' }]}>
-//           {/* Create New AI Itinerary Card */}
-//           <TouchableOpacity
-//             style={styles.card}
-//             onPress={() => navigation.navigate('AIRecommendationsFormScreen')}
-//             activeOpacity={0.7}
-//           >
-//             <View style={styles.cardHeader}>
-//               <View style={[styles.iconWrap, { backgroundColor: COLORS.purple }]}>
-//                 <Ionicons name="bulb-outline" size={24} color="#fff" />
-//               </View>
-//               <Text style={styles.cardTitle}>Create AI Itinerary</Text>
-//             </View>
-
-//             <Text style={styles.cardDescription}>
-//               Get personalized travel recommendations based on your preferences, budget, and travel style
-//             </Text>
-
-//             <View style={styles.cardFooter}>
-//               <View style={styles.cardFooterLeft}>
-//                 <Ionicons name="add-circle-outline" size={18} color={COLORS.purple} />
-//                 <Text style={[styles.cardFooterText, { color: COLORS.purple }]}>Generate Now</Text>
-//               </View>
-//               <Ionicons name="arrow-forward" size={18} color={COLORS.purple} />
-//             </View>
+//     <SafeAreaView style={styles.safeArea}>
+//       <View style={styles.container}>
+//         {/* Header */}
+//         <View style={styles.header}>
+//           <TouchableOpacity onPress={() => navigation.goBack()}>
+//             <Ionicons name="arrow-back" size={24} color={COLORS.text} />
 //           </TouchableOpacity>
-
-//           {/* Saved AI Itineraries Card */}
-//           <TouchableOpacity
-//             style={styles.card}
-//             onPress={() => navigation.navigate('SavedAIItinerariesScreen')}
-//             activeOpacity={0.7}
-//           >
-//             <View style={styles.cardHeader}>
-//               <View style={[styles.iconWrap, { backgroundColor: COLORS.orange }]}>
-//                 <Ionicons name="bookmarks-outline" size={24} color="#fff" />
-//               </View>
-//               <Text style={styles.cardTitle}>Saved AI Itineraries</Text>
-//             </View>
-
-//             <Text style={styles.cardDescription}>
-//               View your collection of AI-generated travel plans and explore saved recommendations
-//             </Text>
-
-//             <View style={styles.cardFooter}>
-//               <View style={styles.cardFooterLeft}>
-//                 <Ionicons name="folder-open-outline" size={18} color={COLORS.orange} />
-//                 <Text style={[styles.cardFooterText, { color: COLORS.orange }]}>View Collection</Text>
-//               </View>
-//               <Ionicons name="arrow-forward" size={18} color={COLORS.orange} />
-//             </View>
-//           </TouchableOpacity>
+//           <Text style={styles.headerTitle}>AI Recommendations</Text>
+//           <View style={{ width: 24 }} />
 //         </View>
-//       </ScrollView>
-//     </View>
+
+//         <ScrollView
+//           style={styles.scrollView}
+//           contentContainerStyle={styles.scrollContent}
+//           showsVerticalScrollIndicator={false}
+//         >
+//           {/* Subtitle */}
+//           <Text style={styles.subtitle}>
+//             Create personalized itineraries or explore your saved AI recommendations
+//           </Text>
+
+//           {/* Two Cards Grid */}
+//           <View style={[styles.grid, isNarrow && { flexDirection: 'column' }]}>
+//             {/* Create New AI Itinerary Card */}
+//             <TouchableOpacity
+//               style={styles.card}
+//               onPress={() => navigation.navigate('AIRecommendationsFormScreen')}
+//               activeOpacity={0.7}
+//             >
+//               <View style={styles.cardHeader}>
+//                 <View style={[styles.iconWrap, { backgroundColor: COLORS.purple }]}>
+//                   <Ionicons name="bulb-outline" size={24} color="#fff" />
+//                 </View>
+//                 <Text style={styles.cardTitle}>Create AI Itinerary</Text>
+//               </View>
+
+//               <Text style={styles.cardDescription}>
+//                 Get personalized travel recommendations based on your preferences, budget, and travel style
+//               </Text>
+
+//               <View style={styles.cardFooter}>
+//                 <View style={styles.cardFooterLeft}>
+//                   <Ionicons name="add-circle-outline" size={18} color={COLORS.purple} />
+//                   <Text style={[styles.cardFooterText, { color: COLORS.purple }]}>Generate Now</Text>
+//                 </View>
+//                 <Ionicons name="arrow-forward" size={18} color={COLORS.purple} />
+//               </View>
+//             </TouchableOpacity>
+
+//             {/* Saved AI Itineraries Card */}
+//             <TouchableOpacity
+//               style={styles.card}
+//               onPress={() => navigation.navigate('SavedAIItinerariesScreen')}
+//               activeOpacity={0.7}
+//             >
+//               <View style={styles.cardHeader}>
+//                 <View style={[styles.iconWrap, { backgroundColor: COLORS.orange }]}>
+//                   <Ionicons name="bookmarks-outline" size={24} color="#fff" />
+//                 </View>
+//                 <Text style={styles.cardTitle}>Saved AI Itineraries</Text>
+//               </View>
+
+//               <Text style={styles.cardDescription}>
+//                 View your collection of AI-generated travel plans and explore saved recommendations
+//               </Text>
+
+//               <View style={styles.cardFooter}>
+//                 <View style={styles.cardFooterLeft}>
+//                   <Ionicons name="folder-open-outline" size={18} color={COLORS.orange} />
+//                   <Text style={[styles.cardFooterText, { color: COLORS.orange }]}>View Collection</Text>
+//                 </View>
+//                 <Ionicons name="arrow-forward" size={18} color={COLORS.orange} />
+//               </View>
+//             </TouchableOpacity>
+//           </View>
+//         </ScrollView>
+//       </View>
+//     </SafeAreaView>
 //   );
 // }
 
 // const styles = StyleSheet.create({
+//   safeArea: {
+//     flex: 1,
+//     backgroundColor: COLORS.bg,
+//     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+//   },
 //   container: {
 //     flex: 1,
 //     backgroundColor: COLORS.bg,
@@ -118,7 +129,7 @@
 //     alignItems: 'center',
 //     justifyContent: 'space-between',
 //     paddingHorizontal: 20,
-//     paddingVertical: 16,
+//     paddingVertical: 14,
 //     backgroundColor: '#fff',
 //     borderBottomWidth: 1,
 //     borderBottomColor: COLORS.border,
@@ -134,7 +145,7 @@
 //   scrollContent: {
 //     paddingHorizontal: 20,
 //     paddingTop: 20,
-//     paddingBottom: 40,
+//     paddingBottom: 60, // To avoid mixing with bottom navigation bar
 //     maxWidth: 1100,
 //     alignSelf: 'center',
 //     width: '100%',
@@ -229,6 +240,7 @@ const COLORS = {
   subtext: '#6b7280',
   purple: '#8b5cf6',
   orange: '#f59e0b',
+  green: '#10b981', // ✅ Added for weather card
   border: '#e5e7eb',
   purpleLight: '#ede9fe',
   orangeLight: '#fef3c7',
@@ -261,7 +273,7 @@ export default function CommunityExplorerScreen() {
             Create personalized itineraries or explore your saved AI recommendations
           </Text>
 
-          {/* Two Cards Grid */}
+          {/* ✅ Three Cards Grid */}
           <View style={[styles.grid, isNarrow && { flexDirection: 'column' }]}>
             {/* Create New AI Itinerary Card */}
             <TouchableOpacity
@@ -314,6 +326,32 @@ export default function CommunityExplorerScreen() {
                 <Ionicons name="arrow-forward" size={18} color={COLORS.orange} />
               </View>
             </TouchableOpacity>
+
+            {/* ✅ NEW: Weather-Aware AI Recommendations Card */}
+            <TouchableOpacity
+              style={styles.card}
+              onPress={() => navigation.navigate('WeatherAwareRecommendations')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.cardHeader}>
+                <View style={[styles.iconWrap, { backgroundColor: COLORS.green }]}>
+                  <Ionicons name="partly-sunny-outline" size={24} color="#fff" />
+                </View>
+                <Text style={styles.cardTitle}>Weather-Smart Planner</Text>
+              </View>
+
+              <Text style={styles.cardDescription}>
+                Get AI recommendations that adapt to real-time weather forecasts for optimal travel planning
+              </Text>
+
+              <View style={styles.cardFooter}>
+                <View style={styles.cardFooterLeft}>
+                  <Ionicons name="cloud-outline" size={18} color={COLORS.green} />
+                  <Text style={[styles.cardFooterText, { color: COLORS.green }]}>Plan with Weather</Text>
+                </View>
+                <Ionicons name="arrow-forward" size={18} color={COLORS.green} />
+              </View>
+            </TouchableOpacity>
           </View>
         </ScrollView>
       </View>
@@ -352,7 +390,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 60, // To avoid mixing with bottom navigation bar
+    paddingBottom: 60,
     maxWidth: 1100,
     alignSelf: 'center',
     width: '100%',
@@ -366,9 +404,11 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     gap: 16,
+    flexWrap: 'wrap', // ✅ Added to allow wrapping on narrow screens
   },
   card: {
     flex: 1,
+    minWidth: 300, // ✅ Added for better layout on different screen sizes
     backgroundColor: COLORS.card,
     borderRadius: 16,
     padding: 20,
