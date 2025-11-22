@@ -1021,6 +1021,23 @@ CREATE TABLE IF NOT EXISTS booking_messages (
     is_read BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TABLE IF NOT EXISTS social_auths (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    provider VARCHAR(50) NOT NULL, -- 'google', 'facebook', 'apple', etc.
+    provider_id VARCHAR(255) NOT NULL,
+    email VARCHAR(255),
+    access_token TEXT,
+    refresh_token TEXT,
+    expires_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(provider, provider_id),
+    UNIQUE(user_id, provider)
+);
+
+CREATE INDEX IF NOT EXISTS idx_social_auths_user ON social_auths(user_id);
+CREATE INDEX IF NOT EXISTS idx_social_auths_provider ON social_auths(provider, provider_id);
 
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_booking_conversations_booking ON booking_conversations(booking_id);

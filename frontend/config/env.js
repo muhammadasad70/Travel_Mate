@@ -14,11 +14,11 @@ const getBaseURL = () => {
     // Android emulator needs the 10.0.2.2 magic host
     if (ANDROID_TARGET === "emulator") return "http://10.0.2.2:8080";
     // Physical Android phone on the same Wi-Fi needs your laptop's LAN IP
-    return "http://192.168.110.128:8080"; // <-- your machine IP
+    return "http://192.168.110.182:8080"; // <-- your machine IP
   }
 
   // Fallback (rare platforms)
-  return "http://192.168.110.128:8080";
+  return "http://192.168.110.182:8080";
 };
 
 export default getBaseURL;

@@ -78,9 +78,11 @@ import OfflineEmergency from './components/Offline/OfflineEmergency';
 
 import BookingChatList from './screens/BookingChatList';
 import BookingChat from './screens/BookingChat';
+import WeatherAwareRecommendationsScreen from './screens/CrowdsourceItineraries/WeatherAwareRecommendationsScreen';
 
 /* Offline hook: start auto-sync once */
 import { startAutoSync } from './hooks/useOfflineItineraries';
+
 
 const Stack = createNativeStackNavigator();
 
@@ -183,6 +185,8 @@ export default function App() {
 
             <Stack.Screen name="BookingChatList" component={BookingChatList} />
             <Stack.Screen name="BookingChat" component={BookingChat} />
+            <Stack.Screen name="WeatherAwareRecommendations" component={WeatherAwareRecommendationsScreen} 
+/>
           </Stack.Navigator>
         </NavigationContainer>
       </SafeAreaProvider>

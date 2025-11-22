@@ -1,353 +1,803 @@
-// import React, { useState } from 'react';
+
+
+// // screens/ItineraryDetailScreen.js
+// import React, { useEffect, useMemo, useState } from "react";
 // import {
-//   View,
-//   Text,
-//   TextInput,
-//   ScrollView,
-//   TouchableOpacity,
-//   StyleSheet,
-//   Dimensions,
-// } from 'react-native';
+//   View, Text, StyleSheet, Image, ScrollView, TouchableOpacity,
+//   Platform, ActivityIndicator, Alert, Pressable
+// } from "react-native";
+// import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+// import { useNavigation, useRoute } from "@react-navigation/native";
+// import { Ionicons } from "@expo/vector-icons";
+// import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// const ItineraryDetailScreen = () => {
-//   const [visibility, setVisibility] = useState('Private');
+// /* Offline hook */
+// import { downloadItinerary } from "../../hooks/useOfflineItineraries";
 
-//   return (
-//     <ScrollView contentContainerStyle={styles.container}>
-//       <Text style={styles.title}>📝 Create Itinerary</Text>
+// /* ✅ Share functionality */
+// import ShareButton from '../components/ShareButton';
+// import { getShareImage, getShareMessage, getShareUrl, isOfflineContent } from '../utils/shareImageHelper';
 
-//       <TextInput placeholder="Trip Title" style={styles.input} value="Skardu Adventure" />
-//       <TextInput
-//         placeholder="Trip Overview"
-//         style={[styles.input, { height: 80 }]}
-//         multiline
-//         value="A 5-day adventure through the valleys of Skardu exploring lakes, mountains, and culture."
-//       />
-
-//       <Text style={styles.label}>Budget</Text>
-//       <View style={styles.tagRow}>
-//         <Tag label="Budget-Friendly" />
-//         <Tag label="Mid-Range" selected />
-//         <Tag label="Luxury" />
-//       </View>
-
-//       <Text style={styles.label}>Day-by-Day Planner</Text>
-//       <View style={styles.tagRow}>
-//         <Tag label="Adventure" selected />
-//         <Tag label="Cultural" />
-//         <Tag label="Relaxed" />
-//       </View>
-
-//       <Text style={styles.dayLabel}>Day 1</Text>
-//       <TextInput placeholder="Place" style={styles.input} value="Satpara Lake" />
-//       <TextInput placeholder="Time" style={styles.input} value="10:00 AM - 2:00 PM" />
-//       <TextInput placeholder="Activities" style={styles.input} value="Boating, Lunch, Photography" />
-
-//       <TouchableOpacity style={styles.addBtn}>
-//         <Text style={styles.addText}>+ Add Day</Text>
-//       </TouchableOpacity>
-
-//       <TouchableOpacity style={styles.addBtn}>
-//         <Text style={styles.addText}>+ Upload Cover Images</Text>
-//       </TouchableOpacity>
-
-//       <Text style={styles.label}>Visibility</Text>
-//       <View style={styles.tagRow}>
-//         <TouchableOpacity
-//           style={[styles.visibilityBtn, visibility === 'Public' && styles.selectedBtn]}
-//           onPress={() => setVisibility('Public')}
-//         >
-//           <Text style={styles.btnText}>Public</Text>
-//         </TouchableOpacity>
-//         <TouchableOpacity
-//           style={[styles.visibilityBtn, visibility === 'Private' && styles.selectedBtn]}
-//           onPress={() => setVisibility('Private')}
-//         >
-//           <Text style={styles.btnText}>Private</Text>
-//         </TouchableOpacity>
-//       </View>
-
-//       <TouchableOpacity style={styles.saveBtn}>
-//         <Text style={styles.saveText}>Save Itinerary</Text>
-//       </TouchableOpacity>
-//     </ScrollView>
-//   );
+// import getBaseURL from "../../config/env";
+// const API_BASE = getBaseURL().replace(/\/+$/, "");
+// const TOKEN_KEYS = ["token", "auth_token", "jwt", "access_token", "AUTH_TOKEN", "userToken"];
+// const getAuthToken = async () => {
+//   for (const k of TOKEN_KEYS) {
+//     const v = await AsyncStorage.getItem(k);
+//     if (v) return v;
+//   }
+//   return null;
 // };
 
-// const Tag = ({ label, selected }) => (
-//   <View style={[styles.tag, selected && styles.selectedTag]}>
-//     <Text style={styles.tagText}>{label}</Text>
-//   </View>
-// );
+// const BORDER = "#E6EDF7";
+// const PRIMARY = "#003366";
+// const SUBTEXT = "#6B7280";
+// const EMPHASIS = "#0f172a";
+// const SOFT_BG = "#F7F9FC";
+
+// function formatRange(start, end) {
+//   if (!start || !end) return "Dates TBD";
+//   try {
+//     const s = new Date(start);
+//     const e = new Date(end);
+//     const sameYear = s.getFullYear() === e.getFullYear();
+//     const fmtS = new Intl.DateTimeFormat("en-US", {
+//       month: "short", day: "numeric", ...(sameYear ? {} : { year: "numeric" })
+//     });
+//     const fmtE = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" });
+//     return `${fmtS.format(s)} – ${fmtE.format(e)}`;
+//   } catch { return "Dates TBD"; }
+// }
+
+// export default function ItineraryDetailScreen() {
+//   const insets = useSafeAreaInsets();
+//   const navigation = useNavigation();
+//   const route = useRoute();
+
+//   const passed = route.params?.itinerary || {};
+//   const id = route.params?.id || passed?.id || passed?._id;
+
+//   const [data, setData] = useState(passed || null);
+//   const [loading, setLoading] = useState(!passed?.days?.length);
+//   const [imgError, setImgError] = useState(false);
+
+//   // ✅ Check if this is offline content
+//   const isOfflineItem = isOfflineContent(passed) || isOfflineContent(data);
+
+//   useEffect(() => {
+//     navigation.setOptions?.({ title: "Itinerary" });
+//   }, [navigation]);
+
+//   useEffect(() => {
+//     let cancelled = false;
+//     (async () => {
+//       if (!id) return;
+//       try {
+//         setLoading(true);
+//         const token = await getAuthToken();
+//         const res = await fetch(`${API_BASE}/itineraries/${id}`, {
+//           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+//         });
+//         const raw = await res.text();
+//         let j = null; try { j = raw ? JSON.parse(raw) : null; } catch {}
+//         if (!cancelled) {
+//           if (res.ok && j) setData(j);
+//           else if (!passed) Alert.alert("Error", j?.error || "Unable to load itinerary.");
+//         }
+//       } catch (e) {
+//         if (!cancelled && !passed) Alert.alert("Network", "Failed to load itinerary.");
+//       } finally { !cancelled && setLoading(false); }
+//     })();
+//     return () => { cancelled = true; };
+//   }, [id]);
+
+//   if (!data && loading) {
+//     return (
+//       <SafeAreaView style={[styles.safe, { paddingTop: insets.top }]}>
+//         <View style={styles.centerFill}><ActivityIndicator /></View>
+//       </SafeAreaView>
+//     );
+//   }
+//   if (!data) {
+//     return (
+//       <SafeAreaView style={[styles.safe, { paddingTop: insets.top }]}>
+//         <View style={styles.centerFill}><Text>Itinerary not found.</Text></View>
+//       </SafeAreaView>
+//     );
+//   }
+
+//   const { title, cover_url, city, style, budget, start_date, end_date, description, days = [] } = data;
+
+//   /* Download current itinerary for offline */
+//   const handleDownloadOffline = async () => {
+//     try {
+//       const normalized = { ...data, id: data.id ?? data._id };
+//       await downloadItinerary({
+//         itinerary: normalized,
+//         coverUrl: cover_url || null,
+//         staticMapUrl: null,
+//       });
+//       Alert.alert(
+//         "Saved for offline",
+//         Platform.OS === "web"
+//           ? "Stored in browser storage for demo."
+//           : "Find it in Profile → Offline."
+//       );
+//     } catch (e) {
+//       Alert.alert("Download failed", "Please try again.");
+//     }
+//   };
+
+//   return (
+//     <SafeAreaView style={[styles.safe, { paddingTop: Platform.OS === "web" ? 0 : insets.top }]}>
+//       <ScrollView style={styles.wrap} contentContainerStyle={{ paddingBottom: 24 + insets.bottom }}>
+//         {/* Back */}
+//         <TouchableOpacity style={styles.backPill} onPress={() => navigation.goBack()}>
+//           <Ionicons name="arrow-back" size={18} color={EMPHASIS} />
+//           <Text style={styles.backPillText}>Back</Text>
+//         </TouchableOpacity>
+
+//         {/* Cover */}
+//         <View style={styles.coverBox}>
+//           {cover_url && !imgError ? (
+//             <Image source={{ uri: cover_url }} style={styles.coverImg} onError={() => setImgError(true)} />
+//           ) : (
+//             <View style={[styles.coverImg, { backgroundColor: "#eef2f7" }]} />
+//           )}
+//           <View style={styles.badges}>
+//             {style ? (
+//               <View style={[styles.badge, styles.badgeDark]}>
+//                 <Ionicons name="sparkles-outline" size={12} color="#fff" />
+//                 <Text style={[styles.badgeText, { color: "#fff" }]}>{style}</Text>
+//               </View>
+//             ) : null}
+//             {budget ? (
+//               <View style={[styles.badge, styles.badgeLight]}>
+//                 <Ionicons name="pricetag-outline" size={12} color={PRIMARY} />
+//                 <Text style={[styles.badgeText, { color: PRIMARY }]}>{budget}</Text>
+//               </View>
+//             ) : null}
+//           </View>
+//         </View>
+
+//         {/* Title & meta */}
+//         <Text style={styles.h1}>{title || "Untitled Itinerary"}</Text>
+
+//         <View style={styles.metaRow}>
+//           <View style={styles.metaItem}>
+//             <Ionicons name="location-outline" size={16} color={SUBTEXT} />
+//             <Text style={styles.metaText}>{city || "—"}</Text>
+//           </View>
+//           <View style={styles.metaItem}>
+//             <Ionicons name="calendar-outline" size={16} color={SUBTEXT} />
+//             <Text style={styles.metaText}>{formatRange(start_date, end_date)}</Text>
+//           </View>
+//           <View style={styles.metaItem}>
+//             <Ionicons name="time-outline" size={16} color={SUBTEXT} />
+//             <Text style={styles.metaText}>{Array.isArray(days) ? `${days.length} day(s)` : "—"}</Text>
+//           </View>
+//         </View>
+
+//         {/* ✅ Action buttons - Only show for online content */}
+//         {!isOfflineItem && (
+//           <View style={styles.actionRow}>
+//             {/* Download for Offline button */}
+//             <Pressable onPress={handleDownloadOffline} style={styles.actionButton}>
+//               <Ionicons name="cloud-download-outline" size={18} color="#fff" />
+//               <Text style={styles.actionButtonText}>Download</Text>
+//             </Pressable>
+
+//             {/* Share button */}
+//             <ShareButton
+//               title={`Travel Itinerary: ${title || 'My Trip'}`}
+//               message={getShareMessage(data, 'itinerary')}
+//               url={getShareUrl(data, 'itinerary')}
+//               imageUrl={getShareImage(data, 'itinerary')}
+//               style={styles.shareButtonStyle}
+//               onShareComplete={() => {
+//                 console.log('Itinerary shared successfully!');
+//               }}
+//             />
+//           </View>
+//         )}
+
+//         {/* ✅ Offline indicator */}
+//         {isOfflineItem && (
+//           <View style={styles.offlineBanner}>
+//             <Ionicons name="cloud-done-outline" size={20} color="#065F46" />
+//             <Text style={styles.offlineBannerText}>Available Offline</Text>
+//           </View>
+//         )}
+
+//         {/* Description */}
+//         {description ? (
+//           <View style={styles.card}>
+//             <Text style={styles.sectionTitle}>Overview</Text>
+//             <Text style={styles.desc}>{description}</Text>
+//           </View>
+//         ) : null}
+
+//         {/* All days */}
+//         <View style={styles.card}>
+//           <Text style={styles.sectionTitle}>Daily Plan</Text>
+//           {(!days || days.length === 0) && <Text style={styles.empty}>No days added yet.</Text>}
+
+//           {days
+//             .slice()
+//             .sort((a,b) => (a.day_number||0)-(b.day_number||0))
+//             .map((d, idx) => {
+//               const place = d.place || d.Place || "—";
+//               const st = d.start_time || d.StartTime || "";
+//               const et = d.end_time || d.EndTime || "";
+//               const act = d.activities || d.Activities || "";
+
+//               return (
+//                 <View key={`${idx}-${place}`} style={styles.dayCard}>
+//                   <View style={styles.dayHeader}>
+//                     <Text style={styles.dayTitle}>Day {d.day_number || idx + 1}</Text>
+//                     <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+//                       {st ? (<View style={styles.timeChip}><Ionicons name="time-outline" size={12} color={PRIMARY} /><Text style={styles.timeChipText}>{st}</Text></View>) : null}
+//                       {et ? (<View style={styles.timeChip}><Ionicons name="time-outline" size={12} color={PRIMARY} /><Text style={styles.timeChipText}>{et}</Text></View>) : null}
+//                     </View>
+//                   </View>
+
+//                   <View style={styles.row}>
+//                     <Ionicons name="location-outline" size={16} color={PRIMARY} />
+//                     <Text style={styles.place}>{place}</Text>
+//                   </View>
+
+//                   {act ? (
+//                     <>
+//                       <Text style={styles.smallLabel}>Activities / Notes</Text>
+//                       <Text style={styles.activities}>{act}</Text>
+//                     </>
+//                   ) : null}
+//                 </View>
+//               );
+//             })}
+//         </View>
+//       </ScrollView>
+//     </SafeAreaView>
+//   );
+// }
 
 // const styles = StyleSheet.create({
-//   container: {
-//     padding: 16,
-//     backgroundColor: '#f9fafa',
-//   },
-//   title: {
-//     fontSize: 22,
-//     fontWeight: 'bold',
-//     marginBottom: 12,
-//     color: '#222',
-//   },
-//   input: {
-//     borderWidth: 1,
-//     borderColor: '#ddd',
-//     padding: 12,
-//     borderRadius: 10,
-//     backgroundColor: '#fff',
-//     marginBottom: 12,
-//   },
-//   label: {
-//     fontWeight: '600',
-//     marginBottom: 8,
-//     marginTop: 10,
-//   },
-//   tagRow: {
-//     flexDirection: 'row',
+//   safe: { flex: 1, backgroundColor: SOFT_BG },
+//   wrap: { flex: 1, padding: 14 },
+
+//   backPill: {
+//     alignSelf: "flex-start",
+//     flexDirection: "row",
 //     gap: 8,
-//     marginBottom: 12,
-//     flexWrap: 'wrap',
-//   },
-//   tag: {
-//     paddingVertical: 6,
-//     paddingHorizontal: 12,
-//     borderRadius: 20,
-//     backgroundColor: '#eee',
-//   },
-//   selectedTag: {
-//     backgroundColor: '#007bff',
-//   },
-//   tagText: {
-//     color: '#000',
-//     fontWeight: '500',
-//   },
-//   dayLabel: {
-//     fontSize: 16,
-//     fontWeight: '600',
-//     marginVertical: 10,
-//   },
-//   addBtn: {
-//     backgroundColor: '#e0f7fa',
-//     padding: 10,
-//     alignItems: 'center',
-//     borderRadius: 8,
-//     marginBottom: 16,
-//   },
-//   addText: {
-//     color: '#007bff',
-//     fontWeight: '600',
-//   },
-//   visibilityBtn: {
-//     paddingVertical: 10,
-//     paddingHorizontal: 20,
-//     borderRadius: 20,
+//     alignItems: "center",
+//     backgroundColor: "#fff",
+//     borderRadius: 12,
 //     borderWidth: 1,
-//     borderColor: '#ccc',
-//     marginRight: 10,
+//     borderColor: BORDER,
+//     paddingVertical: 8,
+//     paddingHorizontal: 12,
+//     marginBottom: 10,
 //   },
-//   selectedBtn: {
-//     backgroundColor: '#007bff',
-//     borderColor: '#007bff',
+//   backPillText: { fontWeight: "800", color: EMPHASIS },
+
+//   coverBox: { height: 200, borderRadius: 16, overflow: "hidden", borderWidth: 1, borderColor: BORDER, backgroundColor: "#fff" },
+//   coverImg: { width: "100%", height: "100%", resizeMode: "cover" },
+//   badges: { position: "absolute", left: 10, bottom: 10, flexDirection: "row", gap: 6 },
+//   badge: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 4, paddingHorizontal: 8, borderRadius: 999, borderWidth: 1 },
+//   badgeDark: { backgroundColor: PRIMARY, borderColor: PRIMARY },
+//   badgeLight: { backgroundColor: "#fff", borderColor: BORDER },
+//   badgeText: { fontSize: 12, fontWeight: "700" },
+
+//   h1: { fontSize: Platform.select({ web: 22, default: 20 }), fontWeight: "800", color: EMPHASIS, marginTop: 10, marginBottom: 6 },
+
+//   metaRow: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 10 },
+//   metaItem: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#fff", borderWidth: 1, borderColor: BORDER, borderRadius: 10, paddingVertical: 6, paddingHorizontal: 10 },
+//   metaText: { color: EMPHASIS, fontWeight: "600" },
+
+//   /* ✅ Action buttons row */
+//   actionRow: {
+//     flexDirection: 'row',
+//     gap: 10,
+//     marginTop: 12,
+//     marginBottom: 4,
 //   },
-//   btnText: {
-//     color: '#fff',
-//     fontWeight: '600',
-//   },
-//   saveBtn: {
-//     backgroundColor: '#2ecc71',
-//     padding: 16,
-//     borderRadius: 10,
+//   actionButton: {
+//     flex: 1,
+//     flexDirection: 'row',
 //     alignItems: 'center',
+//     justifyContent: 'center',
+//     gap: 8,
+//     backgroundColor: PRIMARY,
+//     paddingVertical: 12,
+//     paddingHorizontal: 14,
+//     borderRadius: 12,
 //   },
-//   saveText: {
+//   actionButtonText: {
 //     color: '#fff',
-//     fontSize: 16,
-//     fontWeight: 'bold',
+//     fontWeight: '800',
+//     fontSize: 15,
 //   },
+//   shareButtonStyle: {
+//     flex: 1,
+//   },
+
+//   /* ✅ Offline banner */
+//   offlineBanner: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     gap: 10,
+//     backgroundColor: '#ECFDF5',
+//     borderWidth: 1,
+//     borderColor: '#D1FAE5',
+//     paddingVertical: 12,
+//     paddingHorizontal: 16,
+//     borderRadius: 12,
+//     marginTop: 12,
+//     marginBottom: 4,
+//   },
+//   offlineBannerText: {
+//     color: '#065F46',
+//     fontWeight: '700',
+//     fontSize: 15,
+//   },
+
+//   card: {
+//     backgroundColor: "#fff", borderWidth: 1, borderColor: BORDER, borderRadius: 16, padding: 14, marginTop: 10
+//   },
+//   sectionTitle: { fontSize: Platform.select({ web: 16, default: 15 }), fontWeight: "800", color: EMPHASIS, marginBottom: 8 },
+
+//   desc: { color: "#334155", lineHeight: 20 },
+
+//   empty: { color: SUBTEXT },
+
+//   dayCard: { borderWidth: 1, borderColor: "#e9eef7", borderRadius: 12, padding: 12, marginBottom: 10 },
+//   dayHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
+//   dayTitle: { fontWeight: "800", color: EMPHASIS },
+
+//   row: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 },
+//   place: { color: EMPHASIS, fontWeight: "700" },
+
+//   smallLabel: { fontWeight: "700", color: EMPHASIS, marginTop: 6, marginBottom: 4, fontSize: 13 },
+//   activities: { color: "#374151", lineHeight: 20 },
+
+//   timeChip: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#EFF6FF", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, borderWidth: 1, borderColor: "#DBEAFE" },
+//   timeChipText: { color: PRIMARY, fontWeight: "700", fontSize: 12 },
+
+//   centerFill: { flex: 1, alignItems: "center", justifyContent: "center" },
 // });
 
-// export default ItineraryDetailScreen;
-
-import React, { useEffect } from 'react';
+// screens/ItineraryDetailScreen.js
+import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Image,
-  Dimensions,
-  BackHandler,
-  Platform,
-  TouchableOpacity,
-} from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+  View, Text, StyleSheet, Image, ScrollView, TouchableOpacity,
+  Platform, ActivityIndicator, Alert, Pressable, Share as RNShare
+} from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useNavigation, useRoute } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const screenWidth = Dimensions.get('window').width;
-const isWeb = Platform.OS === 'web';
+/* Offline hook */
+import { downloadItinerary } from "../../hooks/useOfflineItineraries";
 
-const ItineraryDetailScreen = () => {
-  const navigation = useNavigation();
+/* ✅ Import only isOfflineContent */
+import { isOfflineContent } from "../../utils/shareImageHelper";
 
-  // ✅ Handle Android back button
-  useEffect(() => {
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-      navigation.navigate('CrowdsourceItineraries');
-      return true;
+import getBaseURL from "../../config/env";
+const API_BASE = getBaseURL().replace(/\/+$/, "");
+const TOKEN_KEYS = ["token", "auth_token", "jwt", "access_token", "AUTH_TOKEN", "userToken"];
+const getAuthToken = async () => {
+  for (const k of TOKEN_KEYS) {
+    const v = await AsyncStorage.getItem(k);
+    if (v) return v;
+  }
+  return null;
+};
+
+const BORDER = "#E6EDF7";
+const PRIMARY = "#003366";
+const SUBTEXT = "#6B7280";
+const EMPHASIS = "#0f172a";
+const SOFT_BG = "#F7F9FC";
+
+function formatRange(start, end) {
+  if (!start || !end) return "Dates TBD";
+  try {
+    const s = new Date(start);
+    const e = new Date(end);
+    const sameYear = s.getFullYear() === e.getFullYear();
+    const fmtS = new Intl.DateTimeFormat("en-US", {
+      month: "short", day: "numeric", ...(sameYear ? {} : { year: "numeric" })
     });
-    return () => backHandler.remove();
-  }, []);
+    const fmtE = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" });
+    return `${fmtS.format(s)} – ${fmtE.format(e)}`;
+  } catch { return "Dates TBD"; }
+}
 
-  const itinerary = {
-    title: 'Skardu Adventure',
-    overview:
-      'A 5-day adventure through the valleys of Skardu exploring lakes, mountains, and culture.',
-    budget: 'Mid-Range',
-    style: ['Adventure', 'Cultural'],
-    visibility: 'Public',
-    coverImage:
-      'https://images.unsplash.com/photo-1621408617484-c6a1d54f0b33?auto=format&fit=crop&w=1200&q=80',
-    days: [
-      {
-        day: 1,
-        place: 'Satpara Lake',
-        time: '10:00 AM - 2:00 PM',
-        activities: 'Boating, Lunch, Photography',
-      },
-      {
-        day: 2,
-        place: 'Shangrila Resort',
-        time: '3:00 PM - 6:00 PM',
-        activities: 'Sightseeing, Tea, Relaxation',
-      },
-    ],
+export default function ItineraryDetailScreen() {
+  const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
+  const route = useRoute();
+
+  const passed = route.params?.itinerary || {};
+  const id = route.params?.id || passed?.id || passed?._id;
+
+  const [data, setData] = useState(passed || null);
+  const [loading, setLoading] = useState(!passed?.days?.length);
+  const [imgError, setImgError] = useState(false);
+
+  // ✅ Check if this is offline content
+  const isOfflineItem = isOfflineContent(passed) || isOfflineContent(data);
+
+  useEffect(() => {
+    navigation.setOptions?.({ title: "Itinerary" });
+  }, [navigation]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!id) return;
+      try {
+        setLoading(true);
+        const token = await getAuthToken();
+        const res = await fetch(`${API_BASE}/itineraries/${id}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
+        const raw = await res.text();
+        let j = null; 
+        try { j = raw ? JSON.parse(raw) : null; } catch {}
+        if (!cancelled) {
+          if (res.ok && j) setData(j);
+          else if (!passed) Alert.alert("Error", j?.error || "Unable to load itinerary.");
+        }
+      } catch (e) {
+        if (!cancelled && !passed) Alert.alert("Network", "Failed to load itinerary.");
+      } finally { 
+        if (!cancelled) setLoading(false); 
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [id, passed]);
+
+  if (!data && loading) {
+    return (
+      <SafeAreaView style={[styles.safe, { paddingTop: insets.top }]}>
+        <View style={styles.centerFill}><ActivityIndicator /></View>
+      </SafeAreaView>
+    );
+  }
+  if (!data) {
+    return (
+      <SafeAreaView style={[styles.safe, { paddingTop: insets.top }]}>
+        <View style={styles.centerFill}><Text>Itinerary not found.</Text></View>
+      </SafeAreaView>
+    );
+  }
+
+  const { title, cover_url, city, style, budget, start_date, end_date, description, days = [] } = data;
+
+  /* Download current itinerary for offline */
+  const handleDownloadOffline = async () => {
+    try {
+      const normalized = { ...data, id: data.id ?? data._id };
+      await downloadItinerary({
+        itinerary: normalized,
+        coverUrl: cover_url || null,
+        staticMapUrl: null,
+      });
+      Alert.alert(
+        "Saved for offline",
+        Platform.OS === "web"
+          ? "Stored in browser storage for demo."
+          : "Find it in Profile → Offline."
+      );
+    } catch (e) {
+      Alert.alert("Download failed", "Please try again.");
+    }
+  };
+
+  // ✅ Share handler with detailed day-by-day itinerary
+  const handleShare = async () => {
+    try {
+      // Build comprehensive share message
+      let message = `🗺️ Travel Itinerary: ${title || 'My Trip'}\n`;
+      message += `📍 Destination: ${city || 'Amazing Places'}\n`;
+      
+      if (description) {
+        message += `\n${description}\n`;
+      }
+
+      // Add trip details
+      message += `\n📅 ${formatRange(start_date, end_date)}`;
+      if (style) message += `\n✈️ Style: ${style}`;
+      if (budget) message += `\n💰 Budget: ${budget}`;
+
+      // ✅ Add day-by-day schedule from days array
+      if (days && Array.isArray(days) && days.length > 0) {
+        message += `\n\n📋 Day-by-Day Itinerary:\n`;
+        message += `${'='.repeat(30)}\n`;
+
+        days
+          .slice()
+          .sort((a, b) => (a.day_number || 0) - (b.day_number || 0))
+          .forEach((day, idx) => {
+            const dayNum = day.day_number || idx + 1;
+            const place = day.place || day.Place || '';
+            const startTime = day.start_time || day.StartTime || '';
+            const endTime = day.end_time || day.EndTime || '';
+            const activities = day.activities || day.Activities || '';
+
+            message += `\n📆 Day ${dayNum}:\n`;
+            
+            if (place) {
+              message += `  📍 ${place}\n`;
+            }
+            
+            if (startTime || endTime) {
+              const times = [startTime, endTime].filter(Boolean).join(' - ');
+              message += `  🕐 ${times}\n`;
+            }
+            
+            if (activities) {
+              message += `  ${activities}\n`;
+            }
+          });
+      }
+
+      message += `\n\n✨ Plan your journey with TravelMate! 🌍✈️`;
+
+      // Share using native share sheet
+      if (Platform.OS === 'web') {
+        if (navigator.share) {
+          await navigator.share({
+            title: title || 'My Travel Itinerary',
+            text: message,
+          });
+        } else if (navigator.clipboard) {
+          await navigator.clipboard.writeText(message);
+          Alert.alert('Copied!', 'Itinerary copied to clipboard. Paste it anywhere!');
+        } else {
+          alert(message);
+        }
+      } else {
+        await RNShare.share({
+          title: title || 'My Travel Itinerary',
+          message: message,
+        });
+      }
+
+      console.log('✅ Itinerary shared with day-by-day details');
+    } catch (error) {
+      if (error.message !== 'User cancelled' && error.name !== 'AbortError') {
+        console.error('Share error:', error);
+        Alert.alert('Error', 'Could not share itinerary');
+      }
+    }
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      {isWeb && (
-        <TouchableOpacity
-          onPress={() => navigation.navigate('CrowdsourceItineraries')}
-          style={styles.backArrow}
-        >
-          <Ionicons name="arrow-back" size={26} color="#007bff" />
+    <SafeAreaView style={[styles.safe, { paddingTop: Platform.OS === "web" ? 0 : insets.top }]}>
+      <ScrollView style={styles.wrap} contentContainerStyle={{ paddingBottom: 24 + insets.bottom }}>
+        {/* Back */}
+        <TouchableOpacity style={styles.backPill} onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={18} color={EMPHASIS} />
+          <Text style={styles.backPillText}>Back</Text>
         </TouchableOpacity>
-      )}
 
-      <Text style={styles.header}>📋 {itinerary.title}</Text>
-      <Text style={styles.label}>Overview</Text>
-      <Text style={styles.paragraph}>{itinerary.overview}</Text>
-
-      <Image source={{ uri: itinerary.coverImage }} style={styles.image} />
-
-      <Text style={styles.label}>Budget</Text>
-      <Text style={styles.tag}>{itinerary.budget}</Text>
-
-      <Text style={styles.label}>Travel Style</Text>
-      <View style={styles.tagRow}>
-        {itinerary.style.map((s, idx) => (
-          <Text key={idx} style={styles.tag}>
-            {s}
-          </Text>
-        ))}
-      </View>
-
-      <Text style={styles.label}>Day-by-Day Plan</Text>
-      {itinerary.days.map((day) => (
-        <View key={day.day} style={styles.dayCard}>
-          <Text style={styles.dayTitle}>Day {day.day}: {day.place}</Text>
-          <Text style={styles.subText}>🕒 {day.time}</Text>
-          <Text style={styles.subText}>🎯 {day.activities}</Text>
+        {/* Cover */}
+        <View style={styles.coverBox}>
+          {cover_url && !imgError ? (
+            <Image source={{ uri: cover_url }} style={styles.coverImg} onError={() => setImgError(true)} />
+          ) : (
+            <View style={[styles.coverImg, { backgroundColor: "#eef2f7" }]} />
+          )}
+          <View style={styles.badges}>
+            {style ? (
+              <View style={[styles.badge, styles.badgeDark]}>
+                <Ionicons name="sparkles-outline" size={12} color="#fff" />
+                <Text style={[styles.badgeText, { color: "#fff" }]}>{style}</Text>
+              </View>
+            ) : null}
+            {budget ? (
+              <View style={[styles.badge, styles.badgeLight]}>
+                <Ionicons name="pricetag-outline" size={12} color={PRIMARY} />
+                <Text style={[styles.badgeText, { color: PRIMARY }]}>{budget}</Text>
+              </View>
+            ) : null}
+          </View>
         </View>
-      ))}
 
-      <Text style={styles.label}>Visibility</Text>
-      <Text style={[styles.tag, itinerary.visibility === 'Public' ? styles.public : styles.private]}>
-        {itinerary.visibility}
-      </Text>
-    </ScrollView>
+        {/* Title & meta */}
+        <Text style={styles.h1}>{title || "Untitled Itinerary"}</Text>
+
+        <View style={styles.metaRow}>
+          <View style={styles.metaItem}>
+            <Ionicons name="location-outline" size={16} color={SUBTEXT} />
+            <Text style={styles.metaText}>{city || "—"}</Text>
+          </View>
+          <View style={styles.metaItem}>
+            <Ionicons name="calendar-outline" size={16} color={SUBTEXT} />
+            <Text style={styles.metaText}>{formatRange(start_date, end_date)}</Text>
+          </View>
+          <View style={styles.metaItem}>
+            <Ionicons name="time-outline" size={16} color={SUBTEXT} />
+            <Text style={styles.metaText}>{Array.isArray(days) ? `${days.length} day(s)` : "—"}</Text>
+          </View>
+        </View>
+
+        {/* ✅ Action buttons - Only show for online content */}
+        {!isOfflineItem && (
+          <View style={styles.actionRow}>
+            {/* Download for Offline button */}
+            <Pressable onPress={handleDownloadOffline} style={styles.actionButton}>
+              <Ionicons name="cloud-download-outline" size={18} color="#fff" />
+              <Text style={styles.actionButtonText}>Download</Text>
+            </Pressable>
+
+            {/* ✅ Share button with detailed message */}
+            <Pressable onPress={handleShare} style={[styles.actionButton, { backgroundColor: '#10B981' }]}>
+              <Ionicons name="share-social-outline" size={18} color="#fff" />
+              <Text style={styles.actionButtonText}>Share</Text>
+            </Pressable>
+          </View>
+        )}
+
+        {/* ✅ Offline indicator */}
+        {isOfflineItem && (
+          <View style={styles.offlineBanner}>
+            <Ionicons name="cloud-done-outline" size={20} color="#065F46" />
+            <Text style={styles.offlineBannerText}>Available Offline</Text>
+          </View>
+        )}
+
+        {/* Description */}
+        {description ? (
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Overview</Text>
+            <Text style={styles.desc}>{description}</Text>
+          </View>
+        ) : null}
+
+        {/* All days */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Daily Plan</Text>
+          {(!days || days.length === 0) && <Text style={styles.empty}>No days added yet.</Text>}
+
+          {days
+            .slice()
+            .sort((a,b) => (a.day_number||0)-(b.day_number||0))
+            .map((d, idx) => {
+              const place = d.place || d.Place || "—";
+              const st = d.start_time || d.StartTime || "";
+              const et = d.end_time || d.EndTime || "";
+              const act = d.activities || d.Activities || "";
+
+              return (
+                <View key={`${idx}-${place}`} style={styles.dayCard}>
+                  <View style={styles.dayHeader}>
+                    <Text style={styles.dayTitle}>Day {d.day_number || idx + 1}</Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                      {st ? (<View style={styles.timeChip}><Ionicons name="time-outline" size={12} color={PRIMARY} /><Text style={styles.timeChipText}>{st}</Text></View>) : null}
+                      {et ? (<View style={styles.timeChip}><Ionicons name="time-outline" size={12} color={PRIMARY} /><Text style={styles.timeChipText}>{et}</Text></View>) : null}
+                    </View>
+                  </View>
+
+                  <View style={styles.row}>
+                    <Ionicons name="location-outline" size={16} color={PRIMARY} />
+                    <Text style={styles.place}>{place}</Text>
+                  </View>
+
+                  {act ? (
+                    <>
+                      <Text style={styles.smallLabel}>Activities / Notes</Text>
+                      <Text style={styles.activities}>{act}</Text>
+                    </>
+                  ) : null}
+                </View>
+              );
+            })}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-    backgroundColor: '#f9fafb',
-    paddingTop: 60,
-  },
-  backArrow: {
-    position: 'absolute',
-    top: 20,
-    left: 20,
-    zIndex: 10,
-  },
-  header: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    color: '#003366',
-  },
-  label: {
-    fontWeight: '600',
-    fontSize: 16,
-    marginTop: 16,
-    marginBottom: 6,
-  },
-  paragraph: {
-    fontSize: 14,
-    color: '#333',
-  },
-  image: {
-    width: screenWidth - 40,
-    height: 180,
+  safe: { flex: 1, backgroundColor: SOFT_BG },
+  wrap: { flex: 1, padding: 14 },
+
+  backPill: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "center",
+    backgroundColor: "#fff",
     borderRadius: 12,
-    marginTop: 10,
+    borderWidth: 1,
+    borderColor: BORDER,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginBottom: 10,
   },
-  tagRow: {
+  backPillText: { fontWeight: "800", color: EMPHASIS },
+
+  coverBox: { height: 200, borderRadius: 16, overflow: "hidden", borderWidth: 1, borderColor: BORDER, backgroundColor: "#fff" },
+  coverImg: { width: "100%", height: "100%", resizeMode: "cover" },
+  badges: { position: "absolute", left: 10, bottom: 10, flexDirection: "row", gap: 6 },
+  badge: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 4, paddingHorizontal: 8, borderRadius: 999, borderWidth: 1 },
+  badgeDark: { backgroundColor: PRIMARY, borderColor: PRIMARY },
+  badgeLight: { backgroundColor: "#fff", borderColor: BORDER },
+  badgeText: { fontSize: 12, fontWeight: "700" },
+
+  h1: { fontSize: Platform.select({ web: 22, default: 20 }), fontWeight: "800", color: EMPHASIS, marginTop: 10, marginBottom: 6 },
+
+  metaRow: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 10 },
+  metaItem: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#fff", borderWidth: 1, borderColor: BORDER, borderRadius: 10, paddingVertical: 6, paddingHorizontal: 10 },
+  metaText: { color: EMPHASIS, fontWeight: "600" },
+
+  actionRow: {
     flexDirection: 'row',
     gap: 10,
-    flexWrap: 'wrap',
-  },
-  tag: {
-    backgroundColor: '#dceffe',
-    color: '#007bff',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 16,
-    fontSize: 13,
-    fontWeight: '500',
-    marginRight: 10,
-    marginBottom: 6,
-  },
-  public: {
-    backgroundColor: '#d4edda',
-    color: '#155724',
-  },
-  private: {
-    backgroundColor: '#f8d7da',
-    color: '#721c24',
-  },
-  dayCard: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 12,
-    marginVertical: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-  dayTitle: {
-    fontWeight: 'bold',
-    fontSize: 15,
+    marginTop: 12,
     marginBottom: 4,
   },
-  subText: {
-    fontSize: 13,
-    color: '#555',
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: PRIMARY,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: 12,
   },
-});
+  actionButtonText: {
+    color: '#fff',
+    fontWeight: '800',
+    fontSize: 15,
+  },
 
-export default ItineraryDetailScreen;
+  offlineBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#D1FAE5',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  offlineBannerText: {
+    color: '#065F46',
+    fontWeight: '700',
+    fontSize: 15,
+  },
+
+  card: {
+    backgroundColor: "#fff", borderWidth: 1, borderColor: BORDER, borderRadius: 16, padding: 14, marginTop: 10
+  },
+  sectionTitle: { fontSize: Platform.select({ web: 16, default: 15 }), fontWeight: "800", color: EMPHASIS, marginBottom: 8 },
+
+  desc: { color: "#334155", lineHeight: 20 },
+
+  empty: { color: SUBTEXT },
+
+  dayCard: { borderWidth: 1, borderColor: "#e9eef7", borderRadius: 12, padding: 12, marginBottom: 10 },
+  dayHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 },
+  dayTitle: { fontWeight: "800", color: EMPHASIS },
+
+  row: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 },
+  place: { color: EMPHASIS, fontWeight: "700" },
+
+  smallLabel: { fontWeight: "700", color: EMPHASIS, marginTop: 6, marginBottom: 4, fontSize: 13 },
+  activities: { color: "#374151", lineHeight: 20 },
+
+  timeChip: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#EFF6FF", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, borderWidth: 1, borderColor: "#DBEAFE" },
+  timeChipText: { color: PRIMARY, fontWeight: "700", fontSize: 12 },
+
+  centerFill: { flex: 1, alignItems: "center", justifyContent: "center" },
+});

@@ -374,7 +374,7 @@ export default function VendorHome({ dispatchTab, navigation }) {
       if (!token) return setLoading(false);
 
       const [profileRes, reqRes, bookRes, svcRes] = await Promise.all([
-        fetch(`${API_BASE}/vendor/profile`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API_BASE}/vendor/profile/me`, { headers: { Authorization: `Bearer ${token}` } }),
         fetch(`${API_BASE}/vendor/cultural/requests`, { headers: { Authorization: `Bearer ${token}` } }),
         fetch(`${API_BASE}/vendor/cultural/booked`, { headers: { Authorization: `Bearer ${token}` } }),
         fetch(`${API_BASE}/cultural/services`, { headers: { Authorization: `Bearer ${token}` } }),

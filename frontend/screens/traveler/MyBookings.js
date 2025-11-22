@@ -1,4 +1,5 @@
 
+
 // import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 // import {
 //   View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator,
@@ -8,6 +9,7 @@
 // import { LinearGradient } from "expo-linear-gradient";
 // import { useNavigation } from "@react-navigation/native";
 // import AsyncStorage from "@react-native-async-storage/async-storage";
+// import { SafeAreaView } from "react-native-safe-area-context"; // ✅ added
 // import getBaseURL from "../../config/env";
 
 // const API = getBaseURL().replace(/\/+$/, "");
@@ -124,27 +126,20 @@
 
 //   const callVendor = (phone, countryCode) => {
 //     const fullNumber = `${countryCode || ''}${phone || ''}`.replace(/\s/g, '');
-//     if (fullNumber) {
-//       Linking.openURL(`tel:${fullNumber}`);
-//     }
+//     if (fullNumber) Linking.openURL(`tel:${fullNumber}`);
 //   };
 
 //   const emailVendor = (email) => {
-//     if (email) {
-//       Linking.openURL(`mailto:${email}`);
-//     }
+//     if (email) Linking.openURL(`mailto:${email}`);
 //   };
 
-//   // Open chat with vendor
 //   const openChat = async (booking) => {
 //     try {
 //       const token = await getAuthToken();
 //       if (!token) return;
-
 //       const response = await fetch(`${API}/booking-chat/bookings/${booking.id}`, {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
-
 //       if (response.ok) {
 //         const conversation = await response.json();
 //         navigation.navigate('BookingChat', {
@@ -242,7 +237,6 @@
 //           </View>
 //         )}
 
-//         {/* Chat Button - Show for confirmed bookings */}
 //         {isConfirmed && (
 //           <TouchableOpacity style={styles.chatButton} onPress={() => openChat(item)}>
 //             <Ionicons name="chatbubbles" size={18} color="#6366F1" />
@@ -250,7 +244,6 @@
 //           </TouchableOpacity>
 //         )}
 
-//         {/* Show vendor contact ONLY if confirmed */}
 //         {isConfirmed && (
 //           <View style={styles.contactCard}>
 //             <Text style={styles.contactTitle}>Host Contact</Text>
@@ -277,10 +270,10 @@
 //               onPress={() => navigation.navigate('PublicHostProfile', { 
 //                 vendorId: item?.vendor_id || item?.VendorID,
 //                 isConfirmed: true,
-//                 vendorEmail: vendorEmail,
-//                 vendorPhone: vendorPhone,
-//                 vendorCountryCode: vendorCountryCode,
-//                 vendorName: vendorName
+//                 vendorEmail,
+//                 vendorPhone,
+//                 vendorCountryCode,
+//                 vendorName
 //               })}
 //             >
 //               <Text style={styles.viewProfileText}>View full profile</Text>
@@ -293,58 +286,62 @@
 //   };
 
 //   return (
-//     <View style={styles.container}>
-//       <LinearGradient
-//         colors={["#E0EAFC", "#CFDEF3"]}
-//         start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-//         style={styles.headerGradient}
-//       >
-//         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-//           <Ionicons name="arrow-back" size={18} color="#0F3A6B" />
-//           <Text style={styles.backTxt}>Back</Text>
-//         </TouchableOpacity>
-
-//         <Text style={styles.heading}>My Bookings</Text>
-
-//         <View style={styles.tabs}>
-//           <TouchableOpacity onPress={() => setTab("all")} style={[styles.tab, tab === "all" && styles.tabActive]}>
-//             <Text style={[styles.tabTxt, tab === "all" && styles.tabTxtActive]}>All ({counts.all})</Text>
+//     <SafeAreaView style={styles.safeArea}>
+//       <View style={styles.container}>
+//         <LinearGradient
+//           colors={["#E0EAFC", "#CFDEF3"]}
+//           start={{ x: 0, y: 0 }}
+//           end={{ x: 1, y: 1 }}
+//           style={styles.headerGradient}
+//         >
+//           <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+//             <Ionicons name="arrow-back" size={18} color="#0F3A6B" />
+//             <Text style={styles.backTxt}>Back</Text>
 //           </TouchableOpacity>
-//           <TouchableOpacity onPress={() => setTab("pending")} style={[styles.tab, tab === "pending" && styles.tabActive]}>
-//             <Text style={[styles.tabTxt, tab === "pending" && styles.tabTxtActive]}>Pending ({counts.pending})</Text>
-//           </TouchableOpacity>
-//           <TouchableOpacity onPress={() => setTab("confirmed")} style={[styles.tab, tab === "confirmed" && styles.tabActive]}>
-//             <Text style={[styles.tabTxt, tab === "confirmed" && styles.tabTxtActive]}>Confirmed ({counts.confirmed})</Text>
-//           </TouchableOpacity>
-//         </View>
-//       </LinearGradient>
 
-//       {loading ? (
-//         <View style={{ padding: 24, alignItems: "center" }}>
-//           <ActivityIndicator />
-//           <Text style={{ marginTop: 8, color: "#6B7280" }}>Loading…</Text>
-//         </View>
-//       ) : (
-//         <FlatList
-//           data={filtered}
-//           keyExtractor={(it, i) => String(it?.id || it?.ID || i)}
-//           renderItem={({ item, index }) => <Item item={item} index={index} />}
-//           contentContainerStyle={{ padding: 12, paddingBottom: 24 }}
-//           ListEmptyComponent={
-//             <View style={{ padding: 24, alignItems: "center" }}>
-//               <Ionicons name="folder-open-outline" size={36} color="#6B7280" />
-//               <Text style={{ marginTop: 8, color: "#0f172a", fontWeight: "800" }}>No bookings</Text>
-//               <Text style={{ color: "#6B7280" }}>You haven't booked any experiences yet.</Text>
-//             </View>
-//           }
-//           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-//         />
-//       )}
-//     </View>
+//           <Text style={styles.heading}>My Bookings</Text>
+
+//           <View style={styles.tabs}>
+//             <TouchableOpacity onPress={() => setTab("all")} style={[styles.tab, tab === "all" && styles.tabActive]}>
+//               <Text style={[styles.tabTxt, tab === "all" && styles.tabTxtActive]}>All ({counts.all})</Text>
+//             </TouchableOpacity>
+//             <TouchableOpacity onPress={() => setTab("pending")} style={[styles.tab, tab === "pending" && styles.tabActive]}>
+//               <Text style={[styles.tabTxt, tab === "pending" && styles.tabTxtActive]}>Pending ({counts.pending})</Text>
+//             </TouchableOpacity>
+//             <TouchableOpacity onPress={() => setTab("confirmed")} style={[styles.tab, tab === "confirmed" && styles.tabActive]}>
+//               <Text style={[styles.tabTxt, tab === "confirmed" && styles.tabTxtActive]}>Confirmed ({counts.confirmed})</Text>
+//             </TouchableOpacity>
+//           </View>
+//         </LinearGradient>
+
+//         {loading ? (
+//           <View style={{ padding: 24, alignItems: "center" }}>
+//             <ActivityIndicator />
+//             <Text style={{ marginTop: 8, color: "#6B7280" }}>Loading…</Text>
+//           </View>
+//         ) : (
+//           <FlatList
+//             data={filtered}
+//             keyExtractor={(it, i) => String(it?.id || it?.ID || i)}
+//             renderItem={({ item, index }) => <Item item={item} index={index} />}
+//             contentContainerStyle={{ padding: 12, paddingBottom: 90 }} // ✅ space for bottom nav
+//             ListEmptyComponent={
+//               <View style={{ padding: 24, alignItems: "center" }}>
+//                 <Ionicons name="folder-open-outline" size={36} color="#6B7280" />
+//                 <Text style={{ marginTop: 8, color: "#0f172a", fontWeight: "800" }}>No bookings</Text>
+//                 <Text style={{ color: "#6B7280" }}>You haven't booked any experiences yet.</Text>
+//               </View>
+//             }
+//             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+//           />
+//         )}
+//       </View>
+//     </SafeAreaView>
 //   );
 // }
 
 // const styles = StyleSheet.create({
+//   safeArea: { flex: 1, backgroundColor: "#f7f9fc" },
 //   container: { flex: 1, backgroundColor: "#f7f9fc" },
 //   headerGradient: { paddingTop: 12, paddingBottom: 12, paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: "#E2E8F0" },
 //   backBtn: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#F1F5F9", borderWidth: 1, borderColor: "#E2E8F0", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, alignSelf: "flex-start" },
@@ -355,82 +352,25 @@
 //   tabActive: { backgroundColor: "#0ea5e9" },
 //   tabTxt: { fontWeight: "800", color: "#0f172a" },
 //   tabTxtActive: { color: "#fff" },
-
 //   card: { backgroundColor: "#fff", borderWidth: 1, borderColor: "#E6EDF7", borderRadius: 14, padding: 12, marginBottom: 12 },
 //   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
 //   cardTitleRow: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1 },
 //   cardTitle: { fontWeight: "800", color: "#0f172a", flexShrink: 1 },
-
 //   metaRowWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 },
 //   metaPill: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#F8FAFC", paddingHorizontal: 8, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: "#E5E7EB" },
 //   metaText: { fontSize: 12, color: "#0f172a", fontWeight: "700" },
-
 //   priceBox: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#ECFDF5", borderColor: "#D1FAE5", borderWidth: 1, padding: 8, borderRadius: 8, marginTop: 10 },
 //   price: { color: "#065F46", fontWeight: "800" },
-
 //   msgBox: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#EEF2FF", borderColor: "#E0E7FF", borderWidth: 1, padding: 8, borderRadius: 8, marginTop: 10 },
 //   msg: { color: "#0f172a", flex: 1 },
-
-//   // Chat Button
-//   chatButton: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     justifyContent: 'center',
-//     backgroundColor: '#EFF6FF',
-//     borderWidth: 1,
-//     borderColor: '#BFDBFE',
-//     borderRadius: 10,
-//     paddingVertical: 10,
-//     paddingHorizontal: 12,
-//     marginTop: 10,
-//   },
-//   chatButtonText: {
-//     color: '#6366F1',
-//     fontWeight: '700',
-//     fontSize: 14,
-//     marginLeft: 8,
-//   },
-
-//   contactCard: {
-//     marginTop: 10,
-//     backgroundColor: "#F0FDF4",
-//     borderRadius: 10,
-//     padding: 10,
-//     borderWidth: 1,
-//     borderColor: "#BBF7D0",
-//     gap: 6,
-//   },
-//   contactTitle: {
-//     fontWeight: '800',
-//     color: '#065F46',
-//     marginBottom: 4,
-//   },
-//   contactRow: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     gap: 8,
-//   },
-//   contactText: {
-//     fontSize: 14,
-//     color: '#0f172a',
-//     fontWeight: '600',
-//   },
-//   viewProfileBtn: {
-//     flexDirection: 'row',
-//     alignItems: 'center',
-//     justifyContent: 'space-between',
-//     marginTop: 6,
-//     paddingVertical: 6,
-//     paddingHorizontal: 8,
-//     backgroundColor: '#EEF2FF',
-//     borderRadius: 6,
-//   },
-//   viewProfileText: {
-//     fontSize: 13,
-//     fontWeight: '800',
-//     color: '#6366F1',
-//   },
-
+//   chatButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#BFDBFE', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12, marginTop: 10 },
+//   chatButtonText: { color: '#6366F1', fontWeight: '700', fontSize: 14, marginLeft: 8 },
+//   contactCard: { marginTop: 10, backgroundColor: "#F0FDF4", borderRadius: 10, padding: 10, borderWidth: 1, borderColor: "#BBF7D0", gap: 6 },
+//   contactTitle: { fontWeight: '800', color: '#065F46', marginBottom: 4 },
+//   contactRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+//   contactText: { fontSize: 14, color: '#0f172a', fontWeight: '600' },
+//   viewProfileBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6, paddingVertical: 6, paddingHorizontal: 8, backgroundColor: '#EEF2FF', borderRadius: 6 },
+//   viewProfileText: { fontSize: 13, fontWeight: '800', color: '#6366F1' },
 //   statusTag: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 999, backgroundColor: "#E5E7EB" },
 //   statusPending: { backgroundColor: "#FEF3C7" },
 //   statusConfirmed: { backgroundColor: "#BBF7D0" },
@@ -439,17 +379,21 @@
 // });
 
 
+
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator,
-  RefreshControl, Animated, Alert, Linking
+  RefreshControl, Animated, Alert, Linking, Share as RNShare, Platform
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { SafeAreaView } from "react-native-safe-area-context"; // ✅ added
+import { SafeAreaView } from "react-native-safe-area-context";
 import getBaseURL from "../../config/env";
+
+/* ✅ Share functionality */
+import { getShareMessage, getShareUrl } from '../../utils/shareImageHelper';
 
 const API = getBaseURL().replace(/\/+$/, "");
 const TOKEN_KEYS = ["token", "auth_token", "jwt", "access_token", "AUTH_TOKEN", "userToken"];
@@ -595,6 +539,40 @@ export default function MyBookings() {
     }
   };
 
+  // ✅ Share booking handler
+  const handleShareBooking = async (booking) => {
+  try {
+    const title = getTitle(booking);
+    const city = getCity(booking);
+    const chosenDate = safeString(booking?.chosen_date || booking?.ChosenDate);
+    const priceText = getPriceText(booking);
+    
+    const message = `🎉 I just booked ${title} on TravelMate! 🎊
+
+📍 ${city || 'Amazing location'}
+📅 Date: ${chosenDate || 'Coming soon'}
+👥 ${booking?.participants || 1} participant(s)
+💰 ${priceText || 'Great price'}
+
+Join me on this adventure! 🚀`;
+
+    if (Platform.OS === 'web') {
+      if (navigator.share) {
+        await navigator.share({ title: `My Booking: ${title}`, text: message });
+      } else {
+        await navigator.clipboard.writeText(message);
+        Alert.alert('Copied!', 'Booking details copied to clipboard');
+      }
+    } else {
+      await RNShare.share({ title: `My Booking: ${title}`, message: message });
+    }
+    console.log('✅ Booking shared:', title);
+  } catch (error) {
+    if (error.message !== 'User cancelled') {
+      console.error('Share error:', error);
+    }
+  }
+};
   const StatusTag = ({ status }) => {
     const statusStr = safeString(status).toLowerCase();
     return (
@@ -676,11 +654,27 @@ export default function MyBookings() {
           </View>
         )}
 
+        {/* ✅ Action Buttons Row - Only for Confirmed Bookings */}
         {isConfirmed && (
-          <TouchableOpacity style={styles.chatButton} onPress={() => openChat(item)}>
-            <Ionicons name="chatbubbles" size={18} color="#6366F1" />
-            <Text style={styles.chatButtonText}>Chat with Vendor</Text>
-          </TouchableOpacity>
+          <View style={styles.actionButtonsRow}>
+            {/* Chat Button */}
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.chatActionBtn]} 
+              onPress={() => openChat(item)}
+            >
+              <Ionicons name="chatbubbles" size={18} color="#6366F1" />
+              <Text style={styles.actionButtonText}>Chat</Text>
+            </TouchableOpacity>
+
+            {/* ✅ Share Button */}
+            <TouchableOpacity 
+              style={[styles.actionButton, styles.shareActionBtn]} 
+              onPress={() => handleShareBooking(item)}
+            >
+              <Ionicons name="share-social-outline" size={18} color="#0EA5E9" />
+              <Text style={[styles.actionButtonText, { color: '#0EA5E9' }]}>Share</Text>
+            </TouchableOpacity>
+          </View>
         )}
 
         {isConfirmed && (
@@ -763,7 +757,7 @@ export default function MyBookings() {
             data={filtered}
             keyExtractor={(it, i) => String(it?.id || it?.ID || i)}
             renderItem={({ item, index }) => <Item item={item} index={index} />}
-            contentContainerStyle={{ padding: 12, paddingBottom: 90 }} // ✅ space for bottom nav
+            contentContainerStyle={{ padding: 12, paddingBottom: 90 }}
             ListEmptyComponent={
               <View style={{ padding: 24, alignItems: "center" }}>
                 <Ionicons name="folder-open-outline" size={36} color="#6B7280" />
@@ -802,8 +796,38 @@ const styles = StyleSheet.create({
   price: { color: "#065F46", fontWeight: "800" },
   msgBox: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#EEF2FF", borderColor: "#E0E7FF", borderWidth: 1, padding: 8, borderRadius: 8, marginTop: 10 },
   msg: { color: "#0f172a", flex: 1 },
-  chatButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#BFDBFE', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12, marginTop: 10 },
-  chatButtonText: { color: '#6366F1', fontWeight: '700', fontSize: 14, marginLeft: 8 },
+  
+  /* ✅ New Action Buttons Row */
+  actionButtonsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 10,
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  chatActionBtn: {
+    backgroundColor: '#EFF6FF',
+    borderColor: '#BFDBFE',
+  },
+  shareActionBtn: {
+    backgroundColor: '#F0F9FF',
+    borderColor: '#BAE6FD',
+  },
+  actionButtonText: {
+    color: '#6366F1',
+    fontWeight: '700',
+    fontSize: 14,
+    marginLeft: 8,
+  },
+  
   contactCard: { marginTop: 10, backgroundColor: "#F0FDF4", borderRadius: 10, padding: 10, borderWidth: 1, borderColor: "#BBF7D0", gap: 6 },
   contactTitle: { fontWeight: '800', color: '#065F46', marginBottom: 4 },
   contactRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },

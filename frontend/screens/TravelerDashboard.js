@@ -273,7 +273,7 @@ const TravelerDashboard = () => {
     }
   };
 
-  const isFillList = selectedTab === 'events' || selectedTab === 'services' || selectedTab === 'bookingChat';
+  const isFillList = selectedTab === 'events' || selectedTab === 'services' || selectedTab === 'bookingChat' || selectedTab === 'notification';
 
   return (
     <View style={styles.container}>
