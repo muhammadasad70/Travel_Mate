@@ -92,7 +92,12 @@ func GetConversationsForUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
 		return
 	}
-	convs, err := models.GetConversationsForUser(uid)
+	
+	// By default, exclude group-related conversations for Community tab
+	// This keeps group chats separate from community chats
+	excludeGroupChats := c.DefaultQuery("exclude_group", "true") == "true"
+	
+	convs, err := models.GetConversationsForUser(uid, excludeGroupChats)
 	if err != nil {
 		log.Printf("[GetConversationsForUser] model err: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch conversations"})

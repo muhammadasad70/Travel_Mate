@@ -158,14 +158,51 @@ func AddUserToGroupConversationOnJoin(groupID, userID int, title *string) (Conve
 }
 
 // GetConversationsForUser returns conversations (direct/group) for a user.
-func GetConversationsForUser(userID int) ([]Conversation, error) {
-	rows, err := database.DB.Query(`
-		SELECT c.id, c.type, c.title, c.group_id, c.created_at
-		  FROM conversations c
-		  JOIN conversation_members cm ON cm.conversation_id = c.id
-		 WHERE cm.user_id = $1
-		 ORDER BY c.created_at DESC
-	`, userID)
+// excludeGroupChats: if true, excludes direct conversations between users who share a group
+func GetConversationsForUser(userID int, excludeGroupChats bool) ([]Conversation, error) {
+	var query string
+	if excludeGroupChats {
+		// Exclude direct conversations where both users are in the same group
+		query = `
+			SELECT DISTINCT c.id, c.type, c.title, c.group_id, c.created_at
+			  FROM conversations c
+			  JOIN conversation_members cm ON cm.conversation_id = c.id
+			 WHERE cm.user_id = $1
+			   AND (
+				   -- Include group conversations
+				   c.type = 'group'
+				   OR
+				   -- Include direct conversations where users DON'T share a group
+				   (c.type = 'direct' AND NOT EXISTS (
+					   SELECT 1
+					   FROM conversation_members cm2
+					   JOIN conversations c2 ON c2.id = cm2.conversation_id
+					   WHERE c2.id = c.id
+					     AND cm2.user_id != $1
+					     AND EXISTS (
+						   SELECT 1
+						   FROM group_members gm1
+						   JOIN group_members gm2 ON gm2.group_id = gm1.group_id
+						   WHERE gm1.user_id = $1
+						     AND gm2.user_id = cm2.user_id
+						     AND gm1.status = 'active'
+						     AND gm2.status = 'active'
+					   )
+				   ))
+			   )
+			 ORDER BY c.created_at DESC
+		`
+	} else {
+		query = `
+			SELECT c.id, c.type, c.title, c.group_id, c.created_at
+			  FROM conversations c
+			  JOIN conversation_members cm ON cm.conversation_id = c.id
+			 WHERE cm.user_id = $1
+			 ORDER BY c.created_at DESC
+		`
+	}
+	
+	rows, err := database.DB.Query(query, userID)
 	if err != nil {
 		return nil, err
 	}

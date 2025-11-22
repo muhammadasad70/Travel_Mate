@@ -312,7 +312,7 @@ export default function CreateGroupModal() {
     if (!descOK) {
       return Alert.alert("Validation Error", "Description must be at least 10 characters.");
     }
-
+console.log("About to create group with current user from JWT");
     try {
       setBusy(true);
       setErr("");

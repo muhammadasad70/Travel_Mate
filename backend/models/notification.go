@@ -2,6 +2,7 @@
 package models
 
 import (
+	"log"
 	"time"
 
 	"travel_mate/backend/database"
@@ -34,7 +35,7 @@ func GetUserNotifications(userID int64, limit int, onlyUnread bool) ([]Notificat
 	q := `
 		SELECT id, user_id, type, title, message, related_id, related_type, is_read, created_at
 		FROM notifications
-		WHERE user_id = $1`
+		WHERE user_id = $1 AND (related_type IS NULL OR related_type != 'group')`
 
 	args := []interface{}{userID}
 
@@ -73,7 +74,7 @@ func GetUserNotifications(userID int64, limit int, onlyUnread bool) ([]Notificat
 func GetUnreadNotificationCount(userID int64) (int, error) {
 	var count int
 	err := database.DB.QueryRow(
-		`SELECT COUNT(*) FROM notifications WHERE user_id = $1 AND is_read = FALSE`,
+		`SELECT COUNT(*) FROM notifications WHERE user_id = $1 AND is_read = FALSE AND (related_type IS NULL OR related_type != 'group')`,
 		userID,
 	).Scan(&count)
 	return count, err
@@ -116,5 +117,62 @@ func DeleteNotification(userID, notificationID int64) error {
 	if aff == 0 {
 		return ErrNotFound
 	}
+	return nil
+}
+
+// NotifyGroupMembers creates a notification for all members of a group (except the actor)
+func NotifyGroupMembers(groupID int, actorUserID int, notificationType, title, message string) error {
+	// Get all group members
+	const getMembers = `SELECT user_id FROM group_members WHERE group_id = $1 AND status = 'active'`
+	rows, err := database.DB.Query(getMembers, groupID)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	var memberIDs []int64
+	for rows.Next() {
+		var userID int64
+		if err := rows.Scan(&userID); err != nil {
+			continue
+		}
+		// Don't notify the actor
+		if int64(actorUserID) != userID {
+			memberIDs = append(memberIDs, userID)
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	// Create notifications for all members
+	groupID64 := int64(groupID)
+	relatedType := "group"
+	log.Printf("[NotifyGroupMembers] Creating notifications for group %d, actor %d, type %s, %d members to notify", 
+		groupID, actorUserID, notificationType, len(memberIDs))
+	
+	var successCount, errorCount int
+	for _, memberID := range memberIDs {
+		notification := Notification{
+			UserID:      memberID,
+			Type:        notificationType,
+			Title:       title,
+			Message:     message,
+			RelatedID:   &groupID64,
+			RelatedType: &relatedType,
+			IsRead:      false,
+		}
+		// Don't fail if one notification fails
+		if err := CreateNotification(&notification); err != nil {
+			log.Printf("[NotifyGroupMembers] Failed to create notification for user %d: %v", memberID, err)
+			errorCount++
+			continue
+		}
+		successCount++
+		log.Printf("[NotifyGroupMembers] Created notification for user %d (ID: %d)", memberID, notification.ID)
+	}
+	
+	log.Printf("[NotifyGroupMembers] Completed: %d succeeded, %d failed", successCount, errorCount)
 	return nil
 }

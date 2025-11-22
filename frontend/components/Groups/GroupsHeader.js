@@ -419,7 +419,7 @@
 
 
 // components/groups/GroupsHeader.js
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -431,6 +431,8 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import getBaseURL from '../../config/env';
 
 /**
  * Top header for group dashboard (web shows center pills).
@@ -490,7 +492,6 @@ const GroupsHeader = ({ groupId, onTabChange }) => {
 
   const tabs = [
     { label: 'Overview', key: 'overview', icon: 'grid-outline' },
-    { label: 'Plans',    key: 'plans',    icon: 'map-outline' },
     { label: 'Polls',    key: 'polls',    icon: 'stats-chart-outline' },
     { label: 'Members',  key: 'members',  icon: 'people-outline' },
   ];
@@ -556,8 +557,8 @@ const GroupsHeader = ({ groupId, onTabChange }) => {
 
           {/* Right actions */}
           <View style={styles.rightSection}>
-            <IconButton icon="notifications-outline" onPress={() => handleItemPress('notification')} />
-            <IconButton icon="chatbubble-ellipses-outline" onPress={() => handleItemPress('messages')} />
+            <NotificationIconButton groupId={groupId} onPress={() => handleItemPress('notification')} />
+            <ChatIconButton groupId={groupId} onPress={() => handleItemPress('messages')} />
             {!isMobile && (
               <IconButton icon="settings-outline" onPress={() => handleItemPress('settings')} />
             )}
@@ -573,6 +574,156 @@ const IconButton = ({ icon, onPress }) => (
     <Ionicons name={icon} size={22} color="#003366" />
   </TouchableOpacity>
 );
+
+// ChatIconButton with unread count badge
+const ChatIconButton = ({ groupId, onPress }) => {
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [auth, setAuth] = useState({ token: null });
+
+  useEffect(() => {
+    (async () => {
+      const [[, token]] = await AsyncStorage.multiGet(["token"]);
+      setAuth({ token: token || null });
+    })();
+  }, []);
+
+  const loadUnreadCount = useCallback(async () => {
+    if (!groupId || !auth.token) return;
+    
+    try {
+      const res = await fetch(`${getBaseURL()}/groups/${groupId}/chat/unread-count`, {
+        headers: { Authorization: `Bearer ${auth.token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUnreadCount(data.unread_count || 0);
+      }
+    } catch (err) {
+      console.error('[ChatIconButton] Failed to load unread count:', err);
+    }
+  }, [groupId, auth.token]);
+
+  useEffect(() => {
+    loadUnreadCount();
+    // Refresh every 10 seconds
+    const interval = setInterval(loadUnreadCount, 10000);
+    return () => clearInterval(interval);
+  }, [loadUnreadCount]);
+
+  // Refresh count when tab changes to messages (user opens chat)
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const handleTabChange = (e) => {
+        const evKey = e?.detail?.tabKey && String(e.detail.tabKey).split('-')[0];
+        const evGroupId = e?.detail?.groupId;
+        if (evKey === 'messages' && evGroupId && Number(evGroupId) === Number(groupId)) {
+          loadUnreadCount();
+        }
+      };
+      window.addEventListener('tabChange', handleTabChange);
+      return () => window.removeEventListener('tabChange', handleTabChange);
+    }
+  }, [groupId, loadUnreadCount]);
+
+  return (
+    <TouchableOpacity onPress={onPress} style={styles.iconBtn} activeOpacity={0.85}>
+      <View style={styles.iconContainer}>
+        <Ionicons name="chatbubble-ellipses-outline" size={22} color="#003366" />
+        {unreadCount > 0 && (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </Text>
+          </View>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+// NotificationIconButton with unread count badge
+const NotificationIconButton = ({ groupId, onPress }) => {
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [auth, setAuth] = useState({ token: null });
+
+  useEffect(() => {
+    (async () => {
+      const [[, token]] = await AsyncStorage.multiGet(["token"]);
+      setAuth({ token: token || null });
+    })();
+  }, []);
+
+  const loadUnreadCount = useCallback(async () => {
+    if (!groupId || !auth.token) return;
+    
+    try {
+      const res = await fetch(`${getBaseURL()}/groups/${groupId}/notifications/unread-count`, {
+        headers: { Authorization: `Bearer ${auth.token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUnreadCount(data.unread_count || 0);
+      }
+    } catch (err) {
+      console.error('[NotificationIconButton] Failed to load unread count:', err);
+    }
+  }, [groupId, auth.token]);
+
+  useEffect(() => {
+    loadUnreadCount();
+    // Refresh every 10 seconds
+    const interval = setInterval(loadUnreadCount, 10000);
+    return () => clearInterval(interval);
+  }, [loadUnreadCount]);
+
+  // Refresh count when tab changes to notification (user opens notifications) or when notifications are read
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const handleTabChange = (e) => {
+        const evKey = e?.detail?.tabKey && String(e.detail.tabKey).split('-')[0];
+        const evGroupId = e?.detail?.groupId;
+        if (evKey === 'notification' && evGroupId && Number(evGroupId) === Number(groupId)) {
+          loadUnreadCount();
+        }
+      };
+      const handleNotificationRead = (e) => {
+        const evGroupId = e?.detail?.groupId;
+        if (evGroupId && Number(evGroupId) === Number(groupId)) {
+          loadUnreadCount();
+        }
+      };
+      const handleRefreshBadge = (e) => {
+        const evGroupId = e?.detail?.groupId;
+        if (evGroupId && Number(evGroupId) === Number(groupId)) {
+          loadUnreadCount();
+        }
+      };
+      window.addEventListener('tabChange', handleTabChange);
+      window.addEventListener('notificationRead', handleNotificationRead);
+      window.addEventListener('refreshNotificationBadge', handleRefreshBadge);
+      return () => {
+        window.removeEventListener('tabChange', handleTabChange);
+        window.removeEventListener('notificationRead', handleNotificationRead);
+        window.removeEventListener('refreshNotificationBadge', handleRefreshBadge);
+      };
+    }
+  }, [groupId, loadUnreadCount]);
+
+  return (
+    <TouchableOpacity onPress={onPress} style={styles.iconBtn} activeOpacity={0.85}>
+      <View style={styles.iconContainer}>
+        <Ionicons name="notifications-outline" size={22} color="#003366" />
+        {unreadCount > 0 && (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </Text>
+          </View>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
+};
 
 const styles = StyleSheet.create({
   safeWrap: { backgroundColor: '#fff' },
@@ -635,6 +786,29 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 1,
     borderColor: '#E5E7EB',
+  },
+  iconContainer: {
+    position: 'relative',
+  },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#E53E3E',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+    textAlign: 'center',
   },
 });
 

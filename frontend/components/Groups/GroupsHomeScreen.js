@@ -1504,6 +1504,7 @@ export default function GroupsHomeScreen() {
   const [groups, setGroups] = useState([]);
   const [invites, setInvites] = useState([]);
   const [error, setError] = useState("");
+  const [activeTab, setActiveTab] = useState("groups"); // "groups" or "invitations"
 
   const mapGroup = (g, idx) => {
     if (!g || typeof g !== "object") {
@@ -1553,8 +1554,8 @@ export default function GroupsHomeScreen() {
           devwarn("GET /groups/mine failed:", e?.response?.status, e?.message);
           return { data: [] };
         }),
-        api.get("/groups/invites").catch((e) => {
-          devwarn("GET /groups/invites failed:", e?.response?.status, e?.message);
+        api.get("/groups/invites/mine").catch((e) => {
+          devwarn("GET /groups/invites/mine failed:", e?.response?.status, e?.message);
           return { data: [] };
         }),
       ]);
@@ -1687,6 +1688,35 @@ export default function GroupsHomeScreen() {
     </View>
   );
 
+  const TabSwitcher = (
+    <View style={styles.tabWrapper}>
+      <Pressable
+        onPress={() => setActiveTab("groups")}
+        style={({ pressed }) => [
+          styles.tabButton,
+          activeTab === "groups" && styles.tabButtonActive,
+          pressed && { opacity: 0.7 },
+        ]}
+      >
+        <Text style={[styles.tabText, activeTab === "groups" && styles.tabTextActive]}>
+          My Groups
+        </Text>
+      </Pressable>
+      <Pressable
+        onPress={() => setActiveTab("invitations")}
+        style={({ pressed }) => [
+          styles.tabButton,
+          activeTab === "invitations" && styles.tabButtonActive,
+          pressed && { opacity: 0.7 },
+        ]}
+      >
+        <Text style={[styles.tabText, activeTab === "invitations" && styles.tabTextActive]}>
+          Invitations {invites.length > 0 && `(${invites.length})`}
+        </Text>
+      </Pressable>
+    </View>
+  );
+
   const SectionLabel = ({ children }) => (
     <View style={styles.sectionPill}>
       <Text style={styles.sectionPillTxt}>{children}</Text>
@@ -1760,6 +1790,7 @@ export default function GroupsHomeScreen() {
         <View style={styles.topPad}>
           {Hero}
           {QuickActions}
+          {TabSwitcher}
         </View>
         <View style={styles.center}>
           <ActivityIndicator />
@@ -1785,7 +1816,65 @@ export default function GroupsHomeScreen() {
   }
 
   /* ---------- Content ---------- */
-  devlog("render: list UI", { groups: groups.length, invites: invites.length });
+  devlog("render: list UI", { groups: groups.length, invites: invites.length, activeTab });
+  
+  // Render invitations view
+  if (activeTab === "invitations") {
+    return (
+      <SafeAreaView style={styles.container}>
+        {HeaderBar}
+        <View style={styles.topPad}>
+          {Hero}
+          {QuickActions}
+          {TabSwitcher}
+        </View>
+        <FlatList
+          data={invites}
+          keyExtractor={(x) => String(x.id)}
+          renderItem={renderInvite}
+          ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          contentContainerStyle={{
+            paddingBottom: isPhone ? 90 : 40,
+            paddingHorizontal: 16,
+            maxWidth: 1200,
+            alignSelf: "center",
+            width: "100%",
+          }}
+          ListHeaderComponent={
+            <>
+              {!!error && <Text style={[styles.error, { marginTop: 8 }]}>{error}</Text>}
+            </>
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyCard}>
+              <View style={styles.emptyIcon}>
+                <Ionicons name="mail-outline" size={22} color={COLORS.text} />
+              </View>
+              <Text style={styles.emptyText}>You don't have any pending invitations.</Text>
+            </View>
+          }
+        />
+        {isPhone && (
+          <Pressable
+            onPress={() => {
+              devlog("nav: FAB CreateGroupModal");
+              nav.navigate("CreateGroupModal");
+            }}
+            style={({ pressed }) => [
+              styles.fab,
+              { bottom: insets.bottom + 18 },
+              pressed && { transform: [{ scale: 0.98 }] },
+            ]}
+          >
+            <Ionicons name="add" size={22} color="#fff" />
+          </Pressable>
+        )}
+      </SafeAreaView>
+    );
+  }
+
+  // Render groups view
   return (
     <SafeAreaView style={styles.container}>
       {HeaderBar}
@@ -1814,25 +1903,9 @@ export default function GroupsHomeScreen() {
           <View style={styles.topPad}>
             {Hero}
             {QuickActions}
+            {TabSwitcher}
 
             {!!error && <Text style={[styles.error, { paddingHorizontal: 16, marginTop: 8 }]}>{error}</Text>}
-
-            {invites.length > 0 && (
-              <View style={{ marginTop: 12 }}>
-                <SectionLabel>Invites</SectionLabel>
-                <View
-                  style={{
-                    gap: 10,
-                    paddingHorizontal: 16,
-                    maxWidth: 1200,
-                    alignSelf: "center",
-                    width: "100%",
-                  }}
-                >
-                  {invites.map((inv, idx) => renderInvite({ item: inv, index: idx }))}
-                </View>
-              </View>
-            )}
 
             <View
               style={{
@@ -1853,7 +1926,7 @@ export default function GroupsHomeScreen() {
             <View style={styles.emptyIcon}>
               <Ionicons name="people-outline" size={22} color={COLORS.text} />
             </View>
-            <Text style={styles.emptyText}>You haven’t joined any groups yet.</Text>
+            <Text style={styles.emptyText}>You haven't joined any groups yet.</Text>
             <View style={styles.emptyActions}>
               <Pressable
                 onPress={() => {
@@ -2078,5 +2151,38 @@ const styles = StyleSheet.create({
       ios: { shadowColor: "#000", shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 3 } },
       android: { elevation: 4 },
     }),
+  },
+  tabWrapper: {
+    flexDirection: "row",
+    marginTop: 16,
+    marginHorizontal: 16,
+    backgroundColor: COLORS.card,
+    borderRadius: 12,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    maxWidth: 1200,
+    alignSelf: "center",
+    width: "100%",
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tabButtonActive: {
+    backgroundColor: COLORS.accent,
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: COLORS.sub,
+  },
+  tabTextActive: {
+    color: "#FFFFFF",
+    fontWeight: "700",
   },
 });

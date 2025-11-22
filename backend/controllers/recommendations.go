@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 	"travel_mate/backend/database"
@@ -27,6 +28,7 @@ type MistralRequest struct {
 	Messages    []MistralMessage `json:"messages"`
 	Temperature float64          `json:"temperature"`
 	MaxTokens   int              `json:"max_tokens"`
+	RandomSeed  int64            `json:"random_seed,omitempty"` // ✅ NEW: Force unique responses
 }
 
 type MistralResponse struct {
@@ -37,16 +39,25 @@ type MistralResponse struct {
 	} `json:"choices"`
 }
 
+type DayPlan struct {
+	DayNumber  int    `json:"day_number"`
+	Place      string `json:"place"`
+	StartTime  string `json:"start_time"`
+	EndTime    string `json:"end_time"`
+	Activities string `json:"activities"`
+}
+
 type RecommendedItinerary struct {
-	Title       string   `json:"title"`
-	Description string   `json:"description"`
-	City        string   `json:"city"`
-	Budget      string   `json:"budget"`
-	Style       string   `json:"style"`
-	Duration    string   `json:"duration"`
-	Highlights  []string `json:"highlights"`
-	Reasoning   string   `json:"reasoning"`
-	Confidence  string   `json:"confidence"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	City        string    `json:"city"`
+	Budget      string    `json:"budget"`
+	Style       string    `json:"style"`
+	Duration    string    `json:"duration"`
+	Days        []DayPlan `json:"days"`
+	Highlights  []string  `json:"highlights"`
+	Reasoning   string    `json:"reasoning"`
+	Confidence  string    `json:"confidence"`
 }
 
 // ===== Generate Recommendations =====
@@ -73,16 +84,36 @@ func GenerateRecommendations(c *gin.Context) {
 		return
 	}
 
-	// Pass empty slice - no saved itineraries needed
+	requestedCity := input.PreferredCities[0]
 	prompt := buildRecommendationPrompt(input, analysis, []models.ItinerarySummary{})
 
-	recommendations, err := getMistralRecommendations(prompt)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "AI service unavailable",
-			"details": err.Error(),
-		})
-		return
+	// ✅ Retry up to 10 times until we get 3 valid recommendations
+	var recommendations []RecommendedItinerary
+	maxRetries := 10
+
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		fmt.Printf("🔄 Attempt %d/%d: Generating recommendations for %s\n", attempt, maxRetries, requestedCity)
+
+		recs, err := getMistralRecommendations(prompt, requestedCity, attempt)
+		if err != nil {
+			fmt.Printf("❌ Attempt %d failed: %v\n", attempt, err)
+
+			if attempt == maxRetries {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"error":   "AI service failed to generate correct recommendations",
+					"details": fmt.Sprintf("After %d attempts, AI kept suggesting wrong cities. Please try again.", maxRetries),
+				})
+				return
+			}
+
+			time.Sleep(time.Millisecond * 800)
+			continue
+		}
+
+		// Success!
+		recommendations = recs
+		fmt.Printf("✅ Success on attempt %d: Got %d valid recommendations for %s\n", attempt, len(recs), requestedCity)
+		break
 	}
 
 	basedOn := gin.H{
@@ -144,7 +175,7 @@ func GetCachedRecommendations(c *gin.Context) {
 	})
 }
 
-// ===== Build Prompt =====
+// ===== Build Prompt (SIMPLIFIED) =====
 
 func buildRecommendationPrompt(
 	input models.UserRecommendationInput,
@@ -153,112 +184,166 @@ func buildRecommendationPrompt(
 ) string {
 	var sb strings.Builder
 
-	sb.WriteString("You are an expert travel advisor for TravelMate, a Pakistani travel app.\n")
-	sb.WriteString("Generate 3 personalized itinerary recommendations based on user preferences.\n\n")
+	city := input.PreferredCities[0]
 
-	sb.WriteString("=== USER PREFERENCES ===\n")
-	sb.WriteString(fmt.Sprintf("🎯 Interested in: %s\n", strings.Join(input.PreferredCities, ", ")))
-	sb.WriteString(fmt.Sprintf("💰 Budget: %s\n", input.PreferredBudget))
-	sb.WriteString(fmt.Sprintf("✈️ Travel style: %s\n", input.PreferredStyle))
-	if input.TripDuration != "" {
-		sb.WriteString(fmt.Sprintf("⏱️ Duration: %s\n", input.TripDuration))
-	}
-	if len(input.Interests) > 0 {
-		sb.WriteString(fmt.Sprintf("❤️ Interests: %s\n", strings.Join(input.Interests, ", ")))
-	}
-	sb.WriteString("\n")
+	sb.WriteString(fmt.Sprintf(`🎯 TARGET CITY: %s
+⚠️ YOU CAN ONLY SUGGEST PLACES IN %s - NO OTHER CITIES ALLOWED
 
-	if analysis.TotalItineraries > 0 {
-		sb.WriteString("=== USER'S TRAVEL HISTORY ===\n")
-		sb.WriteString(fmt.Sprintf("📊 Total trips planned: %d\n", analysis.TotalItineraries))
+STRICT RULES:
+✅ ALL 3 itineraries must have "city": "%s" (exact match)
+✅ ALL places/activities must be located in %s
+✅ Create 3 different themes: Heritage, Nature, Food/Culture
+❌ FORBIDDEN: Murree, Galiyat, Neelum, Chitral, Lahore, Hunza, or ANY other city
+❌ FORBIDDEN: Combined cities (no commas, &, "and", "to")
+❌ FORBIDDEN: Day trips outside %s
 
-		if len(analysis.CitiesVisited) > 0 {
-			sb.WriteString("Cities previously visited: ")
-			count := 0
-			for city := range analysis.CitiesVisited {
-				if count > 0 {
-					sb.WriteString(", ")
-				}
-				sb.WriteString(city)
-				count++
-				if count >= 5 {
-					break
-				}
+USER REQUIREMENTS:
+- City: %s
+- Budget: %s
+- Travel Style: %s
+- Duration: %s
+`, city, city, city, city, city, city, input.PreferredBudget, input.PreferredStyle, input.TripDuration))
+
+	if analysis.TotalItineraries > 0 && len(analysis.RecentTrips) > 0 {
+		sb.WriteString("\nPrevious trips (avoid repetition):\n")
+		for i, trip := range analysis.RecentTrips {
+			if i >= 2 {
+				break
 			}
-			sb.WriteString("\n")
-		}
-
-		if len(analysis.RecentTrips) > 0 {
-			sb.WriteString("\nRecent trips:\n")
-			for i, trip := range analysis.RecentTrips {
-				if i >= 3 {
-					break
-				}
-				sb.WriteString(fmt.Sprintf("• %s - %s (%s, %d days)\n",
-					trip.Title, trip.City, trip.Style, trip.DayCount))
-			}
+			sb.WriteString(fmt.Sprintf("- %s (%s)\n", trip.City, trip.Style))
 		}
 		sb.WriteString("\n")
 	}
 
-	if len(savedItins) > 0 {
-		sb.WriteString("=== ITINERARIES USER SAVED ===\n")
-		for _, it := range savedItins {
-			sb.WriteString(fmt.Sprintf("• %s - %s (%s)\n", it.Title, it.City, it.Style))
-		}
-		sb.WriteString("\n")
-	}
+	sb.WriteString(fmt.Sprintf(`
+RESPOND WITH VALID JSON ARRAY ONLY (no markdown, no explanation):
 
-	sb.WriteString("=== TASK ===\n")
-	sb.WriteString("Generate 3 NEW itinerary recommendations that:\n")
-	sb.WriteString("1. Focus on the cities user requested\n")
-	sb.WriteString("2. Match their budget and travel style exactly\n")
-	sb.WriteString("3. Offer fresh experiences (avoid repeating past trips)\n")
-	sb.WriteString("4. Are realistic and actionable for Pakistan travelers\n")
-	sb.WriteString("5. Include specific, unique highlights\n\n")
-
-	sb.WriteString("Available cities: Abbottabad, Galiyat, Bagh, Chitral, Dir, Kumrat, Gilgit, ")
-	sb.WriteString("Haveli, Hunza Valley, Islamabad, Karachi, Kotli, Lahore, Multan, Muzaffarabad, ")
-	sb.WriteString("Nagar Valley, Nagarparkar, Naran & Kaghan, Neelum Valley, Rawalakot, Skardu, ")
-	sb.WriteString("Swat Valley, Murree\n\n")
-
-	sb.WriteString("RESPOND WITH VALID JSON ONLY (no markdown, no preamble):\n")
-	sb.WriteString(`[
+[
   {
-    "title": "Compelling trip title",
-    "description": "Engaging 2-3 sentence description highlighting unique experiences",
-    "city": "City name from available list",
-    "budget": "Budget-friendly|Mid-range|Luxury",
-    "style": "Adventure|Cultural|Comfort",
-    "duration": "X days" or "X-Y days",
-    "highlights": [
-      "Specific experience 1",
-      "Specific experience 2",
-      "Specific experience 3",
-      "Specific experience 4"
+    "title": "Heritage & History of %s",
+    "description": "Explore historical landmarks and museums",
+    "city": "%s",
+    "budget": "%s",
+    "style": "%s",
+    "duration": "%s",
+    "days": [
+      {
+        "day_number": 1,
+        "place": "Historic site in %s",
+        "start_time": "09:00",
+        "end_time": "18:00",
+        "activities": "Detailed activities in %s"
+      }
     ],
-    "reasoning": "1-2 sentences explaining why this suits the user",
+    "highlights": [
+      "Monument in %s",
+      "Museum in %s",
+      "Heritage site in %s",
+      "Cultural landmark in %s"
+    ],
+    "reasoning": "Matches user preferences",
+    "confidence": "high"
+  },
+  {
+    "title": "Nature & Parks of %s",
+    "description": "Experience natural beauty and outdoor activities",
+    "city": "%s",
+    "budget": "%s",
+    "style": "%s",
+    "duration": "%s",
+    "days": [
+      {
+        "day_number": 1,
+        "place": "Park or nature spot in %s",
+        "start_time": "08:00",
+        "end_time": "17:00",
+        "activities": "Outdoor activities in %s"
+      }
+    ],
+    "highlights": [
+      "Park in %s",
+      "Nature trail in %s",
+      "Scenic spot in %s",
+      "Green space in %s"
+    ],
+    "reasoning": "Matches user preferences",
+    "confidence": "high"
+  },
+  {
+    "title": "Food & Culture of %s",
+    "description": "Discover culinary delights and local culture",
+    "city": "%s",
+    "budget": "%s",
+    "style": "%s",
+    "duration": "%s",
+    "days": [
+      {
+        "day_number": 1,
+        "place": "Food area in %s",
+        "start_time": "10:00",
+        "end_time": "20:00",
+        "activities": "Food and cultural experiences in %s"
+      }
+    ],
+    "highlights": [
+      "Restaurant in %s",
+      "Market in %s",
+      "Cafe in %s",
+      "Cultural venue in %s"
+    ],
+    "reasoning": "Matches user preferences",
     "confidence": "high"
   }
-]`)
+]
+
+🚨 FINAL CHECK: Every "city" field MUST be "%s" - No exceptions!
+`, city, city, input.PreferredBudget, input.PreferredStyle, input.TripDuration, city, city,
+		city, city, city, city,
+		city, city, input.PreferredBudget, input.PreferredStyle, input.TripDuration, city, city,
+		city, city, city, city,
+		city, city, input.PreferredBudget, input.PreferredStyle, input.TripDuration, city, city,
+		city, city, city, city, city))
 
 	return sb.String()
 }
 
-// ===== Call Mistral API =====
+// ===== Call Mistral API with Cache-Busting =====
 
-func getMistralRecommendations(prompt string) ([]RecommendedItinerary, error) {
+func getMistralRecommendations(prompt string, requestedCity string, attempt int) ([]RecommendedItinerary, error) {
 	apiKey := os.Getenv("MISTRAL_API_KEY")
 	if apiKey == "" {
 		return nil, fmt.Errorf("MISTRAL_API_KEY not configured")
 	}
 
+	// ✅ STRICT system message
+	systemPrompt := fmt.Sprintf(`You are a travel advisor with ABSOLUTE RESTRICTIONS:
+
+🚫 FORBIDDEN CITIES: You CANNOT mention Murree, Galiyat, Neelum Valley, Chitral, Lahore, Hunza, Karachi, or ANY city except %s
+🚫 FORBIDDEN: Day trips to other cities
+🚫 FORBIDDEN: Combined cities (no commas, &, "and", "to" in city field)
+🚫 FORBIDDEN: Suggesting places outside %s
+
+✅ REQUIRED: ALL 3 itineraries must have "city": "%s" (EXACT MATCH)
+✅ REQUIRED: ALL places/activities must be within %s city limits
+✅ REQUIRED: Return ONLY valid JSON array, no markdown
+
+If you suggest any city other than %s, your response will be REJECTED.`,
+		requestedCity, requestedCity, requestedCity, requestedCity, requestedCity)
+
 	reqBody := MistralRequest{
 		Model:       "mistral-small-latest",
-		Temperature: 0.7,
-		MaxTokens:   2500,
+		Temperature: 0.0, // ✅ Zero temperature for consistency
+		MaxTokens:   4000,
+		RandomSeed:  time.Now().UnixNano() + int64(attempt), // ✅ Unique seed per attempt to avoid cache
 		Messages: []MistralMessage{
-			{Role: "user", Content: prompt},
+			{
+				Role:    "system",
+				Content: systemPrompt,
+			},
+			{
+				Role:    "user",
+				Content: prompt,
+			},
 		},
 	}
 
@@ -272,7 +357,7 @@ func getMistralRecommendations(prompt string) ([]RecommendedItinerary, error) {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", apiKey))
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("network error: %v", err)
@@ -296,6 +381,7 @@ func getMistralRecommendations(prompt string) ([]RecommendedItinerary, error) {
 
 	content := mistralResp.Choices[0].Message.Content
 
+	// Clean response
 	content = strings.TrimSpace(content)
 	content = strings.TrimPrefix(content, "```json")
 	content = strings.TrimPrefix(content, "```")
@@ -315,10 +401,69 @@ func getMistralRecommendations(prompt string) ([]RecommendedItinerary, error) {
 		return nil, fmt.Errorf("failed to parse recommendations: %v", err)
 	}
 
-	return recommendations, nil
+	// ✅ STRICT VALIDATION
+	if len(recommendations) != 3 {
+		return nil, fmt.Errorf("expected 3 recommendations, got %d", len(recommendations))
+	}
+
+	validRecs := []RecommendedItinerary{}
+	violations := []string{}
+	requestedCityLower := strings.ToLower(strings.TrimSpace(requestedCity))
+
+	// List of forbidden cities
+	forbiddenCities := []string{"murree", "galiyat", "neelum", "chitral", "lahore", "karachi", "hunza", "naran", "skardu", "swat"}
+
+	for i, rec := range recommendations {
+		recCity := strings.TrimSpace(rec.City)
+		recCityLower := strings.ToLower(recCity)
+
+		// ✅ Check 1: No combined cities
+		if strings.Contains(recCity, ",") || strings.Contains(recCity, "&") ||
+			strings.Contains(recCity, " to ") || strings.Contains(recCity, " and ") {
+			violations = append(violations, fmt.Sprintf("Rec %d: Combined cities '%s'", i+1, recCity))
+			continue
+		}
+
+		// ✅ Check 2: Must match requested city exactly
+		if recCityLower != requestedCityLower {
+			violations = append(violations, fmt.Sprintf("Rec %d: Wrong city '%s' (expected '%s')", i+1, recCity, requestedCity))
+			continue
+		}
+
+		// ✅ Check 3: No forbidden cities in title, description, or activities
+		fullText := strings.ToLower(rec.Title + " " + rec.Description)
+		for _, day := range rec.Days {
+			fullText += " " + strings.ToLower(day.Place+" "+day.Activities)
+		}
+		for _, highlight := range rec.Highlights {
+			fullText += " " + strings.ToLower(highlight)
+		}
+
+		foundForbidden := false
+		for _, forbidden := range forbiddenCities {
+			if forbidden != recCityLower && strings.Contains(fullText, forbidden) {
+				violations = append(violations, fmt.Sprintf("Rec %d: Mentions forbidden city '%s'", i+1, forbidden))
+				foundForbidden = true
+				break
+			}
+		}
+
+		if !foundForbidden {
+			validRecs = append(validRecs, rec)
+		}
+	}
+
+	// ✅ Must have ALL 3 valid
+	if len(validRecs) != 3 {
+		return nil, fmt.Errorf("validation failed: %s | Required: 3 itineraries for '%s', got %d valid",
+			strings.Join(violations, "; "), requestedCity, len(validRecs))
+	}
+
+	fmt.Printf("✅ All 3 recommendations validated for %s\n", requestedCity)
+	return validRecs, nil
 }
 
-// ===== Save AI Itinerary =====
+// ===== Save AI Itinerary WITH DAYS =====
 
 func SaveAIItinerary(c *gin.Context) {
 	userId := c.GetInt("user_id")
@@ -329,30 +474,56 @@ func SaveAIItinerary(c *gin.Context) {
 		return
 	}
 
-	// Convert to JSON
+	tx, err := database.DB.Begin()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+	defer tx.Rollback()
+
 	highlights, _ := json.Marshal(rec.Highlights)
 
-	_, err := database.DB.Exec(`
+	var itinId int64
+	err = tx.QueryRow(`
 		INSERT INTO saved_ai_itineraries 
 		(user_id, title, description, city, budget, style, duration, highlights, reasoning, confidence)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		RETURNING id
 	`, userId, rec.Title, rec.Description, rec.City, rec.Budget, rec.Style,
-		rec.Duration, highlights, rec.Reasoning, rec.Confidence)
+		rec.Duration, highlights, rec.Reasoning, rec.Confidence).Scan(&itinId)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save itinerary"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Itinerary saved successfully"})
+	if len(rec.Days) > 0 {
+		for _, day := range rec.Days {
+			_, err := tx.Exec(`
+				INSERT INTO saved_ai_itinerary_days
+				(itinerary_id, day_number, place, start_time, end_time, activities)
+				VALUES ($1, $2, $3, $4, $5, $6)
+			`, itinId, day.DayNumber, day.Place, day.StartTime, day.EndTime, day.Activities)
+
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save day details"})
+				return
+			}
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to commit"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Itinerary saved successfully", "id": itinId})
 }
 
 // ===== Get Saved AI Itineraries =====
 
 func GetSavedAIItineraries(c *gin.Context) {
 	userId := c.GetInt("user_id")
-
-	fmt.Printf("📦 Fetching saved itineraries for user_id=%d\n", userId) // ✅ Add logging
 
 	rows, err := database.DB.Query(`
 		SELECT id, title, description, city, budget, style, duration, highlights, reasoning, confidence, created_at
@@ -362,15 +533,13 @@ func GetSavedAIItineraries(c *gin.Context) {
 	`, userId)
 
 	if err != nil {
-		fmt.Printf("❌ Query error: %v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch itineraries"})
 		return
 	}
 	defer rows.Close()
 
-	// ✅ FIX: Create a proper struct with explicit Id field
 	type SavedItinerary struct {
-		Id          int      `json:"id"` // ✅ This MUST be capitalized and have json tag
+		Id          int      `json:"id"`
 		Title       string   `json:"title"`
 		Description string   `json:"description"`
 		City        string   `json:"city"`
@@ -388,9 +557,8 @@ func GetSavedAIItineraries(c *gin.Context) {
 		var highlightsJSON []byte
 		var createdAt time.Time
 
-		// ✅ Scan in the correct order matching SELECT
 		err := rows.Scan(
-			&itin.Id, // ✅ FIRST - matches SELECT order
+			&itin.Id,
 			&itin.Title,
 			&itin.Description,
 			&itin.City,
@@ -404,21 +572,83 @@ func GetSavedAIItineraries(c *gin.Context) {
 		)
 
 		if err != nil {
-			fmt.Printf("❌ Scan error: %v\n", err)
 			continue
 		}
 
-		// Parse highlights JSON
 		json.Unmarshal(highlightsJSON, &itin.Highlights)
-
-		// ✅ Log to verify ID is set
-		fmt.Printf("✅ Loaded itinerary: id=%d, title=%s\n", itin.Id, itin.Title)
-
 		itineraries = append(itineraries, itin)
 	}
 
-	fmt.Printf("📦 Returning %d itineraries\n", len(itineraries))
 	c.JSON(http.StatusOK, gin.H{"itineraries": itineraries})
+}
+
+// ===== Get Single AI Itinerary WITH DAYS =====
+
+func GetAIItineraryDetail(c *gin.Context) {
+	userId := c.GetInt("user_id")
+	itinIdStr := c.Param("id")
+	itinId, err := strconv.ParseInt(itinIdStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
+		return
+	}
+
+	var itin struct {
+		Id          int       `json:"id"`
+		Title       string    `json:"title"`
+		Description string    `json:"description"`
+		City        string    `json:"city"`
+		Budget      string    `json:"budget"`
+		Style       string    `json:"style"`
+		Duration    string    `json:"duration"`
+		Highlights  []string  `json:"highlights"`
+		Reasoning   string    `json:"reasoning"`
+		Confidence  string    `json:"confidence"`
+		Days        []DayPlan `json:"days"`
+	}
+
+	var highlightsJSON []byte
+	err = database.DB.QueryRow(`
+		SELECT id, title, description, city, budget, style, duration, highlights, reasoning, confidence
+		FROM saved_ai_itineraries
+		WHERE id = $1 AND user_id = $2
+	`, itinId, userId).Scan(
+		&itin.Id,
+		&itin.Title,
+		&itin.Description,
+		&itin.City,
+		&itin.Budget,
+		&itin.Style,
+		&itin.Duration,
+		&highlightsJSON,
+		&itin.Reasoning,
+		&itin.Confidence,
+	)
+
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Itinerary not found"})
+		return
+	}
+
+	json.Unmarshal(highlightsJSON, &itin.Highlights)
+
+	rows, err := database.DB.Query(`
+		SELECT day_number, place, start_time, end_time, activities
+		FROM saved_ai_itinerary_days
+		WHERE itinerary_id = $1
+		ORDER BY day_number ASC
+	`, itinId)
+
+	if err == nil {
+		defer rows.Close()
+		for rows.Next() {
+			var day DayPlan
+			rows.Scan(&day.DayNumber, &day.Place, &day.StartTime, &day.EndTime, &day.Activities)
+			itin.Days = append(itin.Days, day)
+		}
+	}
+
+	c.JSON(http.StatusOK, itin)
 }
 
 // ===== Delete Saved AI Itinerary =====
@@ -427,51 +657,21 @@ func DeleteSavedAIItinerary(c *gin.Context) {
 	userId := c.GetInt("user_id")
 	itinId := c.Param("id")
 
-	// ✅ Add detailed logging
-	fmt.Printf("🗑️  DELETE REQUEST:\n")
-	fmt.Printf("   User ID: %d\n", userId)
-	fmt.Printf("   Itinerary ID: %s\n", itinId)
-
-	// ✅ First check if record exists
-	var exists bool
-	checkErr := database.DB.QueryRow(`
-		SELECT EXISTS(SELECT 1 FROM saved_ai_itineraries WHERE id = $1 AND user_id = $2)
-	`, itinId, userId).Scan(&exists)
-
-	if checkErr != nil {
-		fmt.Printf("❌ Check error: %v\n", checkErr)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
-		return
-	}
-
-	if !exists {
-		fmt.Printf("❌ Record not found: id=%s, user_id=%d\n", itinId, userId)
-		c.JSON(http.StatusNotFound, gin.H{"error": "Itinerary not found"})
-		return
-	}
-
-	fmt.Printf("✅ Record exists, proceeding with delete...\n")
-
-	// ✅ Now delete
 	result, err := database.DB.Exec(`
 		DELETE FROM saved_ai_itineraries 
 		WHERE id = $1 AND user_id = $2
 	`, itinId, userId)
 
 	if err != nil {
-		fmt.Printf("❌ Delete error: %v\n", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete", "details": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete"})
 		return
 	}
 
 	rowsAffected, _ := result.RowsAffected()
-	fmt.Printf("✅ Rows deleted: %d\n", rowsAffected)
-
 	if rowsAffected == 0 {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Itinerary not found"})
 		return
 	}
 
-	fmt.Printf("✅ Successfully deleted itinerary id=%s\n", itinId)
 	c.JSON(http.StatusOK, gin.H{"message": "Itinerary deleted successfully"})
 }

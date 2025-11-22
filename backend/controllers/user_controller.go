@@ -678,7 +678,15 @@ func SearchUsers(c *gin.Context) {
 		}
 	}
 
-	rows, err := models.SearchUsersBasic(q, limit)
+	// Get current user ID from JWT to exclude from results
+	var excludeUserID int
+	if uidAny, ok := c.Get("user_id"); ok {
+		if uid, ok2 := uidAny.(int); ok2 && uid > 0 {
+			excludeUserID = uid
+		}
+	}
+
+	rows, err := models.SearchUsersBasic(q, limit, excludeUserID)
 	if err != nil {
 		log.Printf("[SearchUsers] model error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to search users"})

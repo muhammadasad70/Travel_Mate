@@ -1,8 +1,7 @@
-
-
 package middlewares
 
 import (
+	"log"
 	"net/http"
 	"strings"
 
@@ -21,18 +20,21 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
+			log.Printf("[Auth] Missing Authorization header for %s %s", c.Request.Method, c.Request.URL.Path)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization header missing"})
 			return
 		}
 
 		parts := strings.SplitN(authHeader, " ", 2)
 		if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") || parts[1] == "" {
+			log.Printf("[Auth] Invalid token format for %s %s", c.Request.Method, c.Request.URL.Path)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token format"})
 			return
 		}
 
 		claims, err := utils.VerifyToken(parts[1])
 		if err != nil {
+			log.Printf("[Auth] Token verification failed: %v", err)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 			return
 		}
@@ -45,9 +47,18 @@ func AuthMiddleware() gin.HandlerFunc {
 		case int:
 			uid = v
 		default:
+			log.Printf("[Auth] Invalid userId type in token. Claims: %+v", claims)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid userId in token"})
 			return
 		}
+
+		if uid <= 0 {
+			log.Printf("[Auth] Invalid userId value: %d", uid)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid userId value"})
+			return
+		}
+
+		log.Printf("[Auth] ✓ Authenticated user_id=%d for %s %s", uid, c.Request.Method, c.Request.URL.Path)
 		c.Set("user_id", uid)
 
 		// Optional extras
