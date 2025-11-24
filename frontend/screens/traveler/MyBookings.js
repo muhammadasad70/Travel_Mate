@@ -1,16 +1,18 @@
 
-
 // import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 // import {
 //   View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator,
-//   RefreshControl, Animated, Alert, Linking
+//   RefreshControl, Animated, Alert, Linking, Share as RNShare, Platform
 // } from "react-native";
 // import { Ionicons } from "@expo/vector-icons";
 // import { LinearGradient } from "expo-linear-gradient";
 // import { useNavigation } from "@react-navigation/native";
 // import AsyncStorage from "@react-native-async-storage/async-storage";
-// import { SafeAreaView } from "react-native-safe-area-context"; // ✅ added
+// import { SafeAreaView } from "react-native-safe-area-context";
 // import getBaseURL from "../../config/env";
+
+// /* ✅ Share functionality */
+// import { getShareMessage, getShareUrl } from '../../utils/shareImageHelper';
 
 // const API = getBaseURL().replace(/\/+$/, "");
 // const TOKEN_KEYS = ["token", "auth_token", "jwt", "access_token", "AUTH_TOKEN", "userToken"];
@@ -156,6 +158,40 @@
 //     }
 //   };
 
+//   // ✅ Share booking handler
+//   const handleShareBooking = async (booking) => {
+//   try {
+//     const title = getTitle(booking);
+//     const city = getCity(booking);
+//     const chosenDate = safeString(booking?.chosen_date || booking?.ChosenDate);
+//     const priceText = getPriceText(booking);
+    
+//     const message = `🎉 I just booked ${title} on TravelMate! 🎊
+
+// 📍 ${city || 'Amazing location'}
+// 📅 Date: ${chosenDate || 'Coming soon'}
+// 👥 ${booking?.participants || 1} participant(s)
+// 💰 ${priceText || 'Great price'}
+
+// Join me on this adventure! 🚀`;
+
+//     if (Platform.OS === 'web') {
+//       if (navigator.share) {
+//         await navigator.share({ title: `My Booking: ${title}`, text: message });
+//       } else {
+//         await navigator.clipboard.writeText(message);
+//         Alert.alert('Copied!', 'Booking details copied to clipboard');
+//       }
+//     } else {
+//       await RNShare.share({ title: `My Booking: ${title}`, message: message });
+//     }
+//     console.log('✅ Booking shared:', title);
+//   } catch (error) {
+//     if (error.message !== 'User cancelled') {
+//       console.error('Share error:', error);
+//     }
+//   }
+// };
 //   const StatusTag = ({ status }) => {
 //     const statusStr = safeString(status).toLowerCase();
 //     return (
@@ -237,11 +273,27 @@
 //           </View>
 //         )}
 
+//         {/* ✅ Action Buttons Row - Only for Confirmed Bookings */}
 //         {isConfirmed && (
-//           <TouchableOpacity style={styles.chatButton} onPress={() => openChat(item)}>
-//             <Ionicons name="chatbubbles" size={18} color="#6366F1" />
-//             <Text style={styles.chatButtonText}>Chat with Vendor</Text>
-//           </TouchableOpacity>
+//           <View style={styles.actionButtonsRow}>
+//             {/* Chat Button */}
+//             <TouchableOpacity 
+//               style={[styles.actionButton, styles.chatActionBtn]} 
+//               onPress={() => openChat(item)}
+//             >
+//               <Ionicons name="chatbubbles" size={18} color="#6366F1" />
+//               <Text style={styles.actionButtonText}>Chat</Text>
+//             </TouchableOpacity>
+
+//             {/* ✅ Share Button */}
+//             <TouchableOpacity 
+//               style={[styles.actionButton, styles.shareActionBtn]} 
+//               onPress={() => handleShareBooking(item)}
+//             >
+//               <Ionicons name="share-social-outline" size={18} color="#0EA5E9" />
+//               <Text style={[styles.actionButtonText, { color: '#0EA5E9' }]}>Share</Text>
+//             </TouchableOpacity>
+//           </View>
 //         )}
 
 //         {isConfirmed && (
@@ -324,7 +376,7 @@
 //             data={filtered}
 //             keyExtractor={(it, i) => String(it?.id || it?.ID || i)}
 //             renderItem={({ item, index }) => <Item item={item} index={index} />}
-//             contentContainerStyle={{ padding: 12, paddingBottom: 90 }} // ✅ space for bottom nav
+//             contentContainerStyle={{ padding: 12, paddingBottom: 90 }}
 //             ListEmptyComponent={
 //               <View style={{ padding: 24, alignItems: "center" }}>
 //                 <Ionicons name="folder-open-outline" size={36} color="#6B7280" />
@@ -363,8 +415,38 @@
 //   price: { color: "#065F46", fontWeight: "800" },
 //   msgBox: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#EEF2FF", borderColor: "#E0E7FF", borderWidth: 1, padding: 8, borderRadius: 8, marginTop: 10 },
 //   msg: { color: "#0f172a", flex: 1 },
-//   chatButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#BFDBFE', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12, marginTop: 10 },
-//   chatButtonText: { color: '#6366F1', fontWeight: '700', fontSize: 14, marginLeft: 8 },
+  
+//   /* ✅ New Action Buttons Row */
+//   actionButtonsRow: {
+//     flexDirection: 'row',
+//     gap: 8,
+//     marginTop: 10,
+//   },
+//   actionButton: {
+//     flex: 1,
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//     borderWidth: 1,
+//     borderRadius: 10,
+//     paddingVertical: 10,
+//     paddingHorizontal: 12,
+//   },
+//   chatActionBtn: {
+//     backgroundColor: '#EFF6FF',
+//     borderColor: '#BFDBFE',
+//   },
+//   shareActionBtn: {
+//     backgroundColor: '#F0F9FF',
+//     borderColor: '#BAE6FD',
+//   },
+//   actionButtonText: {
+//     color: '#6366F1',
+//     fontWeight: '700',
+//     fontSize: 14,
+//     marginLeft: 8,
+//   },
+  
 //   contactCard: { marginTop: 10, backgroundColor: "#F0FDF4", borderRadius: 10, padding: 10, borderWidth: 1, borderColor: "#BBF7D0", gap: 6 },
 //   contactTitle: { fontWeight: '800', color: '#065F46', marginBottom: 4 },
 //   contactRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -387,13 +469,19 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
 import getBaseURL from "../../config/env";
 
 /* ✅ Share functionality */
 import { getShareMessage, getShareUrl } from '../../utils/shareImageHelper';
+
+/* ✅ OFFLINE functionality */
+import {
+  saveBookingOffline,
+  removeOfflineBooking,
+} from "../../utils/offlineStorage";
 
 const API = getBaseURL().replace(/\/+$/, "");
 const TOKEN_KEYS = ["token", "auth_token", "jwt", "access_token", "AUTH_TOKEN", "userToken"];
@@ -428,6 +516,33 @@ export default function MyBookings() {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // ✅ OFFLINE STATE
+  const [offlineStatus, setOfflineStatus] = useState({});
+  const [downloading, setDownloading] = useState(null);
+
+  // ✅ Check if booking is saved offline
+  const isBookingSavedOffline = async (id) => {
+    try {
+      const data = await AsyncStorage.getItem('offline_bookings');
+      if (!data) return false;
+      const bookings = JSON.parse(data);
+      return bookings.some(b => b.id === id || b.ID === id);
+    } catch (error) {
+      return false;
+    }
+  };
+
+  // ✅ Check offline status for all bookings
+  const checkOfflineStatus = async (bookingsList) => {
+    const statusMap = {};
+    for (const booking of bookingsList) {
+      const bookingId = booking.id || booking.ID;
+      const isSaved = await isBookingSavedOffline(bookingId);
+      statusMap[bookingId] = isSaved;
+    }
+    setOfflineStatus(statusMap);
+  };
+
   const fetchBookings = useCallback(async () => {
     try {
       setLoading(true);
@@ -447,7 +562,11 @@ export default function MyBookings() {
       }
       const data = await res.json().catch(() => []);
       console.log('Bookings data:', data);
-      setBookings(Array.isArray(data) ? data : []);
+      const bookingsList = Array.isArray(data) ? data : [];
+      setBookings(bookingsList);
+      
+      // ✅ Check offline status after fetching
+      await checkOfflineStatus(bookingsList);
     } catch (e) {
       console.error('Fetch error:', e);
       setBookings([]);
@@ -456,6 +575,15 @@ export default function MyBookings() {
       setRefreshing(false);
     }
   }, []);
+
+  // ✅ Refresh offline status when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      if (bookings) {
+        checkOfflineStatus(bookings);
+      }
+    }, [bookings])
+  );
 
   useEffect(() => { fetchBookings(); }, [fetchBookings]);
   const onRefresh = () => { setRefreshing(true); fetchBookings(); };
@@ -541,13 +669,13 @@ export default function MyBookings() {
 
   // ✅ Share booking handler
   const handleShareBooking = async (booking) => {
-  try {
-    const title = getTitle(booking);
-    const city = getCity(booking);
-    const chosenDate = safeString(booking?.chosen_date || booking?.ChosenDate);
-    const priceText = getPriceText(booking);
-    
-    const message = `🎉 I just booked ${title} on TravelMate! 🎊
+    try {
+      const title = getTitle(booking);
+      const city = getCity(booking);
+      const chosenDate = safeString(booking?.chosen_date || booking?.ChosenDate);
+      const priceText = getPriceText(booking);
+      
+      const message = `🎉 I just booked ${title} on TravelMate! 🎊
 
 📍 ${city || 'Amazing location'}
 📅 Date: ${chosenDate || 'Coming soon'}
@@ -556,23 +684,96 @@ export default function MyBookings() {
 
 Join me on this adventure! 🚀`;
 
-    if (Platform.OS === 'web') {
-      if (navigator.share) {
-        await navigator.share({ title: `My Booking: ${title}`, text: message });
+      if (Platform.OS === 'web') {
+        if (navigator.share) {
+          await navigator.share({ title: `My Booking: ${title}`, text: message });
+        } else {
+          await navigator.clipboard.writeText(message);
+          Alert.alert('Copied!', 'Booking details copied to clipboard');
+        }
       } else {
-        await navigator.clipboard.writeText(message);
-        Alert.alert('Copied!', 'Booking details copied to clipboard');
+        await RNShare.share({ title: `My Booking: ${title}`, message: message });
       }
-    } else {
-      await RNShare.share({ title: `My Booking: ${title}`, message: message });
+      console.log('✅ Booking shared:', title);
+    } catch (error) {
+      if (error.message !== 'User cancelled') {
+        console.error('Share error:', error);
+      }
     }
-    console.log('✅ Booking shared:', title);
-  } catch (error) {
-    if (error.message !== 'User cancelled') {
-      console.error('Share error:', error);
+  };
+
+  // ✅ Download booking for offline access
+  const handleDownloadOffline = async (booking) => {
+    const bookingId = booking.id || booking.ID;
+    setDownloading(bookingId);
+    
+    try {
+      const normalizedBooking = {
+        id: bookingId,
+        service_id: booking.service_id || booking.ServiceID,
+        service_name: getTitle(booking),
+        city: getCity(booking),
+        status: safeString(booking.status),
+        participants: booking.participants || 1,
+        chosen_date: safeString(booking.chosen_date || booking.ChosenDate),
+        price_snapshot: safeNumber(booking.price_snapshot),
+        pricing_model: safeString(booking.service?.pricing_model || booking.pricing_model),
+        duration_hours: getDuration(booking),
+        message: safeString(booking.message),
+        vendor_id: booking.vendor_id || booking.VendorID,
+        vendor_name: safeString(booking?.vendor?.name || booking?.vendor?.Name),
+        vendor_email: safeString(booking?.vendor?.email || booking?.vendor?.Email),
+        vendor_phone: safeString(booking?.vendor?.phone || booking?.vendor?.Phone),
+        vendor_country_code: safeString(booking?.vendor?.country_code || booking?.vendor?.CountryCode),
+        service: booking.service,
+        vendor: booking.vendor,
+        savedAt: new Date().toISOString(),
+      };
+      
+      const success = await saveBookingOffline(normalizedBooking);
+      
+      if (success) {
+        setOfflineStatus(prev => ({ ...prev, [bookingId]: true }));
+        Alert.alert(
+          '✓ Saved Offline',
+          `"${getTitle(booking)}" is now available offline.\n\nAccess it from: Profile → Offline`,
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert('Error', 'Could not save booking offline');
+      }
+    } catch (error) {
+      console.error('Download error:', error);
+      Alert.alert('Error', 'Failed to save for offline access');
+    } finally {
+      setDownloading(null);
     }
-  }
-};
+  };
+
+  // ✅ Remove booking from offline storage
+  const handleRemoveOffline = async (booking) => {
+    const bookingId = booking.id || booking.ID;
+    
+    Alert.alert(
+      'Remove Offline Access',
+      'Remove this booking from offline storage?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            const success = await removeOfflineBooking(bookingId);
+            if (success) {
+              setOfflineStatus(prev => ({ ...prev, [bookingId]: false }));
+              Alert.alert('Removed', 'Booking removed from offline storage');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const StatusTag = ({ status }) => {
     const statusStr = safeString(status).toLowerCase();
     return (
@@ -605,8 +806,21 @@ Join me on this adventure! 🚀`;
     const vendorCountryCode = safeString(item?.vendor?.country_code || item?.vendor?.CountryCode);
     const chosenDate = safeString(item?.chosen_date || item?.ChosenDate);
 
+    // ✅ Offline status for this booking
+    const bookingId = item.id || item.ID;
+    const isSavedOffline = offlineStatus[bookingId];
+    const isDownloading = downloading === bookingId;
+
     return (
       <Animated.View style={[styles.card, { opacity: fade }]}>
+        {/* ✅ Offline badge on top right */}
+        {isSavedOffline && (
+          <View style={styles.offlineBadgeTop}>
+            <Ionicons name="cloud-done" size={12} color="#fff" />
+            <Text style={styles.offlineBadgeText}>Offline</Text>
+          </View>
+        )}
+
         <View style={styles.cardHeader}>
           <View style={styles.cardTitleRow}>
             <Ionicons name="briefcase-outline" size={18} color="#0F3A6B" />
@@ -654,9 +868,35 @@ Join me on this adventure! 🚀`;
           </View>
         )}
 
-        {/* ✅ Action Buttons Row - Only for Confirmed Bookings */}
+        {/* ✅ Action Buttons Row - Only for Confirmed Bookings (3 buttons now) */}
         {isConfirmed && (
           <View style={styles.actionButtonsRow}>
+            {/* ✅ Download/Offline Button */}
+            {!isSavedOffline ? (
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.downloadActionBtn]} 
+                onPress={() => handleDownloadOffline(item)}
+                disabled={isDownloading}
+              >
+                {isDownloading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <>
+                    <Ionicons name="cloud-download-outline" size={18} color="#fff" />
+                    <Text style={[styles.actionButtonText, { color: '#fff' }]}>Save</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.offlineActionBtn]} 
+                onPress={() => handleRemoveOffline(item)}
+              >
+                <Ionicons name="cloud-done" size={18} color="#10B981" />
+                <Text style={[styles.actionButtonText, { color: '#10B981' }]}>Saved</Text>
+              </TouchableOpacity>
+            )}
+
             {/* Chat Button */}
             <TouchableOpacity 
               style={[styles.actionButton, styles.chatActionBtn]} 
@@ -785,9 +1025,43 @@ const styles = StyleSheet.create({
   tabActive: { backgroundColor: "#0ea5e9" },
   tabTxt: { fontWeight: "800", color: "#0f172a" },
   tabTxtActive: { color: "#fff" },
-  card: { backgroundColor: "#fff", borderWidth: 1, borderColor: "#E6EDF7", borderRadius: 14, padding: 12, marginBottom: 12 },
+  card: { 
+    backgroundColor: "#fff", 
+    borderWidth: 1, 
+    borderColor: "#E6EDF7", 
+    borderRadius: 14, 
+    padding: 12, 
+    marginBottom: 12,
+    position: 'relative', // ✅ For absolute positioning of badge
+  },
+  
+  // ✅ Offline badge on top right
+  offlineBadgeTop: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#10B981',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+    zIndex: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  offlineBadgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  cardTitleRow: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1 },
+  cardTitleRow: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1, marginRight: 8 },
   cardTitle: { fontWeight: "800", color: "#0f172a", flexShrink: 1 },
   metaRowWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 },
   metaPill: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#F8FAFC", paddingHorizontal: 8, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: "#E5E7EB" },
@@ -797,10 +1071,10 @@ const styles = StyleSheet.create({
   msgBox: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#EEF2FF", borderColor: "#E0E7FF", borderWidth: 1, padding: 8, borderRadius: 8, marginTop: 10 },
   msg: { color: "#0f172a", flex: 1 },
   
-  /* ✅ New Action Buttons Row */
+  /* ✅ Updated Action Buttons Row - Now 3 buttons */
   actionButtonsRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
     marginTop: 10,
   },
   actionButton: {
@@ -811,7 +1085,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 10,
     paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
+  },
+  downloadActionBtn: {
+    backgroundColor: '#10B981',
+    borderColor: '#10B981',
+  },
+  offlineActionBtn: {
+    backgroundColor: '#DCFCE7',
+    borderColor: '#10B981',
   },
   chatActionBtn: {
     backgroundColor: '#EFF6FF',
@@ -824,8 +1106,8 @@ const styles = StyleSheet.create({
   actionButtonText: {
     color: '#6366F1',
     fontWeight: '700',
-    fontSize: 14,
-    marginLeft: 8,
+    fontSize: 13,
+    marginLeft: 6,
   },
   
   contactCard: { marginTop: 10, backgroundColor: "#F0FDF4", borderRadius: 10, padding: 10, borderWidth: 1, borderColor: "#BBF7D0", gap: 6 },

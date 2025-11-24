@@ -1,948 +1,6 @@
-// // components/Social/HomeFeed.js
-// import React, { useEffect, useMemo, useState } from "react";
-// import {
-//   View,
-//   Text,
-//   StyleSheet,
-//   Platform,
-//   FlatList,
-//   TouchableOpacity,
-//   TextInput,
-//   ActivityIndicator,
-//   Image,
-// } from "react-native";
-// import AsyncStorage from "@react-native-async-storage/async-storage";
-// import { Ionicons } from "@expo/vector-icons";
 
-// const API_BASE_URL = process.env.EXPO_PUBLIC_API || "http://localhost:8080";
 
-// export default function HomeFeed() {
-//   const [auth, setAuth] = useState({ token: null, userId: null });
-//   const [loading, setLoading] = useState(true);
-//   const [err, setErr] = useState(null);
-//   const [posts, setPosts] = useState([]);
-
-//   useEffect(() => {
-//     (async () => {
-//       const [[, token], [, userId]] = await AsyncStorage.multiGet([
-//         "token",
-//         "userId",
-//       ]);
-//       setAuth({ token: token || null, userId: userId ? Number(userId) : null });
-//     })();
-//   }, []);
-
-//   const headers = useMemo(() => {
-//     const h = { "Content-Type": "application/json" };
-//     if (auth.token) h.Authorization = `Bearer ${auth.token}`;
-//     return h;
-//   }, [auth.token]);
-
-//   const load = async () => {
-//     setLoading(true);
-//     setErr(null);
-//     try {
-//       const res = await fetch(`${API_BASE_URL}/posts`, { headers });
-//       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-//       const data = await res.json();
-//       const rows = Array.isArray(data) ? data : data?.posts || [];
-//       setPosts(rows);
-//     } catch (e) {
-//       setErr(e?.message || "Failed to load posts");
-//       setPosts([]);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   useEffect(() => {
-//     load();
-//   }, [headers]);
-
-//   const toggleLike = async (post) => {
-//     const liked = !!post.liked;
-//     // optimistic
-//     setPosts((ps) =>
-//       ps.map((p) =>
-//         p.id === post.id
-//           ? {
-//               ...p,
-//               liked: !liked,
-//               likes_count: (p.likes_count || 0) + (liked ? -1 : 1),
-//             }
-//           : p
-//       )
-//     );
-//     try {
-//       const url = `${API_BASE_URL}/posts/${post.id}/like`;
-//       const res = await fetch(url, {
-//         method: liked ? "DELETE" : "POST",
-//         headers,
-//       });
-//       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-//     } catch {
-//       // revert on failure
-//       setPosts((ps) =>
-//         ps.map((p) =>
-//           p.id === post.id
-//             ? {
-//                 ...p,
-//                 liked,
-//                 likes_count: (p.likes_count || 0) + (liked ? 1 : -1),
-//               }
-//             : p
-//         )
-//       );
-//     }
-//   };
-
-//   const renderItem = ({ item }) => (
-//     <PostCard
-//       post={item}
-//       onLike={() => toggleLike(item)}
-//       headers={headers}
-//       me={auth.userId}
-//     />
-//   );
-
-//   return (
-//     <View style={styles.page}>
-//       <View style={styles.header}>
-//         <Text style={styles.h1}>Home</Text>
-//         <TouchableOpacity onPress={load} style={styles.refreshBtn}>
-//           <Ionicons name="refresh" size={16} color={COLORS.text} />
-//           <Text style={styles.refreshText}>Refresh</Text>
-//         </TouchableOpacity>
-//       </View>
-
-//       {loading ? (
-//         <View style={styles.center}>
-//           <ActivityIndicator />
-//           <Text style={styles.meta}>Loading feed…</Text>
-//         </View>
-//       ) : err ? (
-//         <View style={styles.errorBox}>
-//           <Ionicons
-//             name="alert-circle"
-//             size={18}
-//             color="#B42318"
-//             style={{ marginRight: 6 }}
-//           />
-//           <Text style={styles.errorText}>{err}</Text>
-//           <TouchableOpacity onPress={load} style={{ marginLeft: "auto" }}>
-//             <Text style={styles.link}>Retry</Text>
-//           </TouchableOpacity>
-//         </View>
-//       ) : posts.length === 0 ? (
-//         <View style={styles.center}>
-//           <Text style={styles.meta}>No posts yet. Be the first!</Text>
-//         </View>
-//       ) : (
-//         <FlatList
-//           data={posts}
-//           keyExtractor={(p) => String(p.id)}
-//           renderItem={renderItem}
-//           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
-//           contentContainerStyle={{
-//             paddingHorizontal: 16,
-//             paddingBottom: 120,
-//             paddingTop: Platform.OS === "web" ? 92 : 16,
-//             ...(Platform.OS === "web"
-//               ? { maxWidth: 860, alignSelf: "center", width: "100%" }
-//               : {}),
-//           }}
-//         />
-//       )}
-//     </View>
-//   );
-// }
-
-// /* ----------------------- Post card with comments ----------------------- */
-// function PostCard({ post, onLike, headers, me }) {
-//   const [showComments, setShowComments] = useState(false);
-//   const [loadingComments, setLoadingComments] = useState(false);
-//   const [comments, setComments] = useState([]);
-//   const [commentText, setCommentText] = useState("");
-
-//   const loadComments = async () => {
-//     setLoadingComments(true);
-//     try {
-//       const res = await fetch(`${API_BASE_URL}/posts/${post.id}/comments`, {
-//         headers,
-//       });
-//       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-//       const data = await res.json();
-//       setComments(Array.isArray(data) ? data : data?.comments || []);
-//     } catch {
-//       setComments([]);
-//     } finally {
-//       setLoadingComments(false);
-//     }
-//   };
-
-//   const sendComment = async () => {
-//     const body = (commentText || "").trim();
-//     if (!body) return;
-//     // optimistic
-//     const temp = {
-//       id: `tmp-${Date.now()}`,
-//       post_id: post.id,
-//       user_id: me,
-//       content: body,
-//       created_at: new Date().toISOString(),
-//     };
-//     setComments((c) => [...c, temp]);
-//     setCommentText("");
-
-//     try {
-//       const res = await fetch(`${API_BASE_URL}/comments`, {
-//         method: "POST",
-//         headers,
-//         body: JSON.stringify({ post_id: post.id, content: body }),
-//       });
-//       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-//       const saved = await res.json();
-//       setComments((c) => c.map((x) => (x.id === temp.id ? saved : x)));
-//     } catch {
-//       setComments((c) => c.filter((x) => x.id !== temp.id));
-//     }
-//   };
-
-//   const toggleComments = () => {
-//     const next = !showComments;
-//     setShowComments(next);
-//     if (next && comments.length === 0) {
-//       loadComments();
-//     }
-//   };
-
-//   const authorName =
-//     post.author_name || post.user_name || `User #${post.user_id || "?"}`;
-
-//   return (
-//     <View style={styles.card}>
-//       {/* header */}
-//       <View style={styles.cardHeader}>
-//         <Image
-//           source={{ uri: post.author_image || "https://placehold.co/64x64?text=U" }}
-//           style={styles.avatar}
-//         />
-//         <View style={{ flex: 1, minWidth: 0 }}>
-//           <Text numberOfLines={1} style={styles.author}>
-//             {authorName}
-//           </Text>
-//           <Text numberOfLines={1} style={styles.time}>
-//             {post.created_at ? new Date(post.created_at).toLocaleString() : ""}
-//           </Text>
-//         </View>
-//       </View>
-
-//       {/* body */}
-//       {!!post.caption && <Text style={styles.caption}>{post.caption}</Text>}
-//       {!!post.itinerary && (
-//         <View style={styles.itBadge}>
-//           <Ionicons name="map" size={14} color={COLORS.text} />
-//           <Text style={styles.itBadgeText}>
-//             {post.itinerary.title || `Itinerary #${post.itinerary.id}`}
-//           </Text>
-//         </View>
-//       )}
-
-//       {/* actions */}
-//       <View style={styles.actions}>
-//         <TouchableOpacity onPress={onLike} style={styles.actionBtn} activeOpacity={0.85}>
-//           <Ionicons
-//             name={post.liked ? "heart" : "heart-outline"}
-//             size={18}
-//             color={post.liked ? "#DC2626" : COLORS.text}
-//           />
-//           <Text style={styles.actionText}>{post.likes_count || 0}</Text>
-//         </TouchableOpacity>
-
-//         <TouchableOpacity onPress={toggleComments} style={styles.actionBtn} activeOpacity={0.85}>
-//           <Ionicons name="chatbubble-ellipses-outline" size={18} color={COLORS.text} />
-//           <Text style={styles.actionText}>Comments</Text>
-//         </TouchableOpacity>
-//       </View>
-
-//       {/* comments */}
-//       {showComments && (
-//         <View style={styles.commentsBox}>
-//           {loadingComments ? (
-//             <View style={styles.center}>
-//               <ActivityIndicator />
-//             </View>
-//           ) : comments.length === 0 ? (
-//             <Text style={styles.meta}>Be the first to comment.</Text>
-//           ) : (
-//             comments.map((c) => (
-//               <View key={c.id} style={styles.commentRow}>
-//                 <Image
-//                   source={{
-//                     uri: c.user_image || "https://placehold.co/40x40?text=U",
-//                   }}
-//                   style={styles.cAvatar}
-//                 />
-//                 <View style={{ flex: 1, minWidth: 0 }}>
-//                   <Text style={styles.cAuthor}>
-//                     {c.user_name || `User #${c.user_id}`}
-//                   </Text>
-//                   <Text style={styles.cText}>{c.content}</Text>
-//                   <Text style={styles.cTime}>
-//                     {c.created_at
-//                       ? new Date(c.created_at).toLocaleString()
-//                       : ""}
-//                   </Text>
-//                 </View>
-//               </View>
-//             ))
-//           )}
-
-//           <View style={styles.commentComposer}>
-//             <TextInput
-//               value={commentText}
-//               onChangeText={setCommentText}
-//               placeholder="Write a comment…"
-//               placeholderTextColor="#94A3B8"
-//               style={styles.commentInput}
-//             />
-//             <TouchableOpacity
-//               onPress={sendComment}
-//               disabled={!commentText.trim()}
-//               activeOpacity={0.9}
-//               style={[
-//                 styles.commentSend,
-//                 !commentText.trim() && { opacity: 0.6 },
-//               ]}
-//             >
-//               <Ionicons name="send" size={16} color="#fff" />
-//             </TouchableOpacity>
-//           </View>
-//         </View>
-//       )}
-//     </View>
-//   );
-// }
-
-// /* ----------------------- styles ----------------------- */
-// const COLORS = {
-//   page: "#F6FAFD",
-//   card: "#FFFFFF",
-//   text: "#0F3A6B",
-//   subtext: "#64748B",
-//   primary: "#0F70F0",
-//   border: "#EAF0F6",
-// };
-
-// const styles = StyleSheet.create({
-//   page: { flex: 1, backgroundColor: COLORS.page },
-
-//   header: {
-//     paddingTop: Platform.OS === "web" ? 92 : 16,
-//     paddingHorizontal: 16,
-//     flexDirection: "row",
-//     alignItems: "center",
-//     ...(Platform.OS === "web" ? { maxWidth: 860, alignSelf: "center", width: "100%" } : {}),
-//   },
-//   h1: { fontSize: 22, fontWeight: "800", color: COLORS.text, flex: 1 },
-//   refreshBtn: {
-//     flexDirection: "row",
-//     alignItems: "center",
-//     gap: 6,
-//     paddingHorizontal: 10,
-//     paddingVertical: 6,
-//     borderRadius: 999,
-//     borderWidth: 1,
-//     borderColor: COLORS.border,
-//     backgroundColor: "#EEF3F9",
-//   },
-//   refreshText: { color: COLORS.text, fontWeight: "700", fontSize: 12 },
-
-//   card: {
-//     backgroundColor: COLORS.card,
-//     borderRadius: 16,
-//     padding: 14,
-//     borderWidth: 1,
-//     borderColor: COLORS.border,
-//     shadowColor: "#000",
-//     shadowOpacity: 0.06,
-//     shadowRadius: 8,
-//     shadowOffset: { width: 0, height: 3 },
-//   },
-
-//   cardHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
-//   avatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: "#DDE7F2" },
-//   author: { fontWeight: "800", color: "#0F172A" },
-//   time: { color: COLORS.subtext, fontSize: 12 },
-
-//   caption: { marginTop: 10, color: "#0F172A" },
-
-//   itBadge: {
-//     marginTop: 10,
-//     alignSelf: "flex-start",
-//     paddingHorizontal: 10,
-//     paddingVertical: 6,
-//     borderRadius: 999,
-//     backgroundColor: "#EEF3F9",
-//     borderWidth: 1,
-//     borderColor: COLORS.border,
-//     flexDirection: "row",
-//     alignItems: "center",
-//     gap: 6,
-//   },
-//   itBadgeText: { color: COLORS.text, fontWeight: "700", fontSize: 12 },
-
-//   actions: {
-//     marginTop: 12,
-//     flexDirection: "row",
-//     gap: 16,
-//     alignItems: "center",
-//   },
-//   actionBtn: { flexDirection: "row", alignItems: "center", gap: 6 },
-//   actionText: { color: COLORS.text, fontWeight: "700" },
-
-//   commentsBox: {
-//     marginTop: 12,
-//     borderTopWidth: 1,
-//     borderColor: COLORS.border,
-//     paddingTop: 10,
-//     gap: 10,
-//   },
-//   commentRow: { flexDirection: "row", gap: 10 },
-//   cAvatar: { width: 32, height: 32, borderRadius: 16, backgroundColor: "#E2E8F0" },
-//   cAuthor: { fontWeight: "700", color: "#0F172A" },
-//   cText: { color: "#0F172A" },
-//   cTime: { color: COLORS.subtext, fontSize: 11, marginTop: 2 },
-
-//   commentComposer: { flexDirection: "row", gap: 8, alignItems: "center" },
-//   commentInput: {
-//     flex: 1,
-//     backgroundColor: "#F9FBFE",
-//     borderWidth: 1,
-//     borderColor: "#E2E8F0",
-//     borderRadius: 12,
-//     paddingHorizontal: 12,
-//     paddingVertical: 10,
-//     color: "#0F172A",
-//   },
-//   commentSend: {
-//     width: 42,
-//     height: 42,
-//     borderRadius: 12,
-//     alignItems: "center",
-//     justifyContent: "center",
-//     backgroundColor: COLORS.primary,
-//   },
-
-//   // states
-//   center: { alignItems: "center", justifyContent: "center", padding: 18 },
-//   meta: { color: COLORS.subtext, fontWeight: "600" },
-//   errorBox: {
-//     marginHorizontal: 16,
-//     marginTop: 16,
-//     flexDirection: "row",
-//     alignItems: "center",
-//     backgroundColor: "#FEF3F2",
-//     borderWidth: 1,
-//     borderColor: "#FEE4E2",
-//     borderRadius: 12,
-//     paddingVertical: 10,
-//     paddingHorizontal: 12,
-//     ...(Platform.OS === "web" ? { maxWidth: 860, alignSelf: "center", width: "100%" } : {}),
-//   },
-//   errorText: { color: "#B42318", fontWeight: "600" },
-//   link: { color: COLORS.primary, fontWeight: "700" },
-// });
-
-
-// components/Social/HomeFeed.js
-// import React, { useEffect, useMemo, useState } from "react";
-// import {
-//   View,
-//   Text,
-//   StyleSheet,
-//   Platform,
-//   FlatList,
-//   TouchableOpacity,
-//   TextInput,
-//   ActivityIndicator,
-//   Image,
-// } from "react-native";
-// import AsyncStorage from "@react-native-async-storage/async-storage";
-// import { Ionicons } from "@expo/vector-icons";
-// import ItineraryCard from "../../screens/CrowdsourceItineraries/ItineraryCard";
-
-// const API_BASE_URL = process.env.EXPO_PUBLIC_API || "http://localhost:8080";
-
-// export default function HomeFeed() {
-//   const [auth, setAuth] = useState({ token: null, userId: null });
-//   const [sessionReady, setSessionReady] = useState(false);
-
-//   const [loading, setLoading] = useState(true);
-//   const [err, setErr] = useState(null);
-//   const [posts, setPosts] = useState([]);
-
-//   // load token/user once
-//   useEffect(() => {
-//     (async () => {
-//       try {
-//         const [[, token], [, userId]] = await AsyncStorage.multiGet([
-//           "token",
-//           "userId",
-//         ]);
-//         setAuth({ token: token || null, userId: userId ? Number(userId) : null });
-//       } finally {
-//         setSessionReady(true);
-//       }
-//     })();
-//   }, []);
-
-//   const headers = useMemo(() => {
-//     const h = { "Content-Type": "application/json" };
-//     if (auth.token) h.Authorization = `Bearer ${auth.token}`;
-//     return h;
-//   }, [auth.token]);
-
-//   const load = async () => {
-//     // if your /posts needs auth, avoid calling until we’ve read storage
-//     if (!sessionReady) return;
-//     setLoading(true);
-//     setErr(null);
-//     try {
-//       const res = await fetch(`${API_BASE_URL}/posts`, { headers });
-//       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-//       const data = await res.json();
-//       // controllers.GetAllPosts() returns [] of Post with embedded User (FirstName/LastName)
-//       const rows = Array.isArray(data) ? data : data?.posts || [];
-//       setPosts(rows);
-//     } catch (e) {
-//       setErr(e?.message || "Failed to load posts");
-//       setPosts([]);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   // initial + whenever token changes
-//   useEffect(() => {
-//     load();
-//     // eslint-disable-next-line react-hooks/exhaustive-deps
-//   }, [sessionReady, headers]);
-
-//   const toggleLike = async (post) => {
-//     const liked = !!post.liked;
-//     // optimistic
-//     setPosts((ps) =>
-//       ps.map((p) =>
-//         p.id === post.id
-//           ? { ...p, liked: !liked, likes_count: (p.likes_count || 0) + (liked ? -1 : 1) }
-//           : p
-//       )
-//     );
-//     try {
-//       const url = `${API_BASE_URL}/posts/${post.id}/like`;
-//       const res = await fetch(url, {
-//         method: liked ? "DELETE" : "POST",
-//         headers,
-//       });
-//       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-//     } catch {
-//       // revert
-//       setPosts((ps) =>
-//         ps.map((p) =>
-//           p.id === post.id
-//             ? { ...p, liked, likes_count: (p.likes_count || 0) + (liked ? 1 : -1) }
-//             : p
-//         )
-//       );
-//     }
-//   };
-
-//   const renderItem = ({ item }) => (
-//     <PostCard
-//       post={item}
-//       onLike={() => toggleLike(item)}
-//       headers={headers}
-//       me={auth.userId}
-//     />
-//   );
-
-//   return (
-//     <View style={styles.page}>
-//       <View style={styles.header}>
-//         <Text style={styles.h1}>Home</Text>
-//         <TouchableOpacity onPress={load} style={styles.refreshBtn}>
-//           <Ionicons name="refresh" size={16} color={COLORS.text} />
-//           <Text style={styles.refreshText}>Refresh</Text>
-//         </TouchableOpacity>
-//       </View>
-
-//       {!sessionReady ? (
-//         <View style={styles.center}>
-//           <ActivityIndicator />
-//           <Text style={styles.meta}>Authorizing…</Text>
-//         </View>
-//       ) : loading ? (
-//         <View style={styles.center}>
-//           <ActivityIndicator />
-//           <Text style={styles.meta}>Loading feed…</Text>
-//         </View>
-//       ) : err ? (
-//         <View style={styles.errorBox}>
-//           <Ionicons name="alert-circle" size={18} color="#B42318" style={{ marginRight: 6 }} />
-//           <Text style={styles.errorText}>{err}</Text>
-//           <TouchableOpacity onPress={load} style={{ marginLeft: "auto" }}>
-//             <Text style={styles.link}>Retry</Text>
-//           </TouchableOpacity>
-//         </View>
-//       ) : posts.length === 0 ? (
-//         <View style={styles.center}>
-//           <Text style={styles.meta}>No posts yet. Be the first!</Text>
-//         </View>
-//       ) : (
-//         <FlatList
-//           data={posts}
-//           keyExtractor={(p) => String(p.id)}
-//           renderItem={renderItem}
-//           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
-//           contentContainerStyle={{
-//             paddingHorizontal: 16,
-//             paddingBottom: 120,
-//             paddingTop: Platform.OS === "web" ? 92 : 16,
-//             ...(Platform.OS === "web"
-//               ? { maxWidth: 860, alignSelf: "center", width: "100%" }
-//               : {}),
-//           }}
-//         />
-//       )}
-//     </View>
-//   );
-// }
-
-// /* ----------------------- Post card with itinerary + comments ----------------------- */
-// function PostCard({ post, onLike, headers, me }) {
-//   const [showComments, setShowComments] = useState(false);
-//   const [loadingComments, setLoadingComments] = useState(false);
-//   const [comments, setComments] = useState([]);
-//   const [commentText, setCommentText] = useState("");
-
-//   // lazy itinerary fetch (based on content_id)
-//   const [itLoading, setItLoading] = useState(!!post?.content_id);
-//   const [itData, setItData] = useState(null);
-
-//   useEffect(() => {
-//     let cancelled = false;
-//     const fetchItinerary = async () => {
-//       if (!post?.content_id) return;
-//       setItLoading(true);
-//       try {
-//         const res = await fetch(`${API_BASE_URL}/itineraries/${post.content_id}`, { headers });
-//         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-//         const data = await res.json();
-//         if (!cancelled) setItData(Array.isArray(data) ? data[0] : data);
-//       } catch {
-//         if (!cancelled) setItData(null);
-//       } finally {
-//         if (!cancelled) setItLoading(false);
-//       }
-//     };
-//     fetchItinerary();
-//     return () => { cancelled = true; };
-//   }, [post?.content_id, headers]);
-
-//   const loadComments = async () => {
-//     setLoadingComments(true);
-//     try {
-//       const res = await fetch(`${API_BASE_URL}/posts/${post.id}/comments`, { headers });
-//       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-//       const data = await res.json();
-//       // backend returns comments with "text"
-//       setComments(Array.isArray(data) ? data : data?.comments || []);
-//     } catch {
-//       setComments([]);
-//     } finally {
-//       setLoadingComments(false);
-//     }
-//   };
-
-//   const sendComment = async () => {
-//     const body = (commentText || "").trim();
-//     if (!body) return;
-//     // optimistic
-//     const temp = {
-//       id: `tmp-${Date.now()}`,
-//       post_id: post.id,
-//       user_id: me,
-//       text: body,
-//       created_at: new Date().toISOString(),
-//     };
-//     setComments((c) => [...c, temp]);
-//     setCommentText("");
-
-//     try {
-//       const res = await fetch(`${API_BASE_URL}/comments`, {
-//         method: "POST",
-//         headers,
-//         // models.AddComment expects { post_id, user_id, text } (controller may infer user)
-//         body: JSON.stringify({ post_id: post.id, text: body }),
-//       });
-//       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-//       const saved = await res.json();
-//       setComments((c) => c.map((x) => (x.id === temp.id ? saved : x)));
-//     } catch {
-//       setComments((c) => c.filter((x) => x.id !== temp.id));
-//     }
-//   };
-
-//   const toggleComments = () => {
-//     const next = !showComments;
-//     setShowComments(next);
-//     if (next && comments.length === 0) {
-//       loadComments();
-//     }
-//   };
-
-//   const authorName =
-//     // from GetAllPosts: post.User.{FirstName, LastName}
-//     (post?.user && (post.user.first_name || post.user.FirstName || "") + " " + (post.user.last_name || post.user.LastName || ""))?.trim() ||
-//     `User #${post.user_id ?? "?"}`;
-
-//   return (
-//     <View style={styles.card}>
-//       {/* header */}
-//       <View style={styles.cardHeader}>
-//         <Image
-//           source={{ uri: post.author_image || "https://placehold.co/64x64?text=U" }}
-//           style={styles.avatar}
-//         />
-//         <View style={{ flex: 1, minWidth: 0 }}>
-//           <Text numberOfLines={1} style={styles.author}>
-//             {authorName}
-//           </Text>
-//           <Text numberOfLines={1} style={styles.time}>
-//             {post.created_at ? new Date(post.created_at).toLocaleString() : ""}
-//           </Text>
-//         </View>
-//       </View>
-
-//       {/* caption */}
-//       {!!post.caption && <Text style={styles.caption}>{post.caption}</Text>}
-
-//       {/* itinerary preview */}
-//       {post?.content_id ? (
-//         itLoading ? (
-//           <View style={[styles.center, { paddingVertical: 10 }]}>
-//             <ActivityIndicator />
-//           </View>
-//         ) : itData ? (
-//           <View style={{ marginTop: 10 }}>
-//             <ItineraryCard
-//               item={{
-//                 title: itData.title,
-//                 city: itData.city || itData.destination,
-//                 start_date: itData.start_date,
-//                 end_date: itData.end_date,
-//                 budget: itData.budget,
-//                 style: itData.style,
-//                 cover_url: itData.cover_url,
-//                 days: itData.days || [],
-//               }}
-//               onPress={undefined}
-//             />
-//           </View>
-//         ) : null
-//       ) : null}
-
-//       {/* actions */}
-//       <View style={styles.actions}>
-//         <TouchableOpacity onPress={onLike} style={styles.actionBtn} activeOpacity={0.85}>
-//           <Ionicons
-//             name={post.liked ? "heart" : "heart-outline"}
-//             size={18}
-//             color={post.liked ? "#DC2626" : COLORS.text}
-//           />
-//           <Text style={styles.actionText}>{post.likes_count || 0}</Text>
-//         </TouchableOpacity>
-
-//         <TouchableOpacity onPress={toggleComments} style={styles.actionBtn} activeOpacity={0.85}>
-//           <Ionicons name="chatbubble-ellipses-outline" size={18} color={COLORS.text} />
-//           <Text style={styles.actionText}>Comments</Text>
-//         </TouchableOpacity>
-//       </View>
-
-//       {/* comments */}
-//       {showComments && (
-//         <View style={styles.commentsBox}>
-//           {loadingComments ? (
-//             <View style={styles.center}>
-//               <ActivityIndicator />
-//             </View>
-//           ) : comments.length === 0 ? (
-//             <Text style={styles.meta}>Be the first to comment.</Text>
-//           ) : (
-//             comments.map((c) => (
-//               <View key={c.id} style={styles.commentRow}>
-//                 <Image
-//                   source={{ uri: c.user_image || "https://placehold.co/40x40?text=U" }}
-//                   style={styles.cAvatar}
-//                 />
-//                 <View style={{ flex: 1, minWidth: 0 }}>
-//                   <Text style={styles.cAuthor}>
-//                     {c.user_name || `User #${c.user_id}`}
-//                   </Text>
-//                   <Text style={styles.cText}>{c.text}</Text>
-//                   <Text style={styles.cTime}>
-//                     {c.created_at ? new Date(c.created_at).toLocaleString() : ""}
-//                   </Text>
-//                 </View>
-//               </View>
-//             ))
-//           )}
-
-//           <View style={styles.commentComposer}>
-//             <TextInput
-//               value={commentText}
-//               onChangeText={setCommentText}
-//               placeholder="Write a comment…"
-//               placeholderTextColor="#94A3B8"
-//               style={styles.commentInput}
-//             />
-//             <TouchableOpacity
-//               onPress={sendComment}
-//               disabled={!commentText.trim()}
-//               activeOpacity={0.9}
-//               style={[
-//                 styles.commentSend,
-//                 !commentText.trim() && { opacity: 0.6 },
-//               ]}
-//             >
-//               <Ionicons name="send" size={16} color="#fff" />
-//             </TouchableOpacity>
-//           </View>
-//         </View>
-//       )}
-//     </View>
-//   );
-// }
-
-// /* ----------------------- styles ----------------------- */
-// const COLORS = {
-//   page: "#F6FAFD",
-//   card: "#FFFFFF",
-//   text: "#0F3A6B",
-//   subtext: "#64748B",
-//   primary: "#0F70F0",
-//   border: "#EAF0F6",
-// };
-
-// const styles = StyleSheet.create({
-//   page: { flex: 1, backgroundColor: COLORS.page },
-
-//   header: {
-//     paddingTop: Platform.OS === "web" ? 92 : 16,
-//     paddingHorizontal: 16,
-//     flexDirection: "row",
-//     alignItems: "center",
-//     ...(Platform.OS === "web" ? { maxWidth: 860, alignSelf: "center", width: "100%" } : {}),
-//   },
-//   h1: { fontSize: 22, fontWeight: "800", color: COLORS.text, flex: 1 },
-//   refreshBtn: {
-//     flexDirection: "row",
-//     alignItems: "center",
-//     gap: 6,
-//     paddingHorizontal: 10,
-//     paddingVertical: 6,
-//     borderRadius: 999,
-//     borderWidth: 1,
-//     borderColor: COLORS.border,
-//     backgroundColor: "#EEF3F9",
-//   },
-//   refreshText: { color: COLORS.text, fontWeight: "700", fontSize: 12 },
-
-//   card: {
-//     backgroundColor: COLORS.card,
-//     borderRadius: 16,
-//     padding: 14,
-//     borderWidth: 1,
-//     borderColor: COLORS.border,
-//     shadowColor: "#000",
-//     shadowOpacity: 0.06,
-//     shadowRadius: 8,
-//     shadowOffset: { width: 0, height: 3 },
-//   },
-
-//   cardHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
-//   avatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: "#DDE7F2" },
-//   author: { fontWeight: "800", color: "#0F172A" },
-//   time: { color: COLORS.subtext, fontSize: 12 },
-
-//   caption: { marginTop: 10, color: "#0F172A" },
-
-//   actions: {
-//     marginTop: 12,
-//     flexDirection: "row",
-//     gap: 16,
-//     alignItems: "center",
-//   },
-//   actionBtn: { flexDirection: "row", alignItems: "center", gap: 6 },
-//   actionText: { color: COLORS.text, fontWeight: "700" },
-
-//   commentsBox: {
-//     marginTop: 12,
-//     borderTopWidth: 1,
-//     borderColor: COLORS.border,
-//     paddingTop: 10,
-//     gap: 10,
-//   },
-//   commentRow: { flexDirection: "row", gap: 10 },
-//   cAvatar: { width: 32, height: 32, borderRadius: 16, backgroundColor: "#E2E8F0" },
-//   cAuthor: { fontWeight: "700", color: "#0F172A" },
-//   cText: { color: "#0F172A" },
-//   cTime: { color: COLORS.subtext, fontSize: 11, marginTop: 2 },
-
-//   commentComposer: { flexDirection: "row", gap: 8, alignItems: "center" },
-//   commentInput: {
-//     flex: 1,
-//     backgroundColor: "#F9FBFE",
-//     borderWidth: 1,
-//     borderColor: "#E2E8F0",
-//     borderRadius: 12,
-//     paddingHorizontal: 12,
-//     paddingVertical: 10,
-//     color: "#0F172A",
-//   },
-//   commentSend: {
-//     width: 42,
-//     height: 42,
-//     borderRadius: 12,
-//     alignItems: "center",
-//     justifyContent: "center",
-//     backgroundColor: COLORS.primary,
-//   },
-
-//   // states
-//   center: { alignItems: "center", justifyContent: "center", padding: 18 },
-//   meta: { color: COLORS.subtext, fontWeight: "600" },
-//   errorBox: {
-//     marginHorizontal: 16,
-//     marginTop: 16,
-//     flexDirection: "row",
-//     alignItems: "center",
-//     backgroundColor: "#FEF3F2",
-//     borderWidth: 1,
-//     borderColor: "#FEE4E2",
-//     borderRadius: 12,
-//     paddingVertical: 10,
-//     paddingHorizontal: 12,
-//     ...(Platform.OS === "web" ? { maxWidth: 860, alignSelf: "center", width: "100%" } : {}),
-//   },
-//   errorText: { color: "#B42318", fontWeight: "600" },
-//   link: { color: COLORS.primary, fontWeight: "700" },
-// });
-
-
-// components/Social/HomeFeed.js
-// import React, { useEffect, useMemo, useState } from "react";
+// import React, { useEffect, useMemo, useState, useCallback } from "react";
 // import {
 //   View,
 //   Text,
@@ -954,13 +12,51 @@
 //   ActivityIndicator,
 //   Image,
 //   Alert,
+//   ScrollView,
 // } from "react-native";
 // import AsyncStorage from "@react-native-async-storage/async-storage";
 // import { Ionicons } from "@expo/vector-icons";
-// import ItineraryCard from "../../screens/CrowdsourceItineraries/ItineraryCard";
+// import { useNavigation } from "@react-navigation/native";
+// import getBaseURL from "../../config/env";
 
-// const API_BASE_URL = process.env.EXPO_PUBLIC_API || "http://localhost:8080";
+// const API_BASE_URL = getBaseURL();
 
+// /* ===================== HELPER FUNCTIONS ===================== */
+// function formatDate(dateString) {
+//   if (!dateString) return "";
+//   const date = new Date(dateString);
+//   return date.toLocaleDateString("en-US", { 
+//     month: "short", 
+//     day: "numeric",
+//     year: "numeric" 
+//   });
+// }
+
+// function calculateDays(startDate, endDate) {
+//   if (!startDate || !endDate) return 0;
+//   const start = new Date(startDate);
+//   const end = new Date(endDate);
+//   const diffTime = Math.abs(end - start);
+//   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+//   return diffDays || 1;
+// }
+
+// function timeAgo(dateString) {
+//   const date = new Date(dateString);
+//   const now = new Date();
+//   const diffMs = now - date;
+//   const diffMins = Math.floor(diffMs / 60000);
+//   const diffHours = Math.floor(diffMs / 3600000);
+//   const diffDays = Math.floor(diffMs / 86400000);
+
+//   if (diffMins < 1) return "just now";
+//   if (diffMins < 60) return `${diffMins}m ago`;
+//   if (diffHours < 24) return `${diffHours}h ago`;
+//   if (diffDays < 7) return `${diffDays}d ago`;
+//   return formatDate(dateString);
+// }
+
+// /* ===================== HOME FEED ===================== */
 // export default function HomeFeed() {
 //   const [auth, setAuth] = useState({ token: null, userId: null });
 //   const [sessionReady, setSessionReady] = useState(false);
@@ -969,75 +65,72 @@
 //   const [err, setErr] = useState(null);
 //   const [posts, setPosts] = useState([]);
 
-//   // load token/user once
+//   // Load token/user once
 //   useEffect(() => {
 //     (async () => {
 //       try {
-//         const [[, token], [, userIdRaw]] = await AsyncStorage.multiGet([
-//           "token",
-//           "userId",
-//         ]);
-//         const userId = Number(userIdRaw);
-//         setAuth({
-//           token: token || null,
-//           userId: Number.isFinite(userId) ? userId : null,
-//         });
+//         const [token, uid] = await AsyncStorage.multiGet(["token", "userId"]);
+//         const t = token?.[1] || null;
+//         const u = uid?.[1] ? Number(uid[1]) : null;
+//         setAuth({ token: t, userId: u });
 //       } finally {
 //         setSessionReady(true);
 //       }
 //     })();
 //   }, []);
 
-//   const headers = useMemo(() => {
-//     const h = { "Content-Type": "application/json" };
+//   const authHeaders = useMemo(() => {
+//     const h = {};
 //     if (auth.token) h.Authorization = `Bearer ${auth.token}`;
 //     return h;
 //   }, [auth.token]);
 
-//   const load = async () => {
+//   const load = useCallback(async () => {
 //     if (!sessionReady) return;
 //     setLoading(true);
 //     setErr(null);
+
 //     try {
-//       const res = await fetch(`${API_BASE_URL}/posts`, { headers });
+//       const res = await fetch(`${API_BASE_URL}/posts`, { headers: authHeaders });
 //       if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
 //       const data = await res.json();
-//       const rows = Array.isArray(data) ? data : data?.posts || [];
-//       setPosts(rows);
-//       console.log(rows)
+//       const list = Array.isArray(data) ? data : data.posts || [];
+
+//       console.log("🔥 POSTS FROM BACKEND:", list);
+
+//       setPosts(list);
 //     } catch (e) {
-//       setErr(e?.message || "Failed to load posts");
+//       setErr(e.message);
 //       setPosts([]);
 //     } finally {
 //       setLoading(false);
 //     }
-//   };
+//   }, [sessionReady, authHeaders]);
 
 //   useEffect(() => {
 //     load();
-//     // eslint-disable-next-line react-hooks/exhaustive-deps
-//   }, [sessionReady, headers]);
+//   }, [load]);
 
 //   const ensureAuthed = () => {
-//     if (!auth.token || !auth.userId) {
-//       Alert.alert(
-//         "Sign in required",
-//         "Please sign in to like and comment.",
-//       );
+//     if (!auth.token) {
+//       Alert.alert("Sign in required", "Please sign in to like and comment.");
 //       return false;
 //     }
 //     return true;
 //   };
 
+//   // 🔥 UPDATED toggleLike - No query params
 //   const toggleLike = async (post) => {
 //     if (!ensureAuthed()) return;
 
 //     const liked = !!post.liked;
+//     const postId = post.id;
 
-//     // optimistic update
+//     // Optimistic update
 //     setPosts((ps) =>
 //       ps.map((p) =>
-//         p.id === post.id
+//         p.id === postId
 //           ? {
 //               ...p,
 //               liked: !liked,
@@ -1048,2243 +141,366 @@
 //     );
 
 //     try {
-//       const url = `${API_BASE_URL}/posts/${post.id}/like`;
-//       const method = liked ? "DELETE" : "POST";
-//       // Some backends require body binding even for DELETE; send it.
-//       const res = await fetch(url, {
-//         method,
-//         headers,
-//         body: JSON.stringify({ user_id: auth.userId }),
-//       });
-
-//       if (!res.ok) {
-//         // 400 may mean "already liked" or validation failed; revert
-//         throw new Error(`HTTP ${res.status}`);
-//       }
-//     } catch {
-//       // revert
-//       setPosts((ps) =>
-//         ps.map((p) =>
-//           p.id === post.id
-//             ? {
-//                 ...p,
-//                 liked,
-//                 likes_count: (p.likes_count || 0) + (liked ? 1 : -1),
-//               }
-//             : p
-//         )
-//       );
-//     }
-//   };
-
-//   const renderItem = ({ item }) => (
-//     <PostCard
-//       post={item}
-//       onLike={() => toggleLike(item)}
-//       headers={headers}
-//       me={auth.userId}
-//       authed={!!auth.token && !!auth.userId}
-//     />
-//   );
-
-//   return (
-//     <View style={styles.page}>
-//       <View style={styles.header}>
-//         <Text style={styles.h1}>Home</Text>
-//         <TouchableOpacity onPress={load} style={styles.refreshBtn}>
-//           <Ionicons name="refresh" size={16} color={COLORS.text} />
-//           <Text style={styles.refreshText}>Refresh</Text>
-//         </TouchableOpacity>
-//       </View>
-
-//       {!sessionReady ? (
-//         <View style={styles.center}>
-//           <ActivityIndicator />
-//           <Text style={styles.meta}>Authorizing…</Text>
-//         </View>
-//       ) : loading ? (
-//         <View style={styles.center}>
-//           <ActivityIndicator />
-//           <Text style={styles.meta}>Loading feed…</Text>
-//         </View>
-//       ) : err ? (
-//         <View style={styles.errorBox}>
-//           <Ionicons name="alert-circle" size={18} color="#B42318" style={{ marginRight: 6 }} />
-//           <Text style={styles.errorText}>{err}</Text>
-//           <TouchableOpacity onPress={load} style={{ marginLeft: "auto" }}>
-//             <Text style={styles.link}>Retry</Text>
-//           </TouchableOpacity>
-//         </View>
-//       ) : posts.length === 0 ? (
-//         <View style={styles.center}>
-//           <Text style={styles.meta}>No posts yet. Be the first!</Text>
-//         </View>
-//       ) : (
-//         <FlatList
-//           data={posts}
-//           keyExtractor={(p) => String(p.id)}
-//           renderItem={renderItem}
-//           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
-//           contentContainerStyle={{
-//             paddingHorizontal: 16,
-//             paddingBottom: 120,
-//             paddingTop: Platform.OS === "web" ? 92 : 16,
-//             ...(Platform.OS === "web"
-//               ? { maxWidth: 860, alignSelf: "center", width: "100%" }
-//               : {}),
-//           }}
-//         />
-//       )}
-//     </View>
-//   );
-// }
-
-// /* ----------------------- Post card with itinerary + comments ----------------------- */
-// function PostCard({ post, onLike, headers, me, authed }) {
-//   const [showComments, setShowComments] = useState(false);
-//   const [loadingComments, setLoadingComments] = useState(false);
-//   const [comments, setComments] = useState([]);
-//   const [commentText, setCommentText] = useState("");
-
-//   const [itLoading, setItLoading] = useState(!!post?.content_id);
-//   const [itData, setItData] = useState(null);
-
-//   useEffect(() => {
-//     let cancelled = false;
-//     const fetchItinerary = async () => {
-//       if (!post?.content_id) return;
-//       setItLoading(true);
-//       try {
-//         const res = await fetch(`${API_BASE_URL}/itineraries/${post.content_id}`, { headers });
-//         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-//         const data = await res.json();
-//         if (!cancelled) setItData(Array.isArray(data) ? data[0] : data);
-//       } catch {
-//         if (!cancelled) setItData(null);
-//       } finally {
-//         if (!cancelled) setItLoading(false);
-//       }
-//     };
-//     fetchItinerary();
-//     return () => {
-//       cancelled = true;
-//     };
-//   }, [post?.content_id, headers]);
-
-//   const loadComments = async () => {
-//     setLoadingComments(true);
-//     try {
-//       const res = await fetch(`${API_BASE_URL}/posts/${post.id}/comments`, { headers });
-//       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-//       const data = await res.json();
-//       setComments(Array.isArray(data) ? data : data?.comments || []);
-//     } catch {
-//       setComments([]);
-//     } finally {
-//       setLoadingComments(false);
-//     }
-//   };
-
-//   const sendComment = async () => {
-//     const body = (commentText || "").trim();
-//     if (!body) return;
-//     if (!authed) {
-//       Alert.alert("Sign in required", "Please sign in to comment.");
-//       return;
-//     }
-
-//     // optimistic
-//     const temp = {
-//       id: `tmp-${Date.now()}`,
-//       post_id: post.id,
-//       user_id: me,
-//       text: body,
-//       created_at: new Date().toISOString(),
-//     };
-//     setComments((c) => [...c, temp]);
-//     setCommentText("");
-
-//     try {
-//       const res = await fetch(`${API_BASE_URL}/comments`, {
-//         method: "POST",
-//         headers,
-//         // IMPORTANT: backend requires user_id
-//         body: JSON.stringify({ post_id: post.id, user_id: me, text: body }),
-//       });
-//       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-//       const saved = await res.json();
-//       setComments((c) => c.map((x) => (x.id === temp.id ? saved : x)));
-//     } catch {
-//       // remove optimistic if failed
-//       setComments((c) => c.filter((x) => x.id !== temp.id));
-//     }
-//   };
-
-//   const toggleComments = () => {
-//     const next = !showComments;
-//     setShowComments(next);
-//     if (next && comments.length === 0) {
-//       loadComments();
-//     }
-//   };
-
-//   const authorName =
-//     (post?.user &&
-//       ((post.user.first_name || post.user.FirstName || "") +
-//         " " +
-//         (post.user.last_name || post.user.LastName || "")))?.trim() ||
-//     `User #${post.user_id ?? "?"}`;
-
-//   return (
-//     <View style={styles.card}>
-//       {/* header */}
-//       <View style={styles.cardHeader}>
-//         <Image
-//           source={{ uri: post.author_image || "https://placehold.co/64x64?text=U" }}
-//           style={styles.avatar}
-//         />
-//         <View style={{ flex: 1, minWidth: 0 }}>
-//           <Text numberOfLines={1} style={styles.author}>
-//             {authorName}
-//           </Text>
-//           <Text numberOfLines={1} style={styles.time}>
-//             {post.created_at ? new Date(post.created_at).toLocaleString() : ""}
-//           </Text>
-//         </View>
-//       </View>
-
-//       {/* caption */}
-//       {!!post.caption && <Text style={styles.caption}>{post.caption}</Text>}
-
-//       {/* itinerary preview */}
-//       {post?.content_id ? (
-//         itLoading ? (
-//           <View style={[styles.center, { paddingVertical: 10 }]}>
-//             <ActivityIndicator />
-//           </View>
-//         ) : itData ? (
-//           <View style={{ marginTop: 10 }}>
-//             <ItineraryCard
-//               item={{
-//                 title: itData.title,
-//                 city: itData.city || itData.destination,
-//                 start_date: itData.start_date,
-//                 end_date: itData.end_date,
-//                 budget: itData.budget,
-//                 style: itData.style,
-//                 cover_url: itData.cover_url,
-//                 days: itData.days || [],
-//               }}
-//               onPress={undefined}
-//             />
-//           </View>
-//         ) : null
-//       ) : null}
-
-//       {/* actions */}
-//       <View style={styles.actions}>
-//         <TouchableOpacity onPress={onLike} style={styles.actionBtn} activeOpacity={0.85}>
-//           <Ionicons
-//             name={post.liked ? "heart" : "heart-outline"}
-//             size={18}
-//             color={post.liked ? "#DC2626" : COLORS.text}
-//           />
-//           <Text style={styles.actionText}>{post.likes_count || 0}</Text>
-//         </TouchableOpacity>
-
-//         <TouchableOpacity onPress={toggleComments} style={styles.actionBtn} activeOpacity={0.85}>
-//           <Ionicons name="chatbubble-ellipses-outline" size={18} color={COLORS.text} />
-//           <Text style={styles.actionText}>Comments</Text>
-//         </TouchableOpacity>
-//       </View>
-
-//       {/* comments */}
-//       {showComments && (
-//         <View style={styles.commentsBox}>
-//           {loadingComments ? (
-//             <View style={styles.center}>
-//               <ActivityIndicator />
-//             </View>
-//           ) : comments.length === 0 ? (
-//             <Text style={styles.meta}>Be the first to comment.</Text>
-//           ) : (
-//             comments.map((c) => (
-//               <View key={String(c.id)} style={styles.commentRow}>
-//                 <Image
-//                   source={{ uri: c.user_image || "https://placehold.co/40x40?text=U" }}
-//                   style={styles.cAvatar}
-//                 />
-//                 <View style={{ flex: 1, minWidth: 0 }}>
-//                   <Text style={styles.cAuthor}>
-//                     { authorName||c.user_name || `User #${c.user_id}`}
-//                   </Text>
-//                   <Text style={styles.cText}>{c.text}</Text>
-//                   <Text style={styles.cTime}>
-//                     {c.created_at ? new Date(c.created_at).toLocaleString() : ""}
-//                   </Text>
-//                 </View>
-//               </View>
-//             ))
-//           )}
-
-//           <View style={styles.commentComposer}>
-//             <TextInput
-//               value={commentText}
-//               onChangeText={setCommentText}
-//               placeholder="Write a comment…"
-//               placeholderTextColor="#94A3B8"
-//               style={styles.commentInput}
-//             />
-//             <TouchableOpacity
-//               onPress={sendComment}
-//               disabled={!commentText.trim()}
-//               activeOpacity={0.9}
-//               style={[
-//                 styles.commentSend,
-//                 !commentText.trim() && { opacity: 0.6 },
-//               ]}
-//             >
-//               <Ionicons name="send" size={16} color="#fff" />
-//             </TouchableOpacity>
-//           </View>
-//         </View>
-//       )}
-//     </View>
-//   );
-// }
-
-// /* ----------------------- styles ----------------------- */
-// const COLORS = {
-//   page: "#F6FAFD",
-//   card: "#FFFFFF",
-//   text: "#0F3A6B",
-//   subtext: "#64748B",
-//   primary: "#0F70F0",
-//   border: "#EAF0F6",
-// };
-
-// const styles = StyleSheet.create({
-//   page: { flex: 1, backgroundColor: COLORS.page },
-
-//   header: {
-//     paddingTop: Platform.OS === "web" ? 92 : 16,
-//     paddingHorizontal: 16,
-//     flexDirection: "row",
-//     alignItems: "center",
-//     ...(Platform.OS === "web" ? { maxWidth: 860, alignSelf: "center", width: "100%" } : {}),
-//   },
-//   h1: { fontSize: 22, fontWeight: "800", color: COLORS.text, flex: 1 },
-//   refreshBtn: {
-//     flexDirection: "row",
-//     alignItems: "center",
-//     gap: 6,
-//     paddingHorizontal: 10,
-//     paddingVertical: 6,
-//     borderRadius: 999,
-//     borderWidth: 1,
-//     borderColor: COLORS.border,
-//     backgroundColor: "#EEF3F9",
-//   },
-//   refreshText: { color: COLORS.text, fontWeight: "700", fontSize: 12 },
-
-//   card: {
-//     backgroundColor: COLORS.card,
-//     borderRadius: 16,
-//     padding: 14,
-//     borderWidth: 1,
-//     borderColor: COLORS.border,
-//     shadowColor: "#000",
-//     shadowOpacity: 0.06,
-//     shadowRadius: 8,
-//     shadowOffset: { width: 0, height: 3 },
-//   },
-
-//   cardHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
-//   avatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: "#DDE7F2" },
-//   author: { fontWeight: "800", color: "#0F172A" },
-//   time: { color: COLORS.subtext, fontSize: 12 },
-
-//   caption: { marginTop: 10, color: "#0F172A" },
-
-//   actions: {
-//     marginTop: 12,
-//     flexDirection: "row",
-//     gap: 16,
-//     alignItems: "center",
-//   },
-//   actionBtn: { flexDirection: "row", alignItems: "center", gap: 6 },
-//   actionText: { color: COLORS.text, fontWeight: "700" },
-
-//   commentsBox: {
-//     marginTop: 12,
-//     borderTopWidth: 1,
-//     borderColor: COLORS.border,
-//     paddingTop: 10,
-//     gap: 10,
-//   },
-//   commentRow: { flexDirection: "row", gap: 10 },
-//   cAvatar: { width: 32, height: 32, borderRadius: 16, backgroundColor: "#E2E8F0" },
-//   cAuthor: { fontWeight: "700", color: "#0F172A" },
-//   cText: { color: "#0F172A" },
-//   cTime: { color: COLORS.subtext, fontSize: 11, marginTop: 2 },
-
-//   commentComposer: { flexDirection: "row", gap: 8, alignItems: "center" },
-//   commentInput: {
-//     flex: 1,
-//     backgroundColor: "#F9FBFE",
-//     borderWidth: 1,
-//     borderColor: "#E2E8F0",
-//     borderRadius: 12,
-//     paddingHorizontal: 12,
-//     paddingVertical: 10,
-//     color: "#0F172A",
-//   },
-//   commentSend: {
-//     width: 42,
-//     height: 42,
-//     borderRadius: 12,
-//     alignItems: "center",
-//     justifyContent: "center",
-//     backgroundColor: COLORS.primary,
-//   },
-
-//   center: { alignItems: "center", justifyContent: "center", padding: 18 },
-//   meta: { color: COLORS.subtext, fontWeight: "600" },
-//   errorBox: {
-//     marginHorizontal: 16,
-//     marginTop: 16,
-//     flexDirection: "row",
-//     alignItems: "center",
-//     backgroundColor: "#FEF3F2",
-//     borderWidth: 1,
-//     borderColor: "#FEE4E2",
-//     borderRadius: 12,
-//     paddingVertical: 10,
-//     paddingHorizontal: 12,
-//     ...(Platform.OS === "web" ? { maxWidth: 860, alignSelf: "center", width: "100%" } : {}),
-//   },
-//   errorText: { color: "#B42318", fontWeight: "600" },
-//   link: { color: COLORS.primary, fontWeight: "700" },
-// });
-
-
-// components/Social/HomeFeed.js
-// import React, { useEffect, useMemo, useState } from "react";
-// import {
-//   View,
-//   Text,
-//   StyleSheet,
-//   Platform,
-//   FlatList,
-//   TouchableOpacity,
-//   TextInput,
-//   ActivityIndicator,
-//   Image,
-//   Alert,
-//   Share,
-// } from "react-native";
-// import AsyncStorage from "@react-native-async-storage/async-storage";
-// import { Ionicons } from "@expo/vector-icons";
-// import { useNavigation } from "@react-navigation/native";
-// import ItineraryCard from "../../screens/CrowdsourceItineraries/ItineraryCard";
-
-// const API_BASE_URL = process.env.EXPO_PUBLIC_API || "http://localhost:8080";
-
-// /* ----------------------- Home Feed ----------------------- */
-// export default function HomeFeed() {
-//   const [auth, setAuth] = useState({ token: null, userId: null });
-//   const [sessionReady, setSessionReady] = useState(false);
-
-//   const [loading, setLoading] = useState(true);
-//   const [err, setErr] = useState(null);
-//   const [posts, setPosts] = useState([]);
-
-//   // load token/user once
-//   useEffect(() => {
-//     (async () => {
-//       try {
-//         const [[, token], [, userIdRaw]] = await AsyncStorage.multiGet([
-//           "token",
-//           "userId",
-//         ]);
-//         const userId = Number(userIdRaw);
-//         setAuth({
-//           token: token || null,
-//           userId: Number.isFinite(userId) ? userId : null,
-//         });
-//       } finally {
-//         setSessionReady(true);
-//       }
-//     })();
-//   }, []);
-
-//   const headers = useMemo(() => {
-//     const h = { "Content-Type": "application/json" };
-//     if (auth.token) h.Authorization = `Bearer ${auth.token}`;
-//     return h;
-//   }, [auth.token]);
-
-//   const load = async () => {
-//     if (!sessionReady) return;
-//     setLoading(true);
-//     setErr(null);
-//     try {
-//       const res = await fetch(`${API_BASE_URL}/posts`, { headers });
-//       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-//       const data = await res.json();
-//       // normalize ids/counts to numbers
-//       const rows = (Array.isArray(data) ? data : data?.posts || []).map((p) => ({
-//         ...p,
-//         id: Number(p.id),
-//         user_id: Number(p.user_id),
-//         likes_count: Number(p.likes_count) || 0,
-//         liked: !!p.liked,
-//       }));
-//       setPosts(rows);
-//     } catch (e) {
-//       setErr(e?.message || "Failed to load posts");
-//       setPosts([]);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   useEffect(() => {
-//     load();
-//     // eslint-disable-next-line react-hooks/exhaustive-deps
-//   }, [sessionReady, headers]);
-
-//   const ensureAuthed = () => {
-//     if (!auth.token || !auth.userId) {
-//       Alert.alert("Sign in required", "Please sign in to like and comment.");
-//       return false;
-//     }
-//     return true;
-//   };
-
-//   const normalizeId = (x) => Number(x);
-
-//   const toggleLike = async (post) => {
-//     if (!ensureAuthed()) return;
-
-//     const targetId = normalizeId(post.id);
-//     const liked = !!post.liked;
-
-//     // optimistic update
-//     setPosts((ps) =>
-//       ps.map((p) =>
-//         normalizeId(p.id) === targetId
-//           ? {
-//               ...p,
-//               liked: !liked,
-//               likes_count: (Number(p.likes_count) || 0) + (liked ? -1 : 1),
-//             }
-//           : p
-//       )
-//     );
-
-//     try {
-//       // send via query + JSON body; cover handlers that bind differently
-//       const url = `${API_BASE_URL}/posts/${targetId}/like?user_id=${auth.userId}`;
-//       const method = liked ? "DELETE" : "POST";
-//       const res = await fetch(url, {
-//         method,
-//         headers,
-//         body: JSON.stringify({
-//           user_id: auth.userId,
-//           UserID: auth.userId,
-//           post_id: targetId,
-//           PostID: targetId,
-//         }),
-//       });
-
-//       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-//     } catch {
-//       // revert
-//       setPosts((ps) =>
-//         ps.map((p) =>
-//           normalizeId(p.id) === targetId
-//             ? {
-//                 ...p,
-//                 liked,
-//                 likes_count: (Number(p.likes_count) || 0) + (liked ? 1 : -1),
-//               }
-//             : p
-//         )
-//       );
-//     }
-//   };
-
-//   const handlePostDeleted = (postId) => {
-//     setPosts((ps) => ps.filter((p) => p.id !== Number(postId)));
-//   };
-
-//   const renderItem = ({ item }) => (
-//     <PostCard
-//       post={item}
-//       onLike={() => toggleLike(item)}
-//       headers={headers}
-//       me={auth.userId}
-//       authed={!!auth.token && !!auth.userId}
-//       onDeleted={handlePostDeleted}
-//     />
-//   );
-
-//   return (
-//     <View style={styles.page}>
-//       <View style={styles.header}>
-//         <Text style={styles.h1}>Home</Text>
-//         <TouchableOpacity onPress={load} style={styles.refreshBtn}>
-//           <Ionicons name="refresh" size={16} color={COLORS.text} />
-//           <Text style={styles.refreshText}>Refresh</Text>
-//         </TouchableOpacity>
-//       </View>
-
-//       {!sessionReady ? (
-//         <View style={styles.center}>
-//           <ActivityIndicator />
-//           <Text style={styles.meta}>Authorizing…</Text>
-//         </View>
-//       ) : loading ? (
-//         <View style={styles.center}>
-//           <ActivityIndicator />
-//           <Text style={styles.meta}>Loading feed…</Text>
-//         </View>
-//       ) : err ? (
-//         <View style={styles.errorBox}>
-//           <Ionicons name="alert-circle" size={18} color="#B42318" style={{ marginRight: 6 }} />
-//           <Text style={styles.errorText}>{err}</Text>
-//           <TouchableOpacity onPress={load} style={{ marginLeft: "auto" }}>
-//             <Text style={styles.link}>Retry</Text>
-//           </TouchableOpacity>
-//         </View>
-//       ) : posts.length === 0 ? (
-//         <View style={styles.center}>
-//           <Text style={styles.meta}>No posts yet. Be the first!</Text>
-//         </View>
-//       ) : (
-//         <FlatList
-//           data={posts}
-//           keyExtractor={(p) => String(p.id)}
-//           renderItem={renderItem}
-//           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
-//           contentContainerStyle={{
-//             paddingHorizontal: 16,
-//             paddingBottom: 120,
-//             paddingTop: Platform.OS === "web" ? 92 : 16,
-//             ...(Platform.OS === "web"
-//               ? { maxWidth: 860, alignSelf: "center", width: "100%" }
-//               : {}),
-//           }}
-//         />
-//       )}
-//     </View>
-//   );
-// }
-
-// /* ----------------------- Post card with itinerary + comments + actions ----------------------- */
-// function PostCard({ post, onLike, headers, me, authed, onDeleted }) {
-//   const navigation = useNavigation();
-
-//   const [showComments, setShowComments] = useState(false);
-//   const [loadingComments, setLoadingComments] = useState(false);
-//   const [comments, setComments] = useState([]);
-//   const [commentText, setCommentText] = useState("");
-
-//   const [itLoading, setItLoading] = useState(!!post?.content_id);
-//   const [itData, setItData] = useState(null);
-
-//   const isOwner =
-//     Number(me) &&
-//     (Number(post.user_id) === Number(me) ||
-//       Number(post?.user?.id) === Number(me));
-
-//   useEffect(() => {
-//     let cancelled = false;
-//     const fetchItinerary = async () => {
-//       if (!post?.content_id) return;
-//       setItLoading(true);
-//       try {
-//         const res = await fetch(`${API_BASE_URL}/itineraries/${post.content_id}`, { headers });
-//         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-//         const data = await res.json();
-//         if (!cancelled) setItData(Array.isArray(data) ? data[0] : data);
-//       } catch {
-//         if (!cancelled) setItData(null);
-//       } finally {
-//         if (!cancelled) setItLoading(false);
-//       }
-//     };
-//     fetchItinerary();
-//     return () => {
-//       cancelled = true;
-//     };
-//   }, [post?.content_id, headers]);
-
-//   const loadComments = async () => {
-//     setLoadingComments(true);
-//     try {
-//       const res = await fetch(`${API_BASE_URL}/posts/${post.id}/comments`, { headers });
-//       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-//       const data = await res.json();
-//       setComments(Array.isArray(data) ? data : data?.comments || []);
-//     } catch {
-//       setComments([]);
-//     } finally {
-//       setLoadingComments(false);
-//     }
-//   };
-
-//   const sendComment = async () => {
-//     const body = (commentText || "").trim();
-//     if (!body) return;
-//     if (!authed) {
-//       Alert.alert("Sign in required", "Please sign in to comment.");
-//       return;
-//     }
-
-//     // optimistic
-//     const temp = {
-//       id: `tmp-${Date.now()}`,
-//       post_id: post.id,
-//       user_id: me,
-//       text: body,
-//       created_at: new Date().toISOString(),
-//     };
-//     setComments((c) => [...c, temp]);
-//     setCommentText("");
-
-//     try {
-//       const res = await fetch(`${API_BASE_URL}/comments`, {
-//         method: "POST",
-//         headers,
-//         body: JSON.stringify({ post_id: post.id, user_id: me, text: body }),
-//       });
-//       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-//       const saved = await res.json();
-//       setComments((c) => c.map((x) => (x.id === temp.id ? saved : x)));
-//     } catch {
-//       setComments((c) => c.filter((x) => x.id !== temp.id));
-//     }
-//   };
-
-//   const toggleComments = () => {
-//     const next = !showComments;
-//     setShowComments(next);
-//     if (next && comments.length === 0) {
-//       loadComments();
-//     }
-//   };
-
-//   const authorName =
-//     (post?.user &&
-//       ((post.user.first_name || post.user.FirstName || "") +
-//         " " +
-//         (post.user.last_name || post.user.LastName || "")))?.trim() ||
-//     `User #${post.user_id ?? "?"}`;
-
-//   /* ---------- itinerary actions (View, Edit, Share, Delete / or View, Share) ---------- */
-//   const onView = () => {
-//     if (!post?.content_id) return;
-//     navigation.navigate("ItineraryDetails", { id: post.content_id });
-//   };
-
-//   const onEdit = () => {
-//     if (!isOwner || !post?.content_id) return;
-//     navigation.navigate("EditItinerary", { id: post.content_id });
-//   };
-
-//   const onShare = async () => {
-//     const title = itData?.title || post?.caption || "Itinerary";
-//     const shareUrl = `${API_BASE_URL.replace(/\/+$/, "")}/itineraries/${post.content_id}`;
-//     try {
-//       await Share.share({
-//         message: `${title}\n\nCheck this itinerary on TravelMate:\n${shareUrl}`,
-//         title,
-//       });
-//     } catch {}
-//   };
-
-//   const onDelete = async () => {
-//     if (!isOwner || !post?.content_id) return;
-//     Alert.alert(
-//       "Delete itinerary",
-//       "This will permanently delete the itinerary (and may remove the post). Continue?",
-//       [
-//         { text: "Cancel", style: "cancel" },
+//       const res = await fetch(
+//         `${API_BASE_URL}/posts/${postId}/like`,
 //         {
-//           text: "Delete",
-//           style: "destructive",
-//           onPress: async () => {
-//             try {
-//               const res = await fetch(`${API_BASE_URL}/itineraries/${post.content_id}`, {
-//                 method: "DELETE",
-//                 headers,
-//                 body: JSON.stringify({ user_id: me, UserID: me }),
-//               });
-//               if (!res.ok) throw new Error(`HTTP ${res.status}`);
-//               // remove the post from feed (owner deleted itinerary)
-//               onDeleted?.(post.id);
-//             } catch (e) {
-//               Alert.alert("Delete failed", e?.message || "Unable to delete itinerary.");
-//             }
-//           },
-//         },
-//       ]
-//     );
-//   };
-
-//   return (
-//     <View style={styles.card}>
-//       {/* header */}
-//       <View style={styles.cardHeader}>
-//         <Image
-//           source={{ uri: post.author_image || "https://placehold.co/64x64?text=U" }}
-//           style={styles.avatar}
-//         />
-//         <View style={{ flex: 1, minWidth: 0 }}>
-//           <Text numberOfLines={1} style={styles.author}>
-//             {authorName}
-//           </Text>
-//           <Text numberOfLines={1} style={styles.time}>
-//             {post.created_at ? new Date(post.created_at).toLocaleString() : ""}
-//           </Text>
-//         </View>
-//       </View>
-
-//       {/* caption */}
-//       {!!post.caption && <Text style={styles.caption}>{post.caption}</Text>}
-
-//       {/* itinerary preview */}
-//       {post?.content_id ? (
-//         itLoading ? (
-//           <View style={[styles.center, { paddingVertical: 10 }]}>
-//             <ActivityIndicator />
-//           </View>
-//         ) : itData ? (
-//           <View style={{ marginTop: 10 }}>
-//             <ItineraryCard
-//               item={{
-//                 title: itData.title,
-//                 city: itData.city || itData.destination,
-//                 start_date: itData.start_date,
-//                 end_date: itData.end_date,
-//                 budget: itData.budget,
-//                 style: itData.style,
-//                 cover_url: itData.cover_url,
-//                 days: itData.days || [],
-//               }}
-//               onPress={undefined}
-//             />
-//           </View>
-//         ) : null
-//       ) : null}
-
-//       {/* itinerary actions row */}
-//       {post?.content_id && (
-//         <View style={styles.itinActions}>
-//           <ActionPill icon="eye-outline" label="View" onPress={onView} />
-//           {isOwner ? (
-//             <>
-//               <ActionPill icon={Platform.OS === "ios" ? "create-outline" : "pencil"} label="Edit" onPress={onEdit} />
-//               <ActionPill icon="share-social-outline" label="Share" onPress={onShare} />
-//               <ActionPill icon="trash-outline" label="Delete" destructive onPress={onDelete} />
-//             </>
-//           ) : (
-//             <ActionPill icon="share-social-outline" label="Share" onPress={onShare} />
-//           )}
-//         </View>
-//       )}
-
-//       {/* post actions (like + comments) */}
-//       <View style={styles.actions}>
-//         <TouchableOpacity onPress={onLike} style={styles.actionBtn} activeOpacity={0.85}>
-//           <Ionicons
-//             name={post.liked ? "heart" : "heart-outline"}
-//             size={18}
-//             color={post.liked ? "#DC2626" : COLORS.text}
-//           />
-//           <Text style={styles.actionText}>{post.likes_count || 0}</Text>
-//         </TouchableOpacity>
-
-//         <TouchableOpacity onPress={toggleComments} style={styles.actionBtn} activeOpacity={0.85}>
-//           <Ionicons name="chatbubble-ellipses-outline" size={18} color={COLORS.text} />
-//           <Text style={styles.actionText}>Comments</Text>
-//         </TouchableOpacity>
-//       </View>
-
-//       {/* comments */}
-//       {showComments && (
-//         <View style={styles.commentsBox}>
-//           {loadingComments ? (
-//             <View style={styles.center}>
-//               <ActivityIndicator />
-//             </View>
-//           ) : comments.length === 0 ? (
-//             <Text style={styles.meta}>Be the first to comment.</Text>
-//           ) : (
-//             comments.map((c) => (
-//               <View key={String(c.id)} style={styles.commentRow}>
-//                 <Image
-//                   source={{ uri: c.user_image || "https://placehold.co/40x40?text=U" }}
-//                   style={styles.cAvatar}
-//                 />
-//                 <View style={{ flex: 1, minWidth: 0 }}>
-//                   <Text style={styles.cAuthor}>
-//                     {authorName||c.user_name || `User #${c.user_id}`}
-//                   </Text>
-//                   <Text style={styles.cText}>{c.text}</Text>
-//                   <Text style={styles.cTime}>
-//                     {c.created_at ? new Date(c.created_at).toLocaleString() : ""}
-//                   </Text>
-//                 </View>
-//               </View>
-//             ))
-//           )}
-
-//           <View style={styles.commentComposer}>
-//             <TextInput
-//               value={commentText}
-//               onChangeText={setCommentText}
-//               placeholder="Write a comment…"
-//               placeholderTextColor="#94A3B8"
-//               style={styles.commentInput}
-//             />
-//             <TouchableOpacity
-//               onPress={sendComment}
-//               disabled={!commentText.trim()}
-//               activeOpacity={0.9}
-//               style={[
-//                 styles.commentSend,
-//                 !commentText.trim() && { opacity: 0.6 },
-//               ]}
-//             >
-//               <Ionicons name="send" size={16} color="#fff" />
-//             </TouchableOpacity>
-//           </View>
-//         </View>
-//       )}
-//     </View>
-//   );
-// }
-
-// /* ----------------------- Small pill button ----------------------- */
-// function ActionPill({ icon, label, onPress, destructive }) {
-//   return (
-//     <TouchableOpacity
-//       onPress={onPress}
-//       activeOpacity={0.9}
-//       style={[
-//         styles.pill,
-//         destructive && { backgroundColor: "#FEE2E2", borderColor: "#FECACA" },
-//       ]}
-//     >
-//       <Ionicons
-//         name={icon}
-//         size={14}
-//         color={destructive ? "#991B1B" : COLORS.text}
-//         style={{ marginRight: 6 }}
-//       />
-//       <Text style={[styles.pillText, destructive && { color: "#991B1B" }]}>{label}</Text>
-//     </TouchableOpacity>
-//   );
-// }
-
-// /* ----------------------- styles ----------------------- */
-// const COLORS = {
-//   page: "#F6FAFD",
-//   card: "#FFFFFF",
-//   text: "#0F3A6B",
-//   subtext: "#64748B",
-//   primary: "#0F70F0",
-//   border: "#EAF0F6",
-// };
-
-// const styles = StyleSheet.create({
-//   page: { flex: 1, backgroundColor: COLORS.page },
-
-//   header: {
-//     paddingTop: Platform.OS === "web" ? 92 : 16,
-//     paddingHorizontal: 16,
-//     flexDirection: "row",
-//     alignItems: "center",
-//     ...(Platform.OS === "web" ? { maxWidth: 860, alignSelf: "center", width: "100%" } : {}),
-//   },
-//   h1: { fontSize: 22, fontWeight: "800", color: COLORS.text, flex: 1 },
-//   refreshBtn: {
-//     flexDirection: "row",
-//     alignItems: "center",
-//     gap: 6,
-//     paddingHorizontal: 10,
-//     paddingVertical: 6,
-//     borderRadius: 999,
-//     borderWidth: 1,
-//     borderColor: COLORS.border,
-//     backgroundColor: "#EEF3F9",
-//   },
-//   refreshText: { color: COLORS.text, fontWeight: "700", fontSize: 12 },
-
-//   card: {
-//     backgroundColor: COLORS.card,
-//     borderRadius: 16,
-//     padding: 14,
-//     borderWidth: 1,
-//     borderColor: COLORS.border,
-//     shadowColor: "#000",
-//     shadowOpacity: 0.06,
-//     shadowRadius: 8,
-//     shadowOffset: { width: 0, height: 3 },
-//   },
-
-//   cardHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
-//   avatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: "#DDE7F2" },
-//   author: { fontWeight: "800", color: "#0F172A" },
-//   time: { color: COLORS.subtext, fontSize: 12 },
-
-//   caption: { marginTop: 10, color: "#0F172A" },
-
-//   /* itinerary actions */
-//   itinActions: {
-//     marginTop: 10,
-//     flexDirection: "row",
-//     flexWrap: "wrap",
-//     gap: 8,
-//   },
-//   pill: {
-//     paddingHorizontal: 12,
-//     paddingVertical: 8,
-//     borderRadius: 999,
-//     borderWidth: 1,
-//     borderColor: COLORS.border,
-//     backgroundColor: "#FFFFFF",
-//     flexDirection: "row",
-//     alignItems: "center",
-//   },
-//   pillText: { fontSize: 12, fontWeight: "800", color: COLORS.text },
-
-//   /* post actions */
-//   actions: {
-//     marginTop: 12,
-//     flexDirection: "row",
-//     gap: 16,
-//     alignItems: "center",
-//   },
-//   actionBtn: { flexDirection: "row", alignItems: "center", gap: 6 },
-//   actionText: { color: COLORS.text, fontWeight: "700" },
-
-//   /* comments */
-//   commentsBox: {
-//     marginTop: 12,
-//     borderTopWidth: 1,
-//     borderColor: COLORS.border,
-//     paddingTop: 10,
-//     gap: 10,
-//   },
-//   commentRow: { flexDirection: "row", gap: 10 },
-//   cAvatar: { width: 32, height: 32, borderRadius: 16, backgroundColor: "#E2E8F0" },
-//   cAuthor: { fontWeight: "700", color: "#0F172A" },
-//   cText: { color: "#0F172A" },
-//   cTime: { color: COLORS.subtext, fontSize: 11, marginTop: 2 },
-
-//   commentComposer: { flexDirection: "row", gap: 8, alignItems: "center" },
-//   commentInput: {
-//     flex: 1,
-//     backgroundColor: "#F9FBFE",
-//     borderWidth: 1,
-//     borderColor: "#E2E8F0",
-//     borderRadius: 12,
-//     paddingHorizontal: 12,
-//     paddingVertical: 10,
-//     color: "#0F172A",
-//   },
-//   commentSend: {
-//     width: 42,
-//     height: 42,
-//     borderRadius: 12,
-//     alignItems: "center",
-//     justifyContent: "center",
-//     backgroundColor: COLORS.primary,
-//   },
-
-//   // states
-//   center: { alignItems: "center", justifyContent: "center", padding: 18 },
-//   meta: { color: COLORS.subtext, fontWeight: "600" },
-//   errorBox: {
-//     marginHorizontal: 16,
-//     marginTop: 16,
-//     flexDirection: "row",
-//     alignItems: "center",
-//     backgroundColor: "#FEF3F2",
-//     borderWidth: 1,
-//     borderColor: "#FEE4E2",
-//     borderRadius: 12,
-//     paddingVertical: 10,
-//     paddingHorizontal: 12,
-//     ...(Platform.OS === "web" ? { maxWidth: 860, alignSelf: "center", width: "100%" } : {}),
-//   },
-//   errorText: { color: "#B42318", fontWeight: "600" },
-//   link: { color: COLORS.primary, fontWeight: "700" },
-// });
-
-
-// components/Social/HomeFeed.js
-// import React, { useEffect, useMemo, useState } from "react";
-// import {
-//   View,
-//   Text,
-//   StyleSheet,
-//   Platform,
-//   FlatList,
-//   TouchableOpacity,
-//   TextInput,
-//   ActivityIndicator,
-//   Image,
-//   Alert,
-//   Share,
-// } from "react-native";
-// import AsyncStorage from "@react-native-async-storage/async-storage";
-// import { Ionicons } from "@expo/vector-icons";
-// import { useNavigation } from "@react-navigation/native";
-// import ItineraryCard from "../../screens/CrowdsourceItineraries/ItineraryCard";
-// import getBaseURL from "../../config/env"; // ✅ use your existing env.js
-
-// const API_BASE_URL = getBaseURL();
-
-// /* ----------------------- Home Feed ----------------------- */
-// export default function HomeFeed() {
-//   const [auth, setAuth] = useState({ token: null, userId: null });
-//   const [sessionReady, setSessionReady] = useState(false);
-
-//   const [loading, setLoading] = useState(true);
-//   const [err, setErr] = useState(null);
-//   const [posts, setPosts] = useState([]);
-
-//   // load token/user once
-//   useEffect(() => {
-//     (async () => {
-//       try {
-//         const [[, token], [, userIdRaw]] = await AsyncStorage.multiGet([
-//           "token",
-//           "userId",
-//         ]);
-//         const userId = Number(userIdRaw);
-//         setAuth({
-//           token: token || null,
-//           userId: Number.isFinite(userId) ? userId : null,
-//         });
-//       } finally {
-//         setSessionReady(true);
-//       }
-//     })();
-//   }, []);
-
-//   // headers: no Content-Type for GETs
-//   const authHeaders = useMemo(() => {
-//     const h = {};
-//     if (auth.token) h.Authorization = `Bearer ${auth.token}`;
-//     return h;
-//   }, [auth.token]);
-
-//   const load = async () => {
-//     if (!sessionReady) return;
-//     setLoading(true);
-//     setErr(null);
-//     try {
-//       const res = await fetch(`${API_BASE_URL}/posts`, { headers: authHeaders });
-//       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-//       const data = await res.json();
-//       // normalize ids/counts to numbers
-//       const rows = (Array.isArray(data) ? data : data?.posts || []).map((p) => ({
-//         ...p,
-//         id: Number(p.id),
-//         user_id: Number(p.user_id),
-//         likes_count: Number(p.likes_count) || 0,
-//         liked: !!p.liked,
-//       }));
-//       setPosts(rows);
-//     } catch (e) {
-//       setErr(e?.message || "Failed to load posts");
-//       setPosts([]);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   useEffect(() => {
-//     load();
-//     // eslint-disable-next-line react-hooks/exhaustive-deps
-//   }, [sessionReady, authHeaders]);
-
-//   const ensureAuthed = () => {
-//     if (!auth.token || !auth.userId) {
-//       Alert.alert("Sign in required", "Please sign in to like and comment.");
-//       return false;
-//     }
-//     return true;
-//   };
-
-//   const normalizeId = (x) => Number(x);
-
-//   const toggleLike = async (post) => {
-//     if (!ensureAuthed()) return;
-
-//     const targetId = normalizeId(post.id);
-//     const liked = !!post.liked;
-
-//     // optimistic update
-//     setPosts((ps) =>
-//       ps.map((p) =>
-//         normalizeId(p.id) === targetId
-//           ? {
-//               ...p,
-//               liked: !liked,
-//               likes_count: (Number(p.likes_count) || 0) + (liked ? -1 : 1),
-//             }
-//           : p
-//       )
-//     );
-
-//     try {
-//       // send via query + JSON body; cover handlers that bind differently
-//       const url = `${API_BASE_URL}/posts/${targetId}/like?user_id=${auth.userId}`;
-//       const method = liked ? "DELETE" : "POST";
-//       const res = await fetch(url, {
-//         method,
-//         headers: { ...authHeaders, "Content-Type": "application/json" },
-//         body: JSON.stringify({
-//           user_id: auth.userId,
-//           UserID: auth.userId,
-//           post_id: targetId,
-//           PostID: targetId,
-//         }),
-//       });
-
-//       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-//     } catch {
-//       // revert
-//       setPosts((ps) =>
-//         ps.map((p) =>
-//           normalizeId(p.id) === targetId
-//             ? {
-//                 ...p,
-//                 liked,
-//                 likes_count: (Number(p.likes_count) || 0) + (liked ? 1 : -1),
-//               }
-//             : p
-//         )
-//       );
-//     }
-//   };
-
-//   const handlePostDeleted = (postId) => {
-//     setPosts((ps) => ps.filter((p) => p.id !== Number(postId)));
-//   };
-
-//   const renderItem = ({ item }) => (
-//     <PostCard
-//       post={item}
-//       onLike={() => toggleLike(item)}
-//       headers={authHeaders}
-//       me={auth.userId}
-//       authed={!!auth.token && !!auth.userId}
-//       onDeleted={handlePostDeleted}
-//     />
-//   );
-
-//   return (
-//     <View style={styles.page}>
-//       <View style={styles.header}>
-//         <Text style={styles.h1}>Home</Text>
-//         <TouchableOpacity onPress={load} style={styles.refreshBtn}>
-//           <Ionicons name="refresh" size={16} color={COLORS.text} />
-//           <Text style={styles.refreshText}>Refresh</Text>
-//         </TouchableOpacity>
-//       </View>
-
-//       {!sessionReady ? (
-//         <View style={styles.center}>
-//           <ActivityIndicator />
-//           <Text style={styles.meta}>Authorizing…</Text>
-//         </View>
-//       ) : loading ? (
-//         <View style={styles.center}>
-//           <ActivityIndicator />
-//           <Text style={styles.meta}>Loading feed…</Text>
-//         </View>
-//       ) : err ? (
-//         <View style={styles.errorBox}>
-//           <Ionicons name="alert-circle" size={18} color="#B42318" style={{ marginRight: 6 }} />
-//           <Text style={styles.errorText}>{err}</Text>
-//           <TouchableOpacity onPress={load} style={{ marginLeft: "auto" }}>
-//             <Text style={styles.link}>Retry</Text>
-//           </TouchableOpacity>
-//         </View>
-//       ) : posts.length === 0 ? (
-//         <View style={styles.center}>
-//           <Text style={styles.meta}>No posts yet. Be the first!</Text>
-//         </View>
-//       ) : (
-//         <FlatList
-//           data={posts}
-//           keyExtractor={(p) => String(p.id)}
-//           renderItem={renderItem}
-//           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
-//           contentContainerStyle={{
-//             paddingHorizontal: 16,
-//             paddingBottom: 120,
-//             paddingTop: Platform.OS === "web" ? 92 : 16,
-//             ...(Platform.OS === "web"
-//               ? { maxWidth: 860, alignSelf: "center", width: "100%" }
-//               : {}),
-//           }}
-//         />
-//       )}
-//     </View>
-//   );
-// }
-
-// /* ----------------------- Post card with itinerary + comments + actions ----------------------- */
-// function PostCard({ post, onLike, headers, me, authed, onDeleted }) {
-//   const navigation = useNavigation();
-
-//   const [showComments, setShowComments] = useState(false);
-//   const [loadingComments, setLoadingComments] = useState(false);
-//   const [comments, setComments] = useState([]);
-//   const [commentText, setCommentText] = useState("");
-
-//   const [itLoading, setItLoading] = useState(!!post?.content_id);
-//   const [itData, setItData] = useState(null);
-
-//   const isOwner =
-//     Number(me) &&
-//     (Number(post.user_id) === Number(me) ||
-//       Number(post?.user?.id) === Number(me));
-
-//   useEffect(() => {
-//     let cancelled = false;
-//     const fetchItinerary = async () => {
-//       if (!post?.content_id) return;
-//       setItLoading(true);
-//       try {
-//         const res = await fetch(`${API_BASE_URL}/itineraries/${post.content_id}`, { headers });
-//         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-//         const data = await res.json();
-//         if (!cancelled) setItData(Array.isArray(data) ? data[0] : data);
-//       } catch {
-//         if (!cancelled) setItData(null);
-//       } finally {
-//         if (!cancelled) setItLoading(false);
-//       }
-//     };
-//     fetchItinerary();
-//     return () => {
-//       cancelled = true;
-//     };
-//   }, [post?.content_id, headers]);
-
-//   const loadComments = async () => {
-//     setLoadingComments(true);
-//     try {
-//       const res = await fetch(`${API_BASE_URL}/posts/${post.id}/comments`, { headers });
-//       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-//       const data = await res.json();
-//       setComments(Array.isArray(data) ? data : data?.comments || []);
-//     } catch {
-//       setComments([]);
-//     } finally {
-//            setLoadingComments(false);
-//     }
-//   };
-
-//   const sendComment = async () => {
-//     const body = (commentText || "").trim();
-//     if (!body) return;
-//     if (!authed) {
-//       Alert.alert("Sign in required", "Please sign in to comment.");
-//       return;
-//     }
-
-//     // optimistic
-//     const temp = {
-//       id: `tmp-${Date.now()}`,
-//       post_id: post.id,
-//       user_id: me,
-//       text: body,
-//       created_at: new Date().toISOString(),
-//     };
-//     setComments((c) => [...c, temp]);
-//     setCommentText("");
-
-//     try {
-//       const res = await fetch(`${API_BASE_URL}/comments`, {
-//         method: "POST",
-//         headers: { ...headers, "Content-Type": "application/json" },
-//         body: JSON.stringify({ post_id: post.id, user_id: me, text: body }),
-//       });
-//       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-//       const saved = await res.json();
-//       setComments((c) => c.map((x) => (x.id === temp.id ? saved : x)));
-//     } catch {
-//       setComments((c) => c.filter((x) => x.id !== temp.id));
-//     }
-//   };
-
-//   const toggleComments = () => {
-//     const next = !showComments;
-//     setShowComments(next);
-//     if (next && comments.length === 0) {
-//       loadComments();
-//     }
-//   };
-
-//   const authorName =
-//     (post?.user &&
-//       ((post.user.first_name || post.user.FirstName || "") +
-//         " " +
-//         (post.user.last_name || post.user.LastName || "")))?.trim() ||
-//     `User #${post.user_id ?? "?"}`;
-
-//   /* ---------- itinerary actions (View, Edit, Share, Delete / or View, Share) ---------- */
-//   const onView = () => {
-//     if (!post?.content_id) return;
-//     navigation.navigate("ItineraryDetails", { id: post.content_id });
-//   };
-
-//   const onEdit = () => {
-//     if (!isOwner || !post?.content_id) return;
-//     navigation.navigate("EditItinerary", { id: post.content_id });
-//   };
-
-//   const onShare = async () => {
-//     const title = itData?.title || post?.caption || "Itinerary";
-//     // Build a view URL based on your API base (works in dev too)
-//     const shareUrl = `${API_BASE_URL.replace(/\/+$/, "")}/itineraries/${post.content_id}`;
-//     try {
-//       await Share.share({
-//         message: `${title}\n\nCheck this itinerary on TravelMate:\n${shareUrl}`,
-//         title,
-//       });
-//     } catch {}
-//   };
-
-//   const onDelete = async () => {
-//     if (!isOwner || !post?.content_id) return;
-//     Alert.alert(
-//       "Delete itinerary",
-//       "This will permanently delete the itinerary (and may remove the post). Continue?",
-//       [
-//         { text: "Cancel", style: "cancel" },
-//         {
-//           text: "Delete",
-//           style: "destructive",
-//           onPress: async () => {
-//             try {
-//               const res = await fetch(`${API_BASE_URL}/itineraries/${post.content_id}`, {
-//                 method: "DELETE",
-//                 headers: { ...headers, "Content-Type": "application/json" },
-//                 body: JSON.stringify({ user_id: me, UserID: me }),
-//               });
-//               if (!res.ok) throw new Error(`HTTP ${res.status}`);
-//               // remove the post from feed (owner deleted itinerary)
-//               onDeleted?.(post.id);
-//             } catch (e) {
-//               Alert.alert("Delete failed", e?.message || "Unable to delete itinerary.");
-//             }
-//           },
-//         },
-//       ]
-//     );
-//   };
-
-//   return (
-//     <View style={styles.card}>
-//       {/* header */}
-//       <View style={styles.cardHeader}>
-//         <Image
-//           source={{ uri: post.author_image || "https://placehold.co/64x64?text=U" }}
-//           style={styles.avatar}
-//         />
-//         <View style={{ flex: 1, minWidth: 0 }}>
-//           <Text numberOfLines={1} style={styles.author}>
-//             {authorName}
-//           </Text>
-//           <Text numberOfLines={1} style={styles.time}>
-//             {post.created_at ? new Date(post.created_at).toLocaleString() : ""}
-//           </Text>
-//         </View>
-//       </View>
-
-//       {/* caption */}
-//       {!!post.caption && <Text style={styles.caption}>{post.caption}</Text>}
-
-//       {/* itinerary preview */}
-//       {post?.content_id ? (
-//         itLoading ? (
-//           <View style={[styles.center, { paddingVertical: 10 }]}>
-//             <ActivityIndicator />
-//           </View>
-//         ) : itData ? (
-//           <View style={{ marginTop: 10 }}>
-//             <ItineraryCard
-//               item={{
-//                 title: itData.title,
-//                 city: itData.city || itData.destination,
-//                 start_date: itData.start_date,
-//                 end_date: itData.end_date,
-//                 budget: itData.budget,
-//                 style: itData.style,
-//                 cover_url: itData.cover_url,
-//                 days: itData.days || [],
-//               }}
-//               onPress={undefined}
-//             />
-//           </View>
-//         ) : null
-//       ) : null}
-
-//       {/* itinerary actions row */}
-//       {post?.content_id && (
-//         <View style={styles.itinActions}>
-//           <ActionPill icon="eye-outline" label="View" onPress={onView} />
-//           {isOwner ? (
-//             <>
-//               <ActionPill icon={Platform.OS === "ios" ? "create-outline" : "pencil"} label="Edit" onPress={onEdit} />
-//               <ActionPill icon="share-social-outline" label="Share" onPress={onShare} />
-//               <ActionPill icon="trash-outline" label="Delete" destructive onPress={onDelete} />
-//             </>
-//           ) : (
-//             <ActionPill icon="share-social-outline" label="Share" onPress={onShare} />
-//           )}
-//         </View>
-//       )}
-
-//       {/* post actions (like + comments) */}
-//       <View style={styles.actions}>
-//         <TouchableOpacity onPress={onLike} style={styles.actionBtn} activeOpacity={0.85}>
-//           <Ionicons
-//             name={post.liked ? "heart" : "heart-outline"}
-//             size={18}
-//             color={post.liked ? "#DC2626" : COLORS.text}
-//           />
-//           <Text style={styles.actionText}>{post.likes_count || 0}</Text>
-//         </TouchableOpacity>
-
-//         <TouchableOpacity onPress={toggleComments} style={styles.actionBtn} activeOpacity={0.85}>
-//           <Ionicons name="chatbubble-ellipses-outline" size={18} color={COLORS.text} />
-//           <Text style={styles.actionText}>Comments</Text>
-//         </TouchableOpacity>
-//       </View>
-
-//       {/* comments */}
-//       {showComments && (
-//         <View style={styles.commentsBox}>
-//           {loadingComments ? (
-//             <View style={styles.center}>
-//               <ActivityIndicator />
-//             </View>
-//           ) : comments.length === 0 ? (
-//             <Text style={styles.meta}>Be the first to comment.</Text>
-//           ) : (
-//             comments.map((c) => (
-//               <View key={String(c.id)} style={styles.commentRow}>
-//                 <Image
-//                   source={{ uri: c.user_image || "https://placehold.co/40x40?text=U" }}
-//                   style={styles.cAvatar}
-//                 />
-//                 <View style={{ flex: 1, minWidth: 0 }}>
-//                   <Text style={styles.cAuthor}>
-//                     {c.user_name || `User #${c.user_id}`}
-//                   </Text>
-//                   <Text style={styles.cText}>{c.text}</Text>
-//                   <Text style={styles.cTime}>
-//                     {c.created_at ? new Date(c.created_at).toLocaleString() : ""}
-//                   </Text>
-//                 </View>
-//               </View>
-//             ))
-//           )}
-
-//           <View style={styles.commentComposer}>
-//             <TextInput
-//               value={commentText}
-//               onChangeText={setCommentText}
-//               placeholder="Write a comment…"
-//               placeholderTextColor="#94A3B8"
-//               style={styles.commentInput}
-//             />
-//             <TouchableOpacity
-//               onPress={sendComment}
-//               disabled={!commentText.trim()}
-//               activeOpacity={0.9}
-//               style={[
-//                 styles.commentSend,
-//                 !commentText.trim() && { opacity: 0.6 },
-//               ]}
-//             >
-//               <Ionicons name="send" size={16} color="#fff" />
-//             </TouchableOpacity>
-//           </View>
-//         </View>
-//       )}
-//     </View>
-//   );
-// }
-
-// /* ----------------------- Small pill button ----------------------- */
-// function ActionPill({ icon, label, onPress, destructive }) {
-//   return (
-//     <TouchableOpacity
-//       onPress={onPress}
-//       activeOpacity={0.9}
-//       style={[
-//         styles.pill,
-//         destructive && { backgroundColor: "#FEE2E2", borderColor: "#FECACA" },
-//       ]}
-//     >
-//       <Ionicons
-//         name={icon}
-//         size={14}
-//         color={destructive ? "#991B1B" : COLORS.text}
-//         style={{ marginRight: 6 }}
-//       />
-//       <Text style={[styles.pillText, destructive && { color: "#991B1B" }]}>{label}</Text>
-//     </TouchableOpacity>
-//   );
-// }
-
-// /* ----------------------- styles ----------------------- */
-// const COLORS = {
-//   page: "#F6FAFD",
-//   card: "#FFFFFF",
-//   text: "#0F3A6B",
-//   subtext: "#64748B",
-//   primary: "#0F70F0",
-//   border: "#EAF0F6",
-// };
-
-// const styles = StyleSheet.create({
-//   page: { flex: 1, backgroundColor: COLORS.page },
-
-//   header: {
-//     paddingTop: Platform.OS === "web" ? 92 : 16,
-//     paddingHorizontal: 16,
-//     flexDirection: "row",
-//     alignItems: "center",
-//     ...(Platform.OS === "web" ? { maxWidth: 860, alignSelf: "center", width: "100%" } : {}),
-//   },
-//   h1: { fontSize: 22, fontWeight: "800", color: COLORS.text, flex: 1 },
-//   refreshBtn: {
-//     flexDirection: "row",
-//     alignItems: "center",
-//     gap: 6,
-//     paddingHorizontal: 10,
-//     paddingVertical: 6,
-//     borderRadius: 999,
-//     borderWidth: 1,
-//     borderColor: COLORS.border,
-//     backgroundColor: "#EEF3F9",
-//   },
-//   refreshText: { color: COLORS.text, fontWeight: "700", fontSize: 12 },
-
-//   card: {
-//     backgroundColor: COLORS.card,
-//     borderRadius: 16,
-//     padding: 14,
-//     borderWidth: 1,
-//     borderColor: COLORS.border,
-//     shadowColor: "#000",
-//     shadowOpacity: 0.06,
-//     shadowRadius: 8,
-//     shadowOffset: { width: 0, height: 3 },
-//   },
-
-//   cardHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
-//   avatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: "#DDE7F2" },
-//   author: { fontWeight: "800", color: "#0F172A" },
-//   time: { color: COLORS.subtext, fontSize: 12 },
-
-//   caption: { marginTop: 10, color: "#0F172A" },
-
-//   /* itinerary actions */
-//   itinActions: {
-//     marginTop: 10,
-//     flexDirection: "row",
-//     flexWrap: "wrap",
-//     gap: 8,
-//   },
-//   pill: {
-//     paddingHorizontal: 12,
-//     paddingVertical: 8,
-//     borderRadius: 999,
-//     borderWidth: 1,
-//     borderColor: COLORS.border,
-//     backgroundColor: "#FFFFFF",
-//     flexDirection: "row",
-//     alignItems: "center",
-//   },
-//   pillText: { fontSize: 12, fontWeight: "800", color: COLORS.text },
-
-//   /* post actions */
-//   actions: {
-//     marginTop: 12,
-//     flexDirection: "row",
-//     gap: 16,
-//     alignItems: "center",
-//   },
-//   actionBtn: { flexDirection: "row", alignItems: "center", gap: 6 },
-//   actionText: { color: COLORS.text, fontWeight: "700" },
-
-//   /* comments */
-//   commentsBox: {
-//     marginTop: 12,
-//     borderTopWidth: 1,
-//     borderColor: COLORS.border,
-//     paddingTop: 10,
-//     gap: 10,
-//   },
-//   commentRow: { flexDirection: "row", gap: 10 },
-//   cAvatar: { width: 32, height: 32, borderRadius: 16, backgroundColor: "#E2E8F0" },
-//   cAuthor: { fontWeight: "700", color: "#0F172A" },
-//   cText: { color: "#0F172A" },
-//   cTime: { color: COLORS.subtext, fontSize: 11, marginTop: 2 },
-
-//   commentComposer: { flexDirection: "row", gap: 8, alignItems: "center" },
-//   commentInput: {
-//     flex: 1,
-//     backgroundColor: "#F9FBFE",
-//     borderWidth: 1,
-//     borderColor: "#E2E8F0",
-//     borderRadius: 12,
-//     paddingHorizontal: 12,
-//     paddingVertical: 10,
-//     color: "#0F172A",
-//   },
-//   commentSend: {
-//     width: 42,
-//     height: 42,
-//     borderRadius: 12,
-//     alignItems: "center",
-//     justifyContent: "center",
-//     backgroundColor: COLORS.primary,
-//   },
-
-//   // states
-//   center: { alignItems: "center", justifyContent: "center", padding: 18 },
-//   meta: { color: COLORS.subtext, fontWeight: "600" },
-//   errorBox: {
-//     marginHorizontal: 16,
-//     marginTop: 16,
-//     flexDirection: "row",
-//     alignItems: "center",
-//     backgroundColor: "#FEF3F2",
-//     borderWidth: 1,
-//     borderColor: "#FEE4E2",
-//     borderRadius: 12,
-//     paddingVertical: 10,
-//     paddingHorizontal: 12,
-//     ...(Platform.OS === "web" ? { maxWidth: 860, alignSelf: "center", width: "100%" } : {}),
-//   },
-//   errorText: { color: "#B42318", fontWeight: "600" },
-//   link: { color: COLORS.primary, fontWeight: "700" },
-// });
-
-
-// import React, { useEffect, useMemo, useState } from "react";
-// import {
-//   View,
-//   Text,
-//   StyleSheet,
-//   Platform,
-//   FlatList,
-//   TouchableOpacity,
-//   TextInput,
-//   ActivityIndicator,
-//   Image,
-//   Alert,
-//   Share,
-// } from "react-native";
-// import AsyncStorage from "@react-native-async-storage/async-storage";
-// import { Ionicons } from "@expo/vector-icons";
-// import { useNavigation } from "@react-navigation/native";
-// import ItineraryCard from "../../screens/CrowdsourceItineraries/ItineraryCard";
-// import getBaseURL from "../../config/env"; // ✅ use your existing env.js
-
-// const API_BASE_URL = getBaseURL();
-
-// /* ----------------------- Home Feed ----------------------- */
-// export default function HomeFeed() {
-//   const [auth, setAuth] = useState({ token: null, userId: null });
-//   const [sessionReady, setSessionReady] = useState(false);
-
-//   const [loading, setLoading] = useState(true);
-//   const [err, setErr] = useState(null);
-//   const [posts, setPosts] = useState([]);
-
-//   // load token/user once
-//   useEffect(() => {
-//     (async () => {
-//       try {
-//         const [[, token], [, userIdRaw]] = await AsyncStorage.multiGet([
-//           "token",
-//           "userId",
-//         ]);
-//         const userId = Number(userIdRaw);
-//         setAuth({
-//           token: token || null,
-//           userId: Number.isFinite(userId) ? userId : null,
-//         });
-//       } finally {
-//         setSessionReady(true);
-//       }
-//     })();
-//   }, []);
-
-//   // headers: no Content-Type for GETs
-//   const authHeaders = useMemo(() => {
-//     const h = {};
-//     if (auth.token) h.Authorization = `Bearer ${auth.token}`;
-//     return h;
-//   }, [auth.token]);
-
-//   const load = async () => {
-//     if (!sessionReady) return;
-//     setLoading(true);
-//     setErr(null);
-//     try {
-//       const res = await fetch(`${API_BASE_URL}/posts`, { headers: authHeaders });
-//       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-//       const data = await res.json();
-//       // normalize ids/counts to numbers
-//       const rows = (Array.isArray(data) ? data : data?.posts || []).map((p) => ({
-//         ...p,
-//         id: Number(p.id),
-//         user_id: Number(p.user_id),
-//         likes_count: Number(p.likes_count) || 0,
-//         liked: !!p.liked,
-//       }));
-//       setPosts(rows);
-//     } catch (e) {
-//       setErr(e?.message || "Failed to load posts");
-//       setPosts([]);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   useEffect(() => {
-//     load();
-//     // eslint-disable-next-line react-hooks/exhaustive-deps
-//   }, [sessionReady, authHeaders]);
-
-//   const ensureAuthed = () => {
-//     if (!auth.token || !auth.userId) {
-//       Alert.alert("Sign in required", "Please sign in to like and comment.");
-//       return false;
-//     }
-//     return true;
-//   };
-
-//   const normalizeId = (x) => Number(x);
-
-//   const toggleLike = async (post) => {
-//     if (!ensureAuthed()) return;
-
-//     const targetId = normalizeId(post.id);
-//     const liked = !!post.liked;
-
-//     // optimistic update
-//     setPosts((ps) =>
-//       ps.map((p) =>
-//         normalizeId(p.id) === targetId
-//           ? {
-//               ...p,
-//               liked: !liked,
-//               likes_count: (Number(p.likes_count) || 0) + (liked ? -1 : 1),
-//             }
-//           : p
-//       )
-//     );
-
-//     try {
-//       // send via query + JSON body; cover handlers that bind differently
-//       const url = `${API_BASE_URL}/posts/${targetId}/like?user_id=${auth.userId}`;
-//       const method = liked ? "DELETE" : "POST";
-//       const res = await fetch(url, {
-//         method,
-//         headers: { ...authHeaders, "Content-Type": "application/json" },
-//         body: JSON.stringify({
-//           user_id: auth.userId,
-//           UserID: auth.userId,
-//           post_id: targetId,
-//           PostID: targetId,
-//         }),
-//       });
-
-//       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-//     } catch {
-//       // revert
-//       setPosts((ps) =>
-//         ps.map((p) =>
-//           normalizeId(p.id) === targetId
-//             ? {
-//                 ...p,
-//                 liked,
-//                 likes_count: (Number(p.likes_count) || 0) + (liked ? 1 : -1),
-//               }
-//             : p
-//         )
-//       );
-//     }
-//   };
-
-//   const handlePostDeleted = (postId) => {
-//     setPosts((ps) => ps.filter((p) => p.id !== Number(postId)));
-//   };
-
-//   const renderItem = ({ item }) => (
-//     <PostCard
-//       post={item}
-//       onLike={() => toggleLike(item)}
-//       headers={authHeaders}
-//       me={auth.userId}
-//       authed={!!auth.token && !!auth.userId}
-//       onDeleted={handlePostDeleted}
-//     />
-//   );
-
-//   return (
-//     <View style={styles.page}>
-//       <View style={styles.header}>
-//         <Text style={styles.h1}>Home</Text>
-//         <TouchableOpacity onPress={load} style={styles.refreshBtn}>
-//           <Ionicons name="refresh" size={16} color={COLORS.text} />
-//           <Text style={styles.refreshText}>Refresh</Text>
-//         </TouchableOpacity>
-//       </View>
-
-//       {!sessionReady ? (
-//         <View style={styles.center}>
-//           <ActivityIndicator />
-//           <Text style={styles.meta}>Authorizing…</Text>
-//         </View>
-//       ) : loading ? (
-//         <View style={styles.center}>
-//           <ActivityIndicator />
-//           <Text style={styles.meta}>Loading feed…</Text>
-//         </View>
-//       ) : err ? (
-//         <View style={styles.errorBox}>
-//           <Ionicons name="alert-circle" size={18} color="#B42318" style={{ marginRight: 6 }} />
-//           <Text style={styles.errorText}>{err}</Text>
-//           <TouchableOpacity onPress={load} style={{ marginLeft: "auto" }}>
-//             <Text style={styles.link}>Retry</Text>
-//           </TouchableOpacity>
-//         </View>
-//       ) : posts.length === 0 ? (
-//         <View style={styles.center}>
-//           <Text style={styles.meta}>No posts yet. Be the first!</Text>
-//         </View>
-//       ) : (
-//         <FlatList
-//           data={posts}
-//           keyExtractor={(p) => String(p.id)}
-//           renderItem={renderItem}
-//           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
-//           contentContainerStyle={{
-//             paddingHorizontal: 16,
-//             paddingBottom: 120,
-//             paddingTop: Platform.OS === "web" ? 92 : 16,
-//             ...(Platform.OS === "web"
-//               ? { maxWidth: 860, alignSelf: "center", width: "100%" }
-//               : {}),
-//           }}
-//         />
-//       )}
-//     </View>
-//   );
-// }
-
-// /* ----------------------- Post card with itinerary + comments + actions ----------------------- */
-// function PostCard({ post, onLike, headers, me, authed, onDeleted }) {
-//   const navigation = useNavigation();
-
-//   const [showComments, setShowComments] = useState(false);
-//   const [loadingComments, setLoadingComments] = useState(false);
-//   const [comments, setComments] = useState([]);
-//   const [commentText, setCommentText] = useState("");
-
-//   const [itLoading, setItLoading] = useState(!!post?.content_id);
-//   const [itData, setItData] = useState(null);
-
-//   const isOwner =
-//     Number(me) &&
-//     (Number(post.user_id) === Number(me) ||
-//       Number(post?.user?.id) === Number(me));
-
-//   useEffect(() => {
-//     let cancelled = false;
-//     const fetchItinerary = async () => {
-//       if (!post?.content_id) return;
-//       setItLoading(true);
-//       try {
-//         // 1) try the normal endpoint (works for owner)
-//         let res = await fetch(`${API_BASE_URL}/itineraries/${post.content_id}`, { headers });
-//         // 2) if blocked for non-owner, try a public route (if exposed by API)
-//         if (!res.ok) {
-//           // common public variants; harmless if they 404 (we'll fall through)
-//           const tryUrls = [
-//             `${API_BASE_URL}/public/itineraries/${post.content_id}`,
-//             `${API_BASE_URL}/itineraries/${post.content_id}?public=1`,
-//           ];
-//           for (const u of tryUrls) {
-//             const r2 = await fetch(u, { headers });
-//             if (r2.ok) { res = r2; break; }
-//           }
+//           method: liked ? "DELETE" : "POST",
+//           headers: authHeaders, // JWT handles user authentication
 //         }
-//         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-//         const data = await res.json();
-//         if (!cancelled) setItData(Array.isArray(data) ? data[0] : data);
-//       } catch {
-//         if (!cancelled) setItData(null);
-//       } finally {
-//         if (!cancelled) setItLoading(false);
-//       }
-//     };
-//     fetchItinerary();
-//     return () => {
-//       cancelled = true;
-//     };
-//   }, [post?.content_id, headers]);
+//       );
+//       if (!res.ok) throw new Error("like failed");
+//     } catch (err) {
+//       console.error("Like error:", err);
+//       // Revert on error
+//       setPosts((ps) =>
+//         ps.map((p) =>
+//           p.id === postId
+//             ? {
+//                 ...p,
+//                 liked,
+//                 likes_count: (p.likes_count || 0) + (liked ? 1 : -1),
+//               }
+//             : p
+//         )
+//       );
+//     }
+//   };
+
+//   // 🔥 NEW: Update comment count when comment is added
+//   const handleCommentAdded = (postId) => {
+//     setPosts((ps) =>
+//       ps.map((p) =>
+//         p.id === postId
+//           ? { ...p, comments_count: (p.comments_count || 0) + 1 }
+//           : p
+//       )
+//     );
+//   };
+
+//   const renderItem = ({ item }) => (
+//     <PostCard
+//       post={item}
+//       onLike={() => toggleLike(item)}
+//       onCommentAdded={handleCommentAdded}
+//       me={auth.userId}
+//       headers={authHeaders}
+//       authed={!!auth.token}
+//     />
+//   );
+
+//   return (
+//     <View style={styles.page}>
+//       <View style={styles.header}>
+//         <Text style={styles.h1}>Community Feed</Text>
+//         <TouchableOpacity onPress={load} style={styles.refreshBtn}>
+//           <Ionicons name="refresh" size={16} color={COLORS.text} />
+//           <Text style={styles.refreshText}>Refresh</Text>
+//         </TouchableOpacity>
+//       </View>
+
+//       {!sessionReady ? (
+//         <Loader label="Authorizing…" />
+//       ) : loading ? (
+//         <Loader label="Loading feed…" />
+//       ) : err ? (
+//         <ErrorBox err={err} onRetry={load} />
+//       ) : posts.length === 0 ? (
+//         <View style={styles.center}>
+//           <Ionicons name="images-outline" size={64} color={COLORS.subtext} />
+//           <Text style={styles.emptyTitle}>No posts yet</Text>
+//           <Text style={styles.meta}>Be the first to share your adventure!</Text>
+//         </View>
+//       ) : (
+//         <FlatList
+//           data={posts}
+//           keyExtractor={(p) => String(p.id)}
+//           renderItem={renderItem}
+//           ItemSeparatorComponent={() => <View style={{ height: 16 }} />}
+//           contentContainerStyle={{
+//             paddingHorizontal: 16,
+//             paddingBottom: 120,
+//             paddingTop: 16,
+//             ...(Platform.OS === "web"
+//               ? { maxWidth: 860, alignSelf: "center", width: "100%" }
+//               : {}),
+//           }}
+//         />
+//       )}
+//     </View>
+//   );
+// }
+
+// /* ===================== POST CARD WITH FULL ITINERARY ===================== */
+// function PostCard({ post, onLike, me, authed, headers, onCommentAdded }) {
+//   const [showComments, setShowComments] = useState(false);
+//   const [loadingComments, setLoadingComments] = useState(false);
+//   const [comments, setComments] = useState([]);
+//   const [commentText, setCommentText] = useState("");
+
+//   const itinerary = post.itinerary;
+//   const days = itinerary?.days || [];
+//   const numDays = calculateDays(itinerary?.start_date, itinerary?.end_date);
+
+//   const authorName = post.user 
+//     ? `${post.user.first_name || ""} ${post.user.last_name || ""}`.trim() 
+//     : "Unknown User";
+
+//   // 🔥 Load comments when section is opened
+//   useEffect(() => {
+//     if (showComments && comments.length === 0) {
+//       loadComments();
+//     }
+//   }, [showComments]);
 
 //   const loadComments = async () => {
 //     setLoadingComments(true);
+
 //     try {
-//       const res = await fetch(`${API_BASE_URL}/posts/${post.id}/comments`, { headers });
-//       if (!res.ok) throw new Error(`HTTP ${res.status}`);
+//       const res = await fetch(`${API_BASE_URL}/posts/${post.id}/comments`);
 //       const raw = await res.json();
-//       // Backend returns []Comment with embedded User (FirstName/LastName) per GetCommentsByPost
-//       const list = Array.isArray(raw) ? raw : raw?.comments || [];
+//       const list = Array.isArray(raw) ? raw : raw.comments || [];
 //       setComments(list);
-//     } catch {
+//     } catch (err) {
+//       console.error("Load comments error:", err);
 //       setComments([]);
 //     } finally {
 //       setLoadingComments(false);
 //     }
 //   };
 
+//   // 🔥 UPDATED sendComment - Include auth headers
 //   const sendComment = async () => {
-//     const body = (commentText || "").trim();
-//     if (!body) return;
 //     if (!authed) {
 //       Alert.alert("Sign in required", "Please sign in to comment.");
 //       return;
 //     }
 
-//     // optimistic
+//     const body = (commentText || "").trim();
+//     if (!body) return;
+
 //     const temp = {
 //       id: `tmp-${Date.now()}`,
 //       post_id: post.id,
 //       user_id: me,
 //       text: body,
 //       created_at: new Date().toISOString(),
-//       // for UI: reflect current user name if available later
+//       user: {
+//         id: me,
+//         first_name: "You",
+//         last_name: "",
+//       }
 //     };
-//     setComments((c) => [temp, ...c]); // backend orders DESC; keep newest first
+
+//     setComments((c) => [temp, ...c]);
 //     setCommentText("");
 
 //     try {
 //       const res = await fetch(`${API_BASE_URL}/comments`, {
 //         method: "POST",
-//         headers: { ...headers, "Content-Type": "application/json" },
+//         headers: { 
+//           "Content-Type": "application/json",
+//           ...headers  // 🔥 INCLUDE AUTH HEADERS
+//         },
 //         body: JSON.stringify({ post_id: post.id, user_id: me, text: body }),
 //       });
-//       if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      
+//       if (!res.ok) {
+//         throw new Error(`Comment failed: ${res.status}`);
+//       }
+      
 //       const saved = await res.json();
-//       // Replace temp with saved server object (which should include User from controller)
 //       setComments((c) => c.map((x) => (x.id === temp.id ? saved : x)));
-//     } catch {
-//       // remove optimistic if failed
+      
+//       // 🔥 Notify parent to update comment count
+//       if (onCommentAdded) {
+//         onCommentAdded(post.id);
+//       }
+      
+//     } catch (error) {
+//       console.error("Comment error:", error);
 //       setComments((c) => c.filter((x) => x.id !== temp.id));
+//       Alert.alert("Error", "Failed to post comment. Please try again.");
 //     }
 //   };
 
-//   const toggleComments = () => {
-//     const next = !showComments;
-//     setShowComments(next);
-//     if (next && comments.length === 0) {
-//       loadComments();
-//     }
-//   };
-
-//   const authorName =
-//     (post?.user &&
-//       ((post.user.first_name || post.user.FirstName || "") +
-//         " " +
-//         (post.user.last_name || post.user.LastName || "")))?.trim() ||
-//     `User #${post.user_id ?? "?"}`;
-
-//   /* ---------- itinerary actions (View, Edit, Share, Delete / or View, Share) ---------- */
-//   const onView = () => {
-//     if (!post?.content_id) return;
-//     navigation.navigate("ItineraryDetails", { id: post.content_id });
-//   };
-
-//   const onEdit = () => {
-//     if (!isOwner || !post?.content_id) return;
-//     navigation.navigate("EditItinerary", { id: post.content_id });
-//   };
-
-//   const onShare = async () => {
-//     const title = itData?.title || post?.caption || "Itinerary";
-//     // Build a view URL based on your API base (works in dev too)
-//     const shareUrl = `${API_BASE_URL.replace(/\/+$/, "")}/itineraries/${post.content_id}`;
-//     try {
-//       await Share.share({
-//         message: `${title}\n\nCheck this itinerary on TravelMate:\n${shareUrl}`,
-//         title,
-//       });
-//     } catch {}
-//   };
-
-//   const onDelete = async () => {
-//     if (!isOwner || !post?.content_id) return;
-//     Alert.alert(
-//       "Delete itinerary",
-//       "This will permanently delete the itinerary (and may remove the post). Continue?",
-//       [
-//         { text: "Cancel", style: "cancel" },
-//         {
-//           text: "Delete",
-//           style: "destructive",
-//           onPress: async () => {
-//             try {
-//               const res = await fetch(`${API_BASE_URL}/itineraries/${post.content_id}`, {
-//                 method: "DELETE",
-//                 headers: { ...headers, "Content-Type": "application/json" },
-//                 body: JSON.stringify({ user_id: me, UserID: me }),
-//               });
-//               if (!res.ok) throw new Error(`HTTP ${res.status}`);
-//               // remove the post from feed (owner deleted itinerary)
-//               onDeleted?.(post.id);
-//             } catch (e) {
-//               Alert.alert("Delete failed", e?.message || "Unable to delete itinerary.");
-//             }
-//           },
-//         },
-//       ]
-//     );
-//   };
-
-//   // Helper: name for a comment from embedded user object
 //   const commentAuthor = (c) => {
 //     const u = c.user || c.User;
-//     const first = u?.first_name ?? u?.FirstName ?? "";
-//     const last = u?.last_name ?? u?.LastName ?? "";
-//     const name = `${first} ${last}`.trim();
-//     return name || `User #${c.user_id}`;
+//     const first = u?.first_name || "";
+//     const last = u?.last_name || "";
+//     return (first + " " + last).trim() || "User";
 //   };
 
 //   return (
 //     <View style={styles.card}>
-//       {/* header */}
+//       {/* ========== POST HEADER ========== */}
 //       <View style={styles.cardHeader}>
 //         <Image
-//           source={{ uri: post.author_image || "https://placehold.co/64x64?text=U" }}
+//           source={{
+//             uri: post.author_image || "https://ui-avatars.com/api/?name=" + encodeURIComponent(authorName),
+//           }}
 //           style={styles.avatar}
 //         />
-//         <View style={{ flex: 1, minWidth: 0 }}>
-//           <Text numberOfLines={1} style={styles.author}>
-//             {authorName}
-//           </Text>
-//           <Text numberOfLines={1} style={styles.time}>
-//             {post.created_at ? new Date(post.created_at).toLocaleString() : ""}
-//           </Text>
+//         <View style={{ flex: 1 }}>
+//           <Text style={styles.author}>{authorName}</Text>
+//           <Text style={styles.time}>{timeAgo(post.created_at)}</Text>
 //         </View>
 //       </View>
 
-//       {/* caption */}
-//       {!!post.caption && <Text style={styles.caption}>{post.caption}</Text>}
+//       {/* ========== CAPTION ========== */}
+//       {post.caption && <Text style={styles.caption}>{post.caption}</Text>}
 
-//       {/* itinerary preview */}
-//       {post?.content_id ? (
-//         itLoading ? (
-//           <View style={[styles.center, { paddingVertical: 10 }]}>
-//             <ActivityIndicator />
-//           </View>
-//         ) : itData ? (
-//           <View style={{ marginTop: 10 }}>
-//             <ItineraryCard
-//               item={{
-//                 title: itData.title,
-//                 city: itData.city || itData.destination,
-//                 start_date: itData.start_date,
-//                 end_date: itData.end_date,
-//                 budget: itData.budget,
-//                 style: itData.style,
-//                 cover_url: itData.cover_url,
-//                 days: itData.days || [],
-//               }}
-//               onPress={undefined}
+//       {/* ========== FULL ITINERARY DETAILS ========== */}
+//       {itinerary ? (
+//         <View style={styles.itinerarySection}>
+//           {/* Cover Image */}
+//           {itinerary.cover_url ? (
+//             <Image 
+//               source={{ uri: itinerary.cover_url }} 
+//               style={styles.coverImage}
+//               resizeMode="cover"
 //             />
-//           </View>
-//         ) : null
-//       ) : null}
-
-//       {/* itinerary actions row */}
-//       {post?.content_id && (
-//         <View style={styles.itinActions}>
-//           <ActionPill icon="eye-outline" label="View" onPress={onView} />
-//           {isOwner ? (
-//             <>
-//               <ActionPill icon={Platform.OS === "ios" ? "create-outline" : "pencil"} label="Edit" onPress={onEdit} />
-//               <ActionPill icon="share-social-outline" label="Share" onPress={onShare} />
-//               <ActionPill icon="trash-outline" label="Delete" destructive onPress={onDelete} />
-//             </>
 //           ) : (
-//             <ActionPill icon="share-social-outline" label="Share" onPress={onShare} />
+//             <View style={styles.coverPlaceholder}>
+//               <Ionicons name="image-outline" size={48} color="#9CA3AF" />
+//             </View>
 //           )}
+
+//           {/* Content */}
+//           <View style={styles.itineraryContent}>
+//             {/* Title & City */}
+//             <Text style={styles.itineraryTitle}>{itinerary.title}</Text>
+
+//             <View style={styles.cityRow}>
+//               <Ionicons name="location" size={16} color={COLORS.primary} />
+//               <Text style={styles.cityText}>{itinerary.city}</Text>
+//             </View>
+
+//             {/* Description */}
+//             {itinerary.description && (
+//               <Text style={styles.description}>{itinerary.description}</Text>
+//             )}
+
+//             {/* Date Range */}
+//             <View style={styles.dateRow}>
+//               <Ionicons name="calendar-outline" size={16} color={COLORS.subtext} />
+//               <Text style={styles.dateText}>
+//                 {formatDate(itinerary.start_date)} - {formatDate(itinerary.end_date)}
+//               </Text>
+//               <Text style={styles.daysCount}>• {numDays} day{numDays !== 1 ? 's' : ''}</Text>
+//             </View>
+
+//             {/* Budget & Style Tags */}
+//             <View style={styles.tagsRow}>
+//               {itinerary.budget && (
+//                 <View style={styles.tagBudget}>
+//                   <Ionicons name="cash-outline" size={14} color="#059669" />
+//                   <Text style={styles.tagTextBudget}>{itinerary.budget}</Text>
+//                 </View>
+//               )}
+//               {itinerary.style && (
+//                 <View style={styles.tagStyle}>
+//                   <Ionicons name="star-outline" size={14} color="#DC2626" />
+//                   <Text style={styles.tagTextStyle}>{itinerary.style}</Text>
+//                 </View>
+//               )}
+//             </View>
+
+//             {/* Activities/Days */}
+//             {days.length > 0 && (
+//               <View style={styles.activitiesSection}>
+//                 <View style={styles.activitiesHeader}>
+//                   <Ionicons name="list-outline" size={18} color={COLORS.text} />
+//                   <Text style={styles.activitiesTitle}>
+//                     Daily Activities ({days.length})
+//                   </Text>
+//                 </View>
+
+//                 <ScrollView 
+//                   horizontal 
+//                   showsHorizontalScrollIndicator={false}
+//                   style={styles.activitiesScroll}
+//                 >
+//                   {days.map((day, index) => (
+//                     <View key={day.id || index} style={styles.dayCard}>
+//                       <View style={styles.dayBadge}>
+//                         <Text style={styles.dayBadgeText}>Day {day.day_number}</Text>
+//                       </View>
+//                       <Text style={styles.dayPlace} numberOfLines={2}>
+//                         {day.place}
+//                       </Text>
+//                       {day.start_time && day.end_time && (
+//                         <View style={styles.dayTimeRow}>
+//                           <Ionicons name="time-outline" size={12} color={COLORS.subtext} />
+//                           <Text style={styles.dayTime}>
+//                             {day.start_time} - {day.end_time}
+//                           </Text>
+//                         </View>
+//                       )}
+//                       {day.activities && (
+//                         <Text style={styles.dayActivities} numberOfLines={3}>
+//                           {day.activities}
+//                         </Text>
+//                       )}
+//                     </View>
+//                   ))}
+//                 </ScrollView>
+//               </View>
+//             )}
+//           </View>
+//         </View>
+//       ) : (
+//         <View style={styles.noItinerary}>
+//           <Ionicons name="alert-circle-outline" size={32} color="#9CA3AF" />
+//           <Text style={styles.noItineraryText}>Itinerary not available</Text>
 //         </View>
 //       )}
 
-//       {/* post actions (like + comments) */}
+//       {/* ========== POST ACTIONS (LIKE & COMMENT) ========== */}
 //       <View style={styles.actions}>
-//         <TouchableOpacity onPress={onLike} style={styles.actionBtn} activeOpacity={0.85}>
+//         <TouchableOpacity onPress={onLike} style={styles.actionBtn}>
 //           <Ionicons
 //             name={post.liked ? "heart" : "heart-outline"}
-//             size={18}
+//             size={20}
 //             color={post.liked ? "#DC2626" : COLORS.text}
 //           />
-//         <Text style={styles.actionText}>{post.likes_count || 0}</Text>
+//           <Text style={styles.actionText}>{post.likes_count || 0}</Text>
 //         </TouchableOpacity>
 
-//         <TouchableOpacity onPress={toggleComments} style={styles.actionBtn} activeOpacity={0.85}>
-//           <Ionicons name="chatbubble-ellipses-outline" size={18} color={COLORS.text} />
-//           <Text style={styles.actionText}>Comments</Text>
+//         <TouchableOpacity
+//           onPress={() => setShowComments(!showComments)}
+//           style={styles.actionBtn}
+//         >
+//           <Ionicons
+//             name="chatbubble-ellipses-outline"
+//             size={20}
+//             color={COLORS.text}
+//           />
+//           <Text style={styles.actionText}>
+//             {post.comments_count > 0 ? `${post.comments_count}` : 'Comment'}
+//           </Text>
 //         </TouchableOpacity>
 //       </View>
 
-//       {/* comments */}
+//       {/* ========== COMMENTS SECTION ========== */}
 //       {showComments && (
 //         <View style={styles.commentsBox}>
 //           {loadingComments ? (
-//             <View style={styles.center}>
-//               <ActivityIndicator />
-//             </View>
+//             <ActivityIndicator color={COLORS.primary} />
 //           ) : comments.length === 0 ? (
 //             <Text style={styles.meta}>Be the first to comment.</Text>
 //           ) : (
 //             comments.map((c) => (
 //               <View key={String(c.id)} style={styles.commentRow}>
 //                 <Image
-//                   source={{ uri: c.user_image || "https://placehold.co/40x40?text=U" }}
 //                   style={styles.cAvatar}
+//                   source={{
+//                     uri: c.user_image || "https://ui-avatars.com/api/?name=" + encodeURIComponent(commentAuthor(c)),
+//                   }}
 //                 />
-//                 <View style={{ flex: 1, minWidth: 0 }}>
+//                 <View style={{ flex: 1 }}>
 //                   <Text style={styles.cAuthor}>{commentAuthor(c)}</Text>
 //                   <Text style={styles.cText}>{c.text}</Text>
-//                   <Text style={styles.cTime}>
-//                     {c.created_at ? new Date(c.created_at).toLocaleString() : ""}
-//                   </Text>
+//                   <Text style={styles.cTime}>{timeAgo(c.created_at)}</Text>
 //                 </View>
 //               </View>
 //             ))
@@ -3297,14 +513,14 @@
 //               placeholder="Write a comment…"
 //               placeholderTextColor="#94A3B8"
 //               style={styles.commentInput}
+//               maxLength={500}
 //             />
 //             <TouchableOpacity
-//               onPress={sendComment}
 //               disabled={!commentText.trim()}
-//               activeOpacity={0.9}
+//               onPress={sendComment}
 //               style={[
 //                 styles.commentSend,
-//                 !commentText.trim() && { opacity: 0.6 },
+//                 !commentText.trim() && { opacity: 0.5 },
 //               ]}
 //             >
 //               <Ionicons name="send" size={16} color="#fff" />
@@ -3316,29 +532,29 @@
 //   );
 // }
 
-// /* ----------------------- Small pill button ----------------------- */
-// function ActionPill({ icon, label, onPress, destructive }) {
+// /* ===================== SMALL UI COMPONENTS ===================== */
+// function Loader({ label }) {
 //   return (
-//     <TouchableOpacity
-//       onPress={onPress}
-//       activeOpacity={0.9}
-//       style={[
-//         styles.pill,
-//         destructive && { backgroundColor: "#FEE2E2", borderColor: "#FECACA" },
-//       ]}
-//     >
-//       <Ionicons
-//         name={icon}
-//         size={14}
-//         color={destructive ? "#991B1B" : COLORS.text}
-//         style={{ marginRight: 6 }}
-//       />
-//       <Text style={[styles.pillText, destructive && { color: "#991B1B" }]}>{label}</Text>
-//     </TouchableOpacity>
+//     <View style={styles.center}>
+//       <ActivityIndicator color={COLORS.primary} />
+//       <Text style={styles.meta}>{label}</Text>
+//     </View>
 //   );
 // }
 
-// /* ----------------------- styles ----------------------- */
+// function ErrorBox({ err, onRetry }) {
+//   return (
+//     <View style={styles.errorBox}>
+//       <Ionicons name="alert-circle" size={18} color="#B42318" />
+//       <Text style={styles.errorText}>{err}</Text>
+//       <TouchableOpacity onPress={onRetry} style={{ marginLeft: "auto" }}>
+//         <Text style={styles.link}>Retry</Text>
+//       </TouchableOpacity>
+//     </View>
+//   );
+// }
+
+// /* ===================== STYLES ===================== */
 // const COLORS = {
 //   page: "#F6FAFD",
 //   card: "#FFFFFF",
@@ -3349,133 +565,396 @@
 // };
 
 // const styles = StyleSheet.create({
-//   page: { flex: 1, backgroundColor: COLORS.page },
+//   page: {
+//     flex: 1,
+//     backgroundColor: COLORS.page,
+//   },
 
 //   header: {
 //     paddingTop: Platform.OS === "web" ? 92 : 16,
 //     paddingHorizontal: 16,
 //     flexDirection: "row",
 //     alignItems: "center",
-//     ...(Platform.OS === "web" ? { maxWidth: 860, alignSelf: "center", width: "100%" } : {}),
+//     marginBottom: 16,
+//     ...(Platform.OS === "web"
+//       ? { maxWidth: 860, alignSelf: "center", width: "100%" }
+//       : {}),
 //   },
-//   h1: { fontSize: 22, fontWeight: "800", color: COLORS.text, flex: 1 },
+
+//   h1: { fontSize: 24, fontWeight: "800", color: COLORS.text, flex: 1 },
+
 //   refreshBtn: {
 //     flexDirection: "row",
 //     alignItems: "center",
 //     gap: 6,
-//     paddingHorizontal: 10,
-//     paddingVertical: 6,
-//     borderRadius: 999,
-//     borderWidth: 1,
-//     borderColor: COLORS.border,
-//     backgroundColor: "#EEF3F9",
-//   },
-//   refreshText: { color: COLORS.text, fontWeight: "700", fontSize: 12 },
-
-//   card: {
-//     backgroundColor: COLORS.card,
-//     borderRadius: 16,
-//     padding: 14,
-//     borderWidth: 1,
-//     borderColor: COLORS.border,
-//     shadowColor: "#000",
-//     shadowOpacity: 0.06,
-//     shadowRadius: 8,
-//     shadowOffset: { width: 0, height: 3 },
-//   },
-
-//   cardHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
-//   avatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: "#DDE7F2" },
-//   author: { fontWeight: "800", color: "#0F172A" },
-//   time: { color: COLORS.subtext, fontSize: 12 },
-
-//   caption: { marginTop: 10, color: "#0F172A" },
-
-//   /* itinerary actions */
-//   itinActions: {
-//     marginTop: 10,
-//     flexDirection: "row",
-//     flexWrap: "wrap",
-//     gap: 8,
-//   },
-//   pill: {
 //     paddingHorizontal: 12,
 //     paddingVertical: 8,
 //     borderRadius: 999,
 //     borderWidth: 1,
 //     borderColor: COLORS.border,
+//     backgroundColor: "#EEF3F9",
+//   },
+
+//   refreshText: { color: COLORS.text, fontWeight: "700", fontSize: 13 },
+
+//   // Post Card
+//   card: {
+//     backgroundColor: COLORS.card,
+//     borderRadius: 16,
+//     padding: 16,
+//     borderWidth: 1,
+//     borderColor: COLORS.border,
+//     shadowColor: "#000",
+//     shadowOpacity: 0.08,
+//     shadowRadius: 12,
+//     shadowOffset: { width: 0, height: 4 },
+//     elevation: 3,
+//   },
+
+//   cardHeader: { 
+//     flexDirection: "row", 
+//     alignItems: "center", 
+//     gap: 12,
+//     marginBottom: 12,
+//   },
+//   avatar: { 
+//     width: 44, 
+//     height: 44, 
+//     borderRadius: 22,
+//     backgroundColor: "#E5E7EB",
+//   },
+//   author: { fontWeight: "800", color: "#0F172A", fontSize: 15 },
+//   time: { color: COLORS.subtext, fontSize: 12, marginTop: 2 },
+
+//   caption: { 
+//     marginBottom: 12, 
+//     color: "#0F172A",
+//     fontSize: 14,
+//     lineHeight: 20,
+//   },
+
+//   // Itinerary Section
+//   itinerarySection: {
+//     backgroundColor: "#F9FAFB",
+//     borderRadius: 12,
+//     overflow: "hidden",
+//     borderWidth: 1,
+//     borderColor: "#E5E7EB",
+//   },
+
+//   coverImage: {
+//     width: "100%",
+//     height: 200,
+//     backgroundColor: "#F3F4F6",
+//   },
+
+//   coverPlaceholder: {
+//     width: "100%",
+//     height: 200,
+//     backgroundColor: "#F3F4F6",
+//     alignItems: "center",
+//     justifyContent: "center",
+//   },
+
+//   itineraryContent: {
+//     padding: 16,
+//   },
+
+//   itineraryTitle: {
+//     fontSize: 20,
+//     fontWeight: "800",
+//     color: COLORS.text,
+//     marginBottom: 8,
+//     lineHeight: 26,
+//   },
+
+//   cityRow: {
+//     flexDirection: "row",
+//     alignItems: "center",
+//     gap: 6,
+//     marginBottom: 12,
+//   },
+//   cityText: {
+//     fontSize: 14,
+//     fontWeight: "700",
+//     color: COLORS.primary,
+//   },
+
+//   description: {
+//     fontSize: 14,
+//     color: COLORS.subtext,
+//     lineHeight: 20,
+//     marginBottom: 12,
+//   },
+
+//   dateRow: {
+//     flexDirection: "row",
+//     alignItems: "center",
+//     gap: 6,
+//     marginBottom: 12,
+//   },
+//   dateText: {
+//     fontSize: 13,
+//     color: COLORS.subtext,
+//     fontWeight: "600",
+//   },
+//   daysCount: {
+//     fontSize: 13,
+//     color: COLORS.text,
+//     fontWeight: "700",
+//   },
+
+//   tagsRow: {
+//     flexDirection: "row",
+//     gap: 8,
+//     marginBottom: 16,
+//   },
+//   tagBudget: {
+//     flexDirection: "row",
+//     alignItems: "center",
+//     gap: 6,
+//     backgroundColor: "#ECFDF5",
+//     paddingHorizontal: 10,
+//     paddingVertical: 6,
+//     borderRadius: 8,
+//     borderWidth: 1,
+//     borderColor: "#A7F3D0",
+//   },
+//   tagTextBudget: {
+//     fontSize: 12,
+//     fontWeight: "700",
+//     color: "#059669",
+//   },
+//   tagStyle: {
+//     flexDirection: "row",
+//     alignItems: "center",
+//     gap: 6,
+//     backgroundColor: "#FEF2F2",
+//     paddingHorizontal: 10,
+//     paddingVertical: 6,
+//     borderRadius: 8,
+//     borderWidth: 1,
+//     borderColor: "#FECACA",
+//   },
+//   tagTextStyle: {
+//     fontSize: 12,
+//     fontWeight: "700",
+//     color: "#DC2626",
+//   },
+
+//   // Activities
+//   activitiesSection: {
+//     paddingTop: 16,
+//     borderTopWidth: 1,
+//     borderTopColor: "#E5E7EB",
+//   },
+//   activitiesHeader: {
+//     flexDirection: "row",
+//     alignItems: "center",
+//     gap: 8,
+//     marginBottom: 12,
+//   },
+//   activitiesTitle: {
+//     fontSize: 16,
+//     fontWeight: "800",
+//     color: COLORS.text,
+//   },
+//   activitiesScroll: {
+//     marginHorizontal: -16,
+//     paddingHorizontal: 16,
+//   },
+//   dayCard: {
+//     width: 220,
 //     backgroundColor: "#FFFFFF",
+//     borderRadius: 12,
+//     borderWidth: 1,
+//     borderColor: "#E5E7EB",
+//     padding: 14,
+//     marginRight: 12,
+//   },
+//   dayBadge: {
+//     alignSelf: "flex-start",
+//     backgroundColor: COLORS.primary,
+//     paddingHorizontal: 10,
+//     paddingVertical: 5,
+//     borderRadius: 6,
+//     marginBottom: 10,
+//   },
+//   dayBadgeText: {
+//     fontSize: 11,
+//     fontWeight: "800",
+//     color: "#fff",
+//     textTransform: "uppercase",
+//   },
+//   dayPlace: {
+//     fontSize: 15,
+//     fontWeight: "700",
+//     color: COLORS.text,
+//     marginBottom: 8,
+//     lineHeight: 20,
+//   },
+//   dayTimeRow: {
 //     flexDirection: "row",
 //     alignItems: "center",
+//     gap: 4,
+//     marginBottom: 8,
 //   },
-//   pillText: { fontSize: 12, fontWeight: "800", color: COLORS.text },
+//   dayTime: {
+//     fontSize: 12,
+//     color: COLORS.subtext,
+//     fontWeight: "600",
+//   },
+//   dayActivities: {
+//     fontSize: 13,
+//     color: COLORS.subtext,
+//     lineHeight: 18,
+//   },
 
-//   /* post actions */
+//   noItinerary: {
+//     padding: 40,
+//     alignItems: "center",
+//     backgroundColor: "#F9FAFB",
+//     borderRadius: 12,
+//     marginBottom: 12,
+//   },
+//   noItineraryText: {
+//     marginTop: 8,
+//     color: "#9CA3AF",
+//     fontSize: 14,
+//     fontWeight: "600",
+//   },
+
+//   // Actions
 //   actions: {
-//     marginTop: 12,
+//     marginTop: 16,
+//     paddingTop: 16,
+//     borderTopWidth: 1,
+//     borderTopColor: COLORS.border,
 //     flexDirection: "row",
-//     gap: 16,
+//     gap: 24,
 //     alignItems: "center",
 //   },
-//   actionBtn: { flexDirection: "row", alignItems: "center", gap: 6 },
-//   actionText: { color: COLORS.text, fontWeight: "700" },
+//   actionBtn: { 
+//     flexDirection: "row", 
+//     alignItems: "center", 
+//     gap: 8,
+//   },
+//   actionText: { 
+//     color: COLORS.text, 
+//     fontWeight: "700",
+//     fontSize: 14,
+//   },
 
-//   /* comments */
+//   // Comments
 //   commentsBox: {
-//     marginTop: 12,
+//     marginTop: 16,
+//     paddingTop: 16,
 //     borderTopWidth: 1,
 //     borderColor: COLORS.border,
-//     paddingTop: 10,
-//     gap: 10,
+//     gap: 12,
 //   },
-//   commentRow: { flexDirection: "row", gap: 10 },
-//   cAvatar: { width: 32, height: 32, borderRadius: 16, backgroundColor: "#E2E8F0" },
-//   cAuthor: { fontWeight: "700", color: "#0F172A" },
-//   cText: { color: "#0F172A" },
-//   cTime: { color: COLORS.subtext, fontSize: 11, marginTop: 2 },
 
-//   commentComposer: { flexDirection: "row", gap: 8, alignItems: "center" },
+//   commentRow: { 
+//     flexDirection: "row", 
+//     gap: 10,
+//     marginBottom: 12,
+//   },
+//   cAvatar: { 
+//     width: 36, 
+//     height: 36, 
+//     borderRadius: 18,
+//     backgroundColor: "#E5E7EB",
+//   },
+//   cAuthor: { 
+//     fontWeight: "700", 
+//     color: "#0F172A",
+//     fontSize: 14,
+//     marginBottom: 2,
+//   },
+//   cText: { 
+//     color: "#0F172A",
+//     fontSize: 14,
+//     lineHeight: 19,
+//   },
+//   cTime: { 
+//     color: COLORS.subtext, 
+//     fontSize: 12,
+//     marginTop: 4,
+//   },
+
+//   commentComposer: {
+//     flexDirection: "row",
+//     gap: 8,
+//     alignItems: "center",
+//   },
 //   commentInput: {
 //     flex: 1,
 //     backgroundColor: "#F9FBFE",
 //     borderWidth: 1,
 //     borderColor: "#E2E8F0",
 //     borderRadius: 12,
-//     paddingHorizontal: 12,
-//     paddingVertical: 10,
-//     color: "#0F172A",
+//     paddingHorizontal: 14,
+//     paddingVertical: 12,
+//     fontSize: 14,
 //   },
 //   commentSend: {
-//     width: 42,
-//     height: 42,
+//     width: 44,
+//     height: 44,
 //     borderRadius: 12,
 //     alignItems: "center",
 //     justifyContent: "center",
 //     backgroundColor: COLORS.primary,
 //   },
 
-//   // states
-//   center: { alignItems: "center", justifyContent: "center", padding: 18 },
-//   meta: { color: COLORS.subtext, fontWeight: "600" },
+//   // Empty & Loading
+//   center: { 
+//     alignItems: "center", 
+//     justifyContent: "center", 
+//     padding: 48,
+//   },
+//   emptyTitle: {
+//     fontSize: 18,
+//     fontWeight: "800",
+//     color: COLORS.text,
+//     marginTop: 16,
+//     marginBottom: 8,
+//   },
+//   meta: { 
+//     color: COLORS.subtext, 
+//     fontWeight: "600",
+//     fontSize: 14,
+//   },
+
 //   errorBox: {
 //     marginHorizontal: 16,
 //     marginTop: 16,
 //     flexDirection: "row",
+//     gap: 8,
 //     alignItems: "center",
 //     backgroundColor: "#FEF3F2",
 //     borderWidth: 1,
 //     borderColor: "#FEE4E2",
 //     borderRadius: 12,
-//     paddingVertical: 10,
-//     paddingHorizontal: 12,
-//     ...(Platform.OS === "web" ? { maxWidth: 860, alignSelf: "center", width: "100%" } : {}),
+//     paddingVertical: 12,
+//     paddingHorizontal: 14,
+//     ...(Platform.OS === "web"
+//       ? { maxWidth: 860, alignSelf: "center", width: "100%" }
+//       : {}),
 //   },
-//   errorText: { color: "#B42318", fontWeight: "600" },
-//   link: { color: COLORS.primary, fontWeight: "700" },
+//   errorText: { 
+//     color: "#B42318", 
+//     fontWeight: "600",
+//     flex: 1,
+//   },
+//   link: { 
+//     color: COLORS.primary, 
+//     fontWeight: "700",
+//   },
 // });
 
 
-import React, { useEffect, useMemo, useState } from "react";
+
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -3487,17 +966,50 @@ import {
   ActivityIndicator,
   Image,
   Alert,
-  Share,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
-import ItineraryCard from "../../screens/CrowdsourceItineraries/ItineraryCard";
-import getBaseURL from "../../config/env"; // ✅ use your existing env.js
+import getBaseURL from "../../config/env";
 
 const API_BASE_URL = getBaseURL();
 
-/* ----------------------- Home Feed ----------------------- */
+/* ===================== HELPER FUNCTIONS ===================== */
+function formatDate(dateString) {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-US", { 
+    month: "short", 
+    day: "numeric",
+    year: "numeric" 
+  });
+}
+
+function calculateDays(startDate, endDate) {
+  if (!startDate || !endDate) return 0;
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const diffTime = Math.abs(end - start);
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays || 1;
+}
+
+function timeAgo(dateString) {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return "just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return formatDate(dateString);
+}
+
+/* ===================== HOME FEED ===================== */
 export default function HomeFeed() {
   const [auth, setAuth] = useState({ token: null, userId: null });
   const [sessionReady, setSessionReady] = useState(false);
@@ -3506,136 +1018,131 @@ export default function HomeFeed() {
   const [err, setErr] = useState(null);
   const [posts, setPosts] = useState([]);
 
-  // load token/user once
+  // Load token/user once
   useEffect(() => {
     (async () => {
       try {
-        const [[, token], [, userIdRaw]] = await AsyncStorage.multiGet([
-          "token",
-          "userId",
-        ]);
-        const userId = Number(userIdRaw);
-        setAuth({
-          token: token || null,
-          userId: Number.isFinite(userId) ? userId : null,
-        });
+        const [token, uid] = await AsyncStorage.multiGet(["token", "userId"]);
+        const t = token?.[1] || null;
+        const u = uid?.[1] ? Number(uid[1]) : null;
+        setAuth({ token: t, userId: u });
       } finally {
         setSessionReady(true);
       }
     })();
   }, []);
 
-  // headers: keep GETs clean; add content-type only for writes
   const authHeaders = useMemo(() => {
     const h = {};
     if (auth.token) h.Authorization = `Bearer ${auth.token}`;
     return h;
   }, [auth.token]);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!sessionReady) return;
     setLoading(true);
     setErr(null);
+
     try {
       const res = await fetch(`${API_BASE_URL}/posts`, { headers: authHeaders });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
       const data = await res.json();
-      // normalize ids/counts to numbers
-      const rows = (Array.isArray(data) ? data : data?.posts || []).map((p) => ({
-        ...p,
-        id: Number(p.id),
-        user_id: Number(p.user_id),
-        likes_count: Number(p.likes_count) || 0,
-        liked: !!p.liked,
-      }));
-      setPosts(rows);
+      const list = Array.isArray(data) ? data : data.posts || [];
+
+      console.log("🔥 POSTS FROM BACKEND:", list);
+
+      setPosts(list);
     } catch (e) {
-      setErr(e?.message || "Failed to load posts");
+      setErr(e.message);
       setPosts([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [sessionReady, authHeaders]);
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionReady, authHeaders]);
+  }, [load]);
 
   const ensureAuthed = () => {
-    if (!auth.token || !auth.userId) {
+    if (!auth.token) {
       Alert.alert("Sign in required", "Please sign in to like and comment.");
       return false;
     }
     return true;
   };
 
-  const normalizeId = (x) => Number(x);
-
   const toggleLike = async (post) => {
     if (!ensureAuthed()) return;
 
-    const targetId = normalizeId(post.id);
     const liked = !!post.liked;
+    const postId = post.id;
 
-    // optimistic update
+    // Optimistic update
     setPosts((ps) =>
       ps.map((p) =>
-        normalizeId(p.id) === targetId
+        p.id === postId
           ? {
               ...p,
               liked: !liked,
-              likes_count: (Number(p.likes_count) || 0) + (liked ? -1 : 1),
+              likes_count: (p.likes_count || 0) + (liked ? -1 : 1),
             }
           : p
       )
     );
 
     try {
-      // send via query + JSON body; cover handlers that bind differently
-      const url = `${API_BASE_URL}/posts/${targetId}/like?user_id=${auth.userId}`;
-      const method = liked ? "DELETE" : "POST";
-      const res = await fetch(url, {
-        method,
-        headers: { ...authHeaders, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          user_id: auth.userId,
-          UserID: auth.userId,
-          post_id: targetId,
-          PostID: targetId,
-        }),
-      });
-
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    } catch {
-      // revert
+      const res = await fetch(
+        `${API_BASE_URL}/posts/${postId}/like`,
+        {
+          method: liked ? "DELETE" : "POST",
+          headers: authHeaders,
+        }
+      );
+      if (!res.ok) throw new Error("like failed");
+    } catch (err) {
+      console.error("Like error:", err);
+      // Revert on error
       setPosts((ps) =>
         ps.map((p) =>
-          normalizeId(p.id) === targetId
+          p.id === postId
             ? {
                 ...p,
                 liked,
-                likes_count: (Number(p.likes_count) || 0) + (liked ? 1 : -1),
+                likes_count: (p.likes_count || 0) + (liked ? 1 : -1),
               }
             : p
         )
       );
     }
   };
+
+  const handleCommentAdded = (postId) => {
+    setPosts((ps) =>
+      ps.map((p) =>
+        p.id === postId
+          ? { ...p, comments_count: (p.comments_count || 0) + 1 }
+          : p
+      )
+    );
+  };
+
   const renderItem = ({ item }) => (
     <PostCard
       post={item}
       onLike={() => toggleLike(item)}
-      headers={authHeaders}
+      onCommentAdded={handleCommentAdded}
       me={auth.userId}
-      authed={!!auth.token && !!auth.userId}
+      headers={authHeaders}
+      authed={!!auth.token}
     />
   );
 
   return (
     <View style={styles.page}>
       <View style={styles.header}>
-        <Text style={styles.h1}>Home</Text>
+        <Text style={styles.h1}>Community Feed</Text>
         <TouchableOpacity onPress={load} style={styles.refreshBtn}>
           <Ionicons name="refresh" size={16} color={COLORS.text} />
           <Text style={styles.refreshText}>Refresh</Text>
@@ -3643,135 +1150,68 @@ export default function HomeFeed() {
       </View>
 
       {!sessionReady ? (
-        <View style={styles.center}>
-          <ActivityIndicator />
-          <Text style={styles.meta}>Authorizing…</Text>
-        </View>
+        <Loader label="Authorizing…" />
       ) : loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator />
-          <Text style={styles.meta}>Loading feed…</Text>
-        </View>
+        <Loader label="Loading feed…" />
       ) : err ? (
-        <View style={styles.errorBox}>
-          <Ionicons name="alert-circle" size={18} color="#B42318" style={{ marginRight: 6 }} />
-          <Text style={styles.errorText}>{err}</Text>
-          <TouchableOpacity onPress={load} style={{ marginLeft: "auto" }}>
-            <Text style={styles.link}>Retry</Text>
-          </TouchableOpacity>
-        </View>
+        <ErrorBox err={err} onRetry={load} />
       ) : posts.length === 0 ? (
         <View style={styles.center}>
-          <Text style={styles.meta}>No posts yet. Be the first!</Text>
+          <Ionicons name="images-outline" size={64} color={COLORS.subtext} />
+          <Text style={styles.emptyTitle}>No posts yet</Text>
+          <Text style={styles.meta}>Be the first to share your adventure!</Text>
         </View>
       ) : (
         <FlatList
           data={posts}
           keyExtractor={(p) => String(p.id)}
           renderItem={renderItem}
-          ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+          ItemSeparatorComponent={() => <View style={{ height: 16 }} />}
           contentContainerStyle={{
             paddingHorizontal: 16,
             paddingBottom: 120,
-            paddingTop: Platform.OS === "web" ? 92 : 16,
+            paddingTop: 16,
             ...(Platform.OS === "web"
               ? { maxWidth: 860, alignSelf: "center", width: "100%" }
               : {}),
           }}
-          scrollEnabled={false}
-          nestedScrollEnabled
-
         />
       )}
     </View>
   );
 }
 
-/* ----------------------- Post card with itinerary + comments + actions ----------------------- */
-function PostCard({ post, onLike, headers, me, authed }) {
-  const navigation = useNavigation();
-
+/* ===================== POST CARD WITH FULL ITINERARY ===================== */
+function PostCard({ post, onLike, me, authed, headers, onCommentAdded }) {
   const [showComments, setShowComments] = useState(false);
   const [loadingComments, setLoadingComments] = useState(false);
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState("");
 
-  const [itLoading, setItLoading] = useState(!!post?.content_id);
-  const [itData, setItData] = useState(null);
+  const itinerary = post.itinerary;
+  const days = itinerary?.days || [];
+  const numDays = calculateDays(itinerary?.start_date, itinerary?.end_date);
 
-  const isOwner =
-    Number(me) &&
-    (Number(post.user_id) === Number(me) ||
-      Number(post?.user?.id) === Number(me));
+  const authorName = post.user 
+    ? `${post.user.first_name || ""} ${post.user.last_name || ""}`.trim() 
+    : "Unknown User";
 
   useEffect(() => {
-    let cancelled = false;
-
-    const parseItinerary = (data) => (Array.isArray(data) ? data[0] : data) || null;
-
-    const fetchItinerary = async () => {
-      if (!post?.content_id) return;
-      setItLoading(true);
-      try {
-        // Try multiple endpoints so non-owners still get a public view.
-        const candidates = [
-          `${API_BASE_URL}/itineraries/${post.content_id}`,                 // owner/full
-          `${API_BASE_URL}/posts/${post.id}/itinerary`,                     // post-scoped public
-          `${API_BASE_URL}/public/itineraries/${post.content_id}`,          // explicit public
-          `${API_BASE_URL}/itineraries/${post.content_id}?public=1`,        // query flag
-        ];
-
-        let found = null;
-        for (const url of candidates) {
-          try {
-            const r = await fetch(url, { headers });
-            if (r.ok) {
-              const d = await r.json();
-              found = parseItinerary(d);
-              // If the API returns a minimal public shape, still accept it
-              if (found) break;
-            }
-          } catch {
-            // try next candidate
-          }
-        }
-
-        // As a last resort, synthesize a minimal preview from the post fields
-        if (!found) {
-          found = {
-            title: post.caption || "Untitled Itinerary",
-            city: post.city || post.destination || undefined,
-            start_date: post.start_date || undefined,
-            end_date: post.end_date || undefined,
-            style: post.style || undefined,
-            budget: post.budget || undefined,
-            days: [],
-          };
-        }
-
-        if (!cancelled) setItData(found);
-      } catch {
-        if (!cancelled) setItData(null);
-      } finally {
-        if (!cancelled) setItLoading(false);
-      }
-    };
-
-    fetchItinerary();
-    return () => {
-      cancelled = true;
-    };
-  }, [post?.content_id, post?.id, headers]);
+    if (showComments && comments.length === 0) {
+      loadComments();
+    }
+  }, [showComments]);
 
   const loadComments = async () => {
     setLoadingComments(true);
+
     try {
-      const res = await fetch(`${API_BASE_URL}/posts/${post.id}/comments`, { headers });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const res = await fetch(`${API_BASE_URL}/posts/${post.id}/comments`);
       const raw = await res.json();
-      const list = Array.isArray(raw) ? raw : raw?.comments || [];
-      setComments(list); // your SQL orders DESC; we render as-is
-    } catch {
+      const list = Array.isArray(raw) ? raw : raw.comments || [];
+      setComments(list);
+    } catch (err) {
+      console.error("Load comments error:", err);
       setComments([]);
     } finally {
       setLoadingComments(false);
@@ -3779,177 +1219,241 @@ function PostCard({ post, onLike, headers, me, authed }) {
   };
 
   const sendComment = async () => {
-    const body = (commentText || "").trim();
-    if (!body) return;
     if (!authed) {
       Alert.alert("Sign in required", "Please sign in to comment.");
       return;
     }
 
-    // optimistic
+    const body = (commentText || "").trim();
+    if (!body) return;
+
     const temp = {
       id: `tmp-${Date.now()}`,
       post_id: post.id,
       user_id: me,
       text: body,
       created_at: new Date().toISOString(),
+      user: {
+        id: me,
+        first_name: "You",
+        last_name: "",
+      }
     };
+
     setComments((c) => [temp, ...c]);
     setCommentText("");
 
     try {
       const res = await fetch(`${API_BASE_URL}/comments`, {
         method: "POST",
-        headers: { ...headers, "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          ...headers
+        },
         body: JSON.stringify({ post_id: post.id, user_id: me, text: body }),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      
+      if (!res.ok) {
+        throw new Error(`Comment failed: ${res.status}`);
+      }
+      
       const saved = await res.json();
       setComments((c) => c.map((x) => (x.id === temp.id ? saved : x)));
-    } catch {
+      
+      if (onCommentAdded) {
+        onCommentAdded(post.id);
+      }
+      
+    } catch (error) {
+      console.error("Comment error:", error);
       setComments((c) => c.filter((x) => x.id !== temp.id));
+      Alert.alert("Error", "Failed to post comment. Please try again.");
     }
   };
 
-  const toggleComments = () => {
-    const next = !showComments;
-    setShowComments(next);
-    if (next && comments.length === 0) {
-      loadComments();
-    }
-  };
-
-  const authorName =
-    (post?.user &&
-      ((post.user.first_name || post.user.FirstName || "") +
-        " " +
-        (post.user.last_name || post.user.LastName || "")))?.trim() ||
-    `User #${post.user_id ?? "?"}`;
-
-  /* ---------- itinerary actions (View, Edit, Share, Delete / or View, Share) ---------- */
-  const onView = () => {
-    if (!post?.content_id) return;
-    navigation.navigate("ItineraryDetails", { id: post.content_id });
-  };
-
-  const onEdit = () => {
-    if (!isOwner || !post?.content_id) return;
-    navigation.navigate("EditItinerary", { id: post.content_id });
-  };
-
-  const onShare = async () => {
-    const title = itData?.title || post?.caption || "Itinerary";
-    const shareUrl = `${API_BASE_URL.replace(/\/+$/, "")}/itineraries/${post.content_id}`;
-    try {
-      await Share.share({
-        message: `${title}\n\nCheck this itinerary on TravelMate:\n${shareUrl}`,
-        title,
-      });
-    } catch {}
-  };
-
-  // Name for a comment from embedded user object (Go: User with FirstName/LastName)
   const commentAuthor = (c) => {
     const u = c.user || c.User;
-    const first = u?.first_name ?? u?.FirstName ?? "";
-    const last = u?.last_name ?? u?.LastName ?? "";
-    const name = `${first} ${last}`.trim();
-    return name || `User #${c.user_id}`;
+    const first = u?.first_name || "";
+    const last = u?.last_name || "";
+    return (first + " " + last).trim() || "User";
   };
+
+  // 🔥 FIX: Render function for day cards in horizontal FlatList
+  const renderDayCard = ({ item: day, index }) => (
+    <View style={styles.dayCard}>
+      <View style={styles.dayBadge}>
+        <Text style={styles.dayBadgeText}>Day {day.day_number}</Text>
+      </View>
+      <Text style={styles.dayPlace} numberOfLines={2}>
+        {day.place}
+      </Text>
+      {day.start_time && day.end_time && (
+        <View style={styles.dayTimeRow}>
+          <Ionicons name="time-outline" size={12} color={COLORS.subtext} />
+          <Text style={styles.dayTime}>
+            {day.start_time} - {day.end_time}
+          </Text>
+        </View>
+      )}
+      {day.activities && (
+        <Text style={styles.dayActivities} numberOfLines={3}>
+          {day.activities}
+        </Text>
+      )}
+    </View>
+  );
 
   return (
     <View style={styles.card}>
-      {/* header */}
+      {/* ========== POST HEADER ========== */}
       <View style={styles.cardHeader}>
         <Image
-          source={{ uri: post.author_image || "https://placehold.co/64x64?text=U" }}
+          source={{
+            uri: post.author_image || "https://ui-avatars.com/api/?name=" + encodeURIComponent(authorName),
+          }}
           style={styles.avatar}
         />
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text numberOfLines={1} style={styles.author}>
-            {authorName}
-          </Text>
-          <Text numberOfLines={1} style={styles.time}>
-            {post.created_at ? new Date(post.created_at).toLocaleString() : ""}
-          </Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.author}>{authorName}</Text>
+          <Text style={styles.time}>{timeAgo(post.created_at)}</Text>
         </View>
       </View>
 
-      {/* caption */}
-      {!!post.caption && <Text style={styles.caption}>{post.caption}</Text>}
+      {/* ========== CAPTION ========== */}
+      {post.caption && <Text style={styles.caption}>{post.caption}</Text>}
 
-      {/* itinerary preview */}
-      {post?.content_id ? (
-        itLoading ? (
-          <View style={[styles.center, { paddingVertical: 10 }]}>
-            <ActivityIndicator />
-          </View>
-        ) : itData ? (
-          <View style={{ marginTop: 10 }}>
-            <ItineraryCard
-              item={{
-                title: itData.title || "Untitled Itinerary",
-                city: itData.city || itData.destination || "-",
-                start_date: itData.start_date,
-                end_date: itData.end_date,
-                budget: itData.budget,
-                style: itData.style,
-                cover_url: itData.cover_url,
-                days: Array.isArray(itData.days) ? itData.days : [],
-              }}
-              onPress={undefined}
+      {/* ========== FULL ITINERARY DETAILS ========== */}
+      {itinerary ? (
+        <View style={styles.itinerarySection}>
+          {/* Cover Image */}
+          {itinerary.cover_url ? (
+            <Image 
+              source={{ uri: itinerary.cover_url }} 
+              style={styles.coverImage}
+              resizeMode="cover"
             />
-          </View>
-        ) : null
-      ) : null}
+          ) : (
+            <View style={styles.coverPlaceholder}>
+              <Ionicons name="image-outline" size={48} color="#9CA3AF" />
+            </View>
+          )}
 
-      {/* itinerary actions row */}
-      {post?.content_id && (
-        <View style={styles.itinActions}>
-          <ActionPill icon="eye-outline" label="View" onPress={onView} />
-          <ActionPill icon="share-social-outline" label="Share" onPress={onShare} />
+          {/* Content */}
+          <View style={styles.itineraryContent}>
+            {/* Title & City */}
+            <Text style={styles.itineraryTitle}>{itinerary.title}</Text>
+
+            <View style={styles.cityRow}>
+              <Ionicons name="location" size={16} color={COLORS.primary} />
+              <Text style={styles.cityText}>{itinerary.city}</Text>
+            </View>
+
+            {/* Description */}
+            {itinerary.description && (
+              <Text style={styles.description}>{itinerary.description}</Text>
+            )}
+
+            {/* Date Range */}
+            <View style={styles.dateRow}>
+              <Ionicons name="calendar-outline" size={16} color={COLORS.subtext} />
+              <Text style={styles.dateText}>
+                {formatDate(itinerary.start_date)} - {formatDate(itinerary.end_date)}
+              </Text>
+              <Text style={styles.daysCount}>• {numDays} day{numDays !== 1 ? 's' : ''}</Text>
+            </View>
+
+            {/* Budget & Style Tags */}
+            <View style={styles.tagsRow}>
+              {itinerary.budget && (
+                <View style={styles.tagBudget}>
+                  <Ionicons name="cash-outline" size={14} color="#059669" />
+                  <Text style={styles.tagTextBudget}>{itinerary.budget}</Text>
+                </View>
+              )}
+              {itinerary.style && (
+                <View style={styles.tagStyle}>
+                  <Ionicons name="star-outline" size={14} color="#DC2626" />
+                  <Text style={styles.tagTextStyle}>{itinerary.style}</Text>
+                </View>
+              )}
+            </View>
+
+            {/* 🔥 FIXED: Activities/Days - Changed ScrollView to FlatList */}
+            {days.length > 0 && (
+              <View style={styles.activitiesSection}>
+                <View style={styles.activitiesHeader}>
+                  <Ionicons name="list-outline" size={18} color={COLORS.text} />
+                  <Text style={styles.activitiesTitle}>
+                    Daily Activities ({days.length})
+                  </Text>
+                </View>
+
+                <FlatList
+                  data={days}
+                  renderItem={renderDayCard}
+                  keyExtractor={(day, index) => day.id ? String(day.id) : `day-${index}`}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.activitiesScrollContent}
+                  style={styles.activitiesList}
+                />
+              </View>
+            )}
+          </View>
+        </View>
+      ) : (
+        <View style={styles.noItinerary}>
+          <Ionicons name="alert-circle-outline" size={32} color="#9CA3AF" />
+          <Text style={styles.noItineraryText}>Itinerary not available</Text>
         </View>
       )}
 
-      {/* post actions (like + comments) */}
+      {/* ========== POST ACTIONS (LIKE & COMMENT) ========== */}
       <View style={styles.actions}>
-        <TouchableOpacity onPress={onLike} style={styles.actionBtn} activeOpacity={0.85}>
+        <TouchableOpacity onPress={onLike} style={styles.actionBtn}>
           <Ionicons
             name={post.liked ? "heart" : "heart-outline"}
-            size={18}
+            size={20}
             color={post.liked ? "#DC2626" : COLORS.text}
           />
           <Text style={styles.actionText}>{post.likes_count || 0}</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={toggleComments} style={styles.actionBtn} activeOpacity={0.85}>
-          <Ionicons name="chatbubble-ellipses-outline" size={18} color={COLORS.text} />
-          <Text style={styles.actionText}>Comments</Text>
+        <TouchableOpacity
+          onPress={() => setShowComments(!showComments)}
+          style={styles.actionBtn}
+        >
+          <Ionicons
+            name="chatbubble-ellipses-outline"
+            size={20}
+            color={COLORS.text}
+          />
+          <Text style={styles.actionText}>
+            {post.comments_count > 0 ? `${post.comments_count}` : 'Comment'}
+          </Text>
         </TouchableOpacity>
       </View>
 
-      {/* comments */}
+      {/* ========== COMMENTS SECTION ========== */}
       {showComments && (
         <View style={styles.commentsBox}>
           {loadingComments ? (
-            <View style={styles.center}>
-              <ActivityIndicator />
-            </View>
+            <ActivityIndicator color={COLORS.primary} />
           ) : comments.length === 0 ? (
             <Text style={styles.meta}>Be the first to comment.</Text>
           ) : (
             comments.map((c) => (
               <View key={String(c.id)} style={styles.commentRow}>
                 <Image
-                  source={{ uri: c.user_image || "https://placehold.co/40x40?text=U" }}
                   style={styles.cAvatar}
+                  source={{
+                    uri: c.user_image || "https://ui-avatars.com/api/?name=" + encodeURIComponent(commentAuthor(c)),
+                  }}
                 />
-                <View style={{ flex: 1, minWidth: 0 }}>
+                <View style={{ flex: 1 }}>
                   <Text style={styles.cAuthor}>{commentAuthor(c)}</Text>
                   <Text style={styles.cText}>{c.text}</Text>
-                  <Text style={styles.cTime}>
-                    {c.created_at ? new Date(c.created_at).toLocaleString() : ""}
-                  </Text>
+                  <Text style={styles.cTime}>{timeAgo(c.created_at)}</Text>
                 </View>
               </View>
             ))
@@ -3962,14 +1466,14 @@ function PostCard({ post, onLike, headers, me, authed }) {
               placeholder="Write a comment…"
               placeholderTextColor="#94A3B8"
               style={styles.commentInput}
+              maxLength={500}
             />
             <TouchableOpacity
-              onPress={sendComment}
               disabled={!commentText.trim()}
-              activeOpacity={0.9}
+              onPress={sendComment}
               style={[
                 styles.commentSend,
-                !commentText.trim() && { opacity: 0.6 },
+                !commentText.trim() && { opacity: 0.5 },
               ]}
             >
               <Ionicons name="send" size={16} color="#fff" />
@@ -3981,29 +1485,29 @@ function PostCard({ post, onLike, headers, me, authed }) {
   );
 }
 
-/* ----------------------- Small pill button ----------------------- */
-function ActionPill({ icon, label, onPress, destructive }) {
+/* ===================== SMALL UI COMPONENTS ===================== */
+function Loader({ label }) {
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.9}
-      style={[
-        styles.pill,
-        destructive && { backgroundColor: "#FEE2E2", borderColor: "#FECACA" },
-      ]}
-    >
-      <Ionicons
-        name={icon}
-        size={14}
-        color={destructive ? "#991B1B" : COLORS.text}
-        style={{ marginRight: 6 }}
-      />
-      <Text style={[styles.pillText, destructive && { color: "#991B1B" }]}>{label}</Text>
-    </TouchableOpacity>
+    <View style={styles.center}>
+      <ActivityIndicator color={COLORS.primary} />
+      <Text style={styles.meta}>{label}</Text>
+    </View>
   );
 }
 
-/* ----------------------- styles ----------------------- */
+function ErrorBox({ err, onRetry }) {
+  return (
+    <View style={styles.errorBox}>
+      <Ionicons name="alert-circle" size={18} color="#B42318" />
+      <Text style={styles.errorText}>{err}</Text>
+      <TouchableOpacity onPress={onRetry} style={{ marginLeft: "auto" }}>
+        <Text style={styles.link}>Retry</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+/* ===================== STYLES ===================== */
 const COLORS = {
   page: "#F6FAFD",
   card: "#FFFFFF",
@@ -4014,127 +1518,391 @@ const COLORS = {
 };
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: COLORS.page },
+  page: {
+    flex: 1,
+    backgroundColor: COLORS.page,
+  },
 
   header: {
     paddingTop: Platform.OS === "web" ? 92 : 16,
     paddingHorizontal: 16,
     flexDirection: "row",
     alignItems: "center",
-    ...(Platform.OS === "web" ? { maxWidth: 860, alignSelf: "center", width: "100%" } : {}),
+    marginBottom: 16,
+    ...(Platform.OS === "web"
+      ? { maxWidth: 860, alignSelf: "center", width: "100%" }
+      : {}),
   },
-  h1: { fontSize: 22, fontWeight: "800", color: COLORS.text, flex: 1 },
+
+  h1: { fontSize: 24, fontWeight: "800", color: COLORS.text, flex: 1 },
+
   refreshBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: "#EEF3F9",
-  },
-  refreshText: { color: COLORS.text, fontWeight: "700", fontSize: 12 },
-
-  card: {
-    backgroundColor: COLORS.card,
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-  },
-
-  cardHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
-  avatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: "#DDE7F2" },
-  author: { fontWeight: "800", color: "#0F172A" },
-  time: { color: COLORS.subtext, fontSize: 12 },
-
-  caption: { marginTop: 10, color: "#0F172A" },
-
-  /* itinerary actions */
-  itinActions: {
-    marginTop: 10,
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  pill: {
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 999,
     borderWidth: 1,
     borderColor: COLORS.border,
+    backgroundColor: "#EEF3F9",
+  },
+
+  refreshText: { color: COLORS.text, fontWeight: "700", fontSize: 13 },
+
+  // Post Card
+  card: {
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+
+  cardHeader: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    gap: 12,
+    marginBottom: 12,
+  },
+  avatar: { 
+    width: 44, 
+    height: 44, 
+    borderRadius: 22,
+    backgroundColor: "#E5E7EB",
+  },
+  author: { fontWeight: "800", color: "#0F172A", fontSize: 15 },
+  time: { color: COLORS.subtext, fontSize: 12, marginTop: 2 },
+
+  caption: { 
+    marginBottom: 12, 
+    color: "#0F172A",
+    fontSize: 14,
+    lineHeight: 20,
+  },
+
+  // Itinerary Section
+  itinerarySection: {
+    backgroundColor: "#F9FAFB",
+    borderRadius: 12,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+
+  coverImage: {
+    width: "100%",
+    height: 200,
+    backgroundColor: "#F3F4F6",
+  },
+
+  coverPlaceholder: {
+    width: "100%",
+    height: 200,
+    backgroundColor: "#F3F4F6",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  itineraryContent: {
+    padding: 16,
+  },
+
+  itineraryTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: COLORS.text,
+    marginBottom: 8,
+    lineHeight: 26,
+  },
+
+  cityRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 12,
+  },
+  cityText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: COLORS.primary,
+  },
+
+  description: {
+    fontSize: 14,
+    color: COLORS.subtext,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+
+  dateRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 12,
+  },
+  dateText: {
+    fontSize: 13,
+    color: COLORS.subtext,
+    fontWeight: "600",
+  },
+  daysCount: {
+    fontSize: 13,
+    color: COLORS.text,
+    fontWeight: "700",
+  },
+
+  tagsRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 16,
+  },
+  tagBudget: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#ECFDF5",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#A7F3D0",
+  },
+  tagTextBudget: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#059669",
+  },
+  tagStyle: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#FEF2F2",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#FECACA",
+  },
+  tagTextStyle: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#DC2626",
+  },
+
+  // 🔥 UPDATED: Activities styles for FlatList
+  activitiesSection: {
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+  },
+  activitiesHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12,
+  },
+  activitiesTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: COLORS.text,
+  },
+  activitiesList: {
+    marginHorizontal: -16,
+  },
+  activitiesScrollContent: {
+    paddingHorizontal: 16,
+  },
+  dayCard: {
+    width: 220,
     backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    padding: 14,
+    marginRight: 12,
+  },
+  dayBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    marginBottom: 10,
+  },
+  dayBadgeText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#fff",
+    textTransform: "uppercase",
+  },
+  dayPlace: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: COLORS.text,
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  dayTimeRow: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 4,
+    marginBottom: 8,
   },
-  pillText: { fontSize: 12, fontWeight: "800", color: COLORS.text },
+  dayTime: {
+    fontSize: 12,
+    color: COLORS.subtext,
+    fontWeight: "600",
+  },
+  dayActivities: {
+    fontSize: 13,
+    color: COLORS.subtext,
+    lineHeight: 18,
+  },
 
-  /* post actions */
+  noItinerary: {
+    padding: 40,
+    alignItems: "center",
+    backgroundColor: "#F9FAFB",
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  noItineraryText: {
+    marginTop: 8,
+    color: "#9CA3AF",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+
+  // Actions
   actions: {
-    marginTop: 12,
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
     flexDirection: "row",
-    gap: 16,
+    gap: 24,
     alignItems: "center",
   },
-  actionBtn: { flexDirection: "row", alignItems: "center", gap: 6 },
-  actionText: { color: COLORS.text, fontWeight: "700" },
+  actionBtn: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    gap: 8,
+  },
+  actionText: { 
+    color: COLORS.text, 
+    fontWeight: "700",
+    fontSize: 14,
+  },
 
-  /* comments */
+  // Comments
   commentsBox: {
-    marginTop: 12,
+    marginTop: 16,
+    paddingTop: 16,
     borderTopWidth: 1,
     borderColor: COLORS.border,
-    paddingTop: 10,
-    gap: 10,
+    gap: 12,
   },
-  commentRow: { flexDirection: "row", gap: 10 },
-  cAvatar: { width: 32, height: 32, borderRadius: 16, backgroundColor: "#E2E8F0" },
-  cAuthor: { fontWeight: "700", color: "#0F172A" },
-  cText: { color: "#0F172A" },
-  cTime: { color: COLORS.subtext, fontSize: 11, marginTop: 2 },
 
-  commentComposer: { flexDirection: "row", gap: 8, alignItems: "center" },
+  commentRow: { 
+    flexDirection: "row", 
+    gap: 10,
+    marginBottom: 12,
+  },
+  cAvatar: { 
+    width: 36, 
+    height: 36, 
+    borderRadius: 18,
+    backgroundColor: "#E5E7EB",
+  },
+  cAuthor: { 
+    fontWeight: "700", 
+    color: "#0F172A",
+    fontSize: 14,
+    marginBottom: 2,
+  },
+  cText: { 
+    color: "#0F172A",
+    fontSize: 14,
+    lineHeight: 19,
+  },
+  cTime: { 
+    color: COLORS.subtext, 
+    fontSize: 12,
+    marginTop: 4,
+  },
+
+  commentComposer: {
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "center",
+  },
   commentInput: {
     flex: 1,
     backgroundColor: "#F9FBFE",
     borderWidth: 1,
     borderColor: "#E2E8F0",
     borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    color: "#0F172A",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 14,
   },
   commentSend: {
-    width: 42,
-    height: 42,
+    width: 44,
+    height: 44,
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: COLORS.primary,
   },
 
-  // states
-  center: { alignItems: "center", justifyContent: "center", padding: 18 },
-  meta: { color: COLORS.subtext, fontWeight: "600" },
+  // Empty & Loading
+  center: { 
+    alignItems: "center", 
+    justifyContent: "center", 
+    padding: 48,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: COLORS.text,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  meta: { 
+    color: COLORS.subtext, 
+    fontWeight: "600",
+    fontSize: 14,
+  },
+
   errorBox: {
     marginHorizontal: 16,
     marginTop: 16,
     flexDirection: "row",
+    gap: 8,
     alignItems: "center",
     backgroundColor: "#FEF3F2",
     borderWidth: 1,
     borderColor: "#FEE4E2",
     borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    ...(Platform.OS === "web" ? { maxWidth: 860, alignSelf: "center", width: "100%" } : {}),
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    ...(Platform.OS === "web"
+      ? { maxWidth: 860, alignSelf: "center", width: "100%" }
+      : {}),
   },
-  errorText: { color: "#B42318", fontWeight: "600" },
-  link: { color: COLORS.primary, fontWeight: "700" },
+  errorText: { 
+    color: "#B42318", 
+    fontWeight: "600",
+    flex: 1,
+  },
+  link: { 
+    color: COLORS.primary, 
+    fontWeight: "700",
+  },
 });

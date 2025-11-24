@@ -1,3 +1,5 @@
+
+// // components/Social/Notifications.js
 // import React, { useCallback, useEffect, useMemo, useState } from "react";
 // import {
 //   View,
@@ -12,8 +14,9 @@
 // } from "react-native";
 // import AsyncStorage from "@react-native-async-storage/async-storage";
 // import { Ionicons } from "@expo/vector-icons";
+// import getBaseURL from "../../config/env"; // ✅ use your existing env.js
 
-// const API_BASE_URL = process.env.EXPO_PUBLIC_API || "http://localhost:8080";
+// const API_BASE_URL = getBaseURL();
 
 // export default function Notifications() {
 //   const [auth, setAuth] = useState({ token: null, userId: null });
@@ -25,46 +28,56 @@
 //   // load token + userId saved by LoginScreen
 //   useEffect(() => {
 //     (async () => {
-//       const [token, userId] = await AsyncStorage.multiGet(["token", "userId"]);
+//       const [[, token], [, userIdRaw]] = await AsyncStorage.multiGet([
+//         "token",
+//         "userId",
+//       ]);
 //       setAuth({
-//         token: token?.[1] || null,
-//         userId: userId?.[1] ? Number(userId[1]) : null,
+//         token: token || null,
+//         userId: userIdRaw ? Number(userIdRaw) : null,
 //       });
 //     })();
 //   }, []);
 
-//   const headers = useMemo(() => {
-//     const h = { "Content-Type": "application/json" };
+//   // Build headers; don't set Content-Type unless sending a JSON body
+//   const authHeaders = useMemo(() => {
+//     const h = {};
 //     if (auth.token) h.Authorization = `Bearer ${auth.token}`;
 //     return h;
-//   }, [auth]);
+//   }, [auth.token]);
 
 //   const fetchPending = useCallback(async () => {
-//     if (!auth.userId) return;
+//     if (!auth.userId) {
+//       setRequests([]);
+//       setLoading(false);
+//       return;
+//     }
 //     setLoading(true);
 //     setError(null);
 //     try {
 //       const res = await fetch(
 //         `${API_BASE_URL}/social/follow-requests/pending/${auth.userId}`,
-//         { method: "GET", headers }
+//         { method: "GET", headers: authHeaders }
 //       );
 //       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 //       const data = await res.json();
 
-//       // API shape from your controller:
 //       // { pending_requests: [{ id, follower_id, following_id, status, follower:{ username, full_name, image_url, bio } }], count: N }
-//       setRequests(Array.isArray(data.pending_requests) ? data.pending_requests : []);
+//       const list = Array.isArray(data.pending_requests)
+//         ? data.pending_requests
+//         : [];
+//       setRequests(list);
 //     } catch (e) {
 //       setError(e?.message || "Failed to load requests");
 //       setRequests([]);
 //     } finally {
 //       setLoading(false);
 //     }
-//   }, [auth.userId, headers]);
+//   }, [auth.userId, authHeaders, API_BASE_URL]);
 
 //   useEffect(() => {
-//     if (auth.userId) fetchPending();
-//   }, [auth.userId, fetchPending]);
+//     fetchPending();
+//   }, [fetchPending]);
 
 //   const approve = async (req) => {
 //     if (busy[req.id]) return;
@@ -72,7 +85,7 @@
 //       setBusy((p) => ({ ...p, [req.id]: true }));
 //       const res = await fetch(`${API_BASE_URL}/social/follow-requests/approve`, {
 //         method: "POST",
-//         headers,
+//         headers: { ...authHeaders, "Content-Type": "application/json" },
 //         body: JSON.stringify({
 //           follower_id: req.follower_id,
 //           following_id: req.following_id,
@@ -98,7 +111,7 @@
 //       setBusy((p) => ({ ...p, [req.id]: true }));
 //       const res = await fetch(`${API_BASE_URL}/social/follow-requests/reject`, {
 //         method: "POST",
-//         headers,
+//         headers: { ...authHeaders, "Content-Type": "application/json" },
 //         body: JSON.stringify({
 //           follower_id: req.follower_id,
 //           following_id: req.following_id,
@@ -118,7 +131,8 @@
 //   };
 
 //   const renderItem = ({ item }) => {
-//     const avatar = item?.follower?.image_url || "https://placehold.co/64x64?text=U";
+//     const avatar =
+//       item?.follower?.image_url || "https://placehold.co/64x64?text=U";
 //     const fullName = item?.follower?.full_name || "Unknown User";
 //     const username = item?.follower?.username ? `@${item.follower.username}` : "";
 //     const isBusy = !!busy[item.id];
@@ -127,7 +141,9 @@
 //       <View style={styles.cardRow}>
 //         <Image source={{ uri: avatar }} style={styles.avatar} />
 //         <View style={{ flex: 1, minWidth: 0 }}>
-//           <Text style={styles.name} numberOfLines={1}>{fullName}</Text>
+//           <Text style={styles.name} numberOfLines={1}>
+//             {fullName}
+//           </Text>
 //           <Text style={styles.meta} numberOfLines={1}>
 //             {username} wants to follow you
 //           </Text>
@@ -168,6 +184,18 @@
 //         <Text style={styles.title}>Notifications</Text>
 //         <Text style={styles.subtitle}>Mentions, likes, and follow requests.</Text>
 
+//         {!auth.userId && (
+//           <View style={[styles.banner, styles.bannerInfo]}>
+//             <Ionicons
+//               name="information-circle"
+//               size={18}
+//               color="#0F70F0"
+//               style={{ marginRight: 6 }}
+//             />
+//             <Text style={styles.bannerInfoText}>Sign in to see your notifications.</Text>
+//           </View>
+//         )}
+
 //         {/* Panel */}
 //         {showPanel ? (
 //           <View style={styles.panel}>
@@ -178,7 +206,12 @@
 //               </View>
 //             ) : error ? (
 //               <View style={[styles.banner, styles.bannerError]}>
-//                 <Ionicons name="alert-circle" size={18} color="#B42318" style={{ marginRight: 6 }} />
+//                 <Ionicons
+//                   name="alert-circle"
+//                   size={18}
+//                   color="#B42318"
+//                   style={{ marginRight: 6 }}
+//                 />
 //                 <Text style={styles.bannerErrorText}>{error}</Text>
 //                 <TouchableOpacity onPress={fetchPending} style={{ marginLeft: "auto" }}>
 //                   <Text style={styles.link}>Retry</Text>
@@ -230,6 +263,17 @@
 //   title: { fontSize: 24, fontWeight: "800", color: COLORS.text, letterSpacing: 0.2 },
 //   subtitle: { marginTop: 6, fontSize: 14, color: COLORS.subtext, marginBottom: 12 },
 
+//   banner: {
+//     flexDirection: "row",
+//     alignItems: "center",
+//     borderRadius: 10,
+//     paddingVertical: 10,
+//     paddingHorizontal: 12,
+//     marginBottom: 8,
+//   },
+//   bannerInfo: { backgroundColor: "#EFF6FF", borderWidth: 1, borderColor: "#DBEAFE" },
+//   bannerInfoText: { color: "#0F70F0", fontWeight: "600" },
+
 //   panel: {
 //     flex: 1,
 //     backgroundColor: COLORS.card,
@@ -248,14 +292,6 @@
 //   loadingText: { marginTop: 6, color: COLORS.subtext, fontWeight: "600" },
 //   emptyText: { color: COLORS.subtext, fontWeight: "600" },
 
-//   banner: {
-//     flexDirection: "row",
-//     alignItems: "center",
-//     borderRadius: 10,
-//     paddingVertical: 10,
-//     paddingHorizontal: 12,
-//     marginBottom: 8,
-//   },
 //   bannerError: { backgroundColor: "#FEF3F2", borderWidth: 1, borderColor: "#FEE4E2" },
 //   bannerErrorText: { color: "#B42318", fontWeight: "600" },
 //   link: { color: COLORS.primary, fontWeight: "700" },
@@ -296,18 +332,17 @@ import {
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
-import getBaseURL from "../../config/env"; // ✅ use your existing env.js
+import getBaseURL from "../../config/env";
 
 const API_BASE_URL = getBaseURL();
 
 export default function Notifications() {
   const [auth, setAuth] = useState({ token: null, userId: null });
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState({}); // { [requestId]: true }
+  const [busy, setBusy] = useState({});
   const [error, setError] = useState(null);
-  const [requests, setRequests] = useState([]); // pending follow requests
+  const [requests, setRequests] = useState([]);
 
-  // load token + userId saved by LoginScreen
   useEffect(() => {
     (async () => {
       const [[, token], [, userIdRaw]] = await AsyncStorage.multiGet([
@@ -321,7 +356,6 @@ export default function Notifications() {
     })();
   }, []);
 
-  // Build headers; don't set Content-Type unless sending a JSON body
   const authHeaders = useMemo(() => {
     const h = {};
     if (auth.token) h.Authorization = `Bearer ${auth.token}`;
@@ -344,7 +378,6 @@ export default function Notifications() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
 
-      // { pending_requests: [{ id, follower_id, following_id, status, follower:{ username, full_name, image_url, bio } }], count: N }
       const list = Array.isArray(data.pending_requests)
         ? data.pending_requests
         : [];
@@ -355,7 +388,7 @@ export default function Notifications() {
     } finally {
       setLoading(false);
     }
-  }, [auth.userId, authHeaders, API_BASE_URL]);
+  }, [auth.userId, authHeaders]);
 
   useEffect(() => {
     fetchPending();
@@ -374,7 +407,6 @@ export default function Notifications() {
         }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      // Optimistically remove
       setRequests((list) => list.filter((r) => r.id !== req.id));
     } catch (e) {
       setError(e?.message || "Failed to approve request");
@@ -413,10 +445,21 @@ export default function Notifications() {
   };
 
   const renderItem = ({ item }) => {
-    const avatar =
-      item?.follower?.image_url || "https://placehold.co/64x64?text=U";
-    const fullName = item?.follower?.full_name || "Unknown User";
-    const username = item?.follower?.username ? `@${item.follower.username}` : "";
+    // 🔥 Properly construct full name with fallbacks
+    const firstName = item?.follower?.first_name || "";
+    const lastName = item?.follower?.last_name || "";
+    const fullName = item?.follower?.full_name || 
+                     `${firstName} ${lastName}`.trim() || 
+                     item?.follower?.email || 
+                     "Unknown User";
+    
+    // 🔥 Use provided avatar or generate one
+    const avatar = item?.follower?.image_url || 
+                   `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=0F70F0&color=fff`;
+    
+    // 🔥 Username display
+    const username = item?.follower?.username || "";
+    
     const isBusy = !!busy[item.id];
 
     return (
@@ -427,7 +470,7 @@ export default function Notifications() {
             {fullName}
           </Text>
           <Text style={styles.meta} numberOfLines={1}>
-            {username} wants to follow you
+            {username ? `@${username}` : "User"} wants to follow you
           </Text>
         </View>
 
@@ -478,12 +521,11 @@ export default function Notifications() {
           </View>
         )}
 
-        {/* Panel */}
         {showPanel ? (
           <View style={styles.panel}>
             {loading ? (
               <View style={styles.centerBlock}>
-                <ActivityIndicator />
+                <ActivityIndicator color="#0F70F0" />
                 <Text style={styles.loadingText}>Loading…</Text>
               </View>
             ) : error ? (
@@ -501,7 +543,9 @@ export default function Notifications() {
               </View>
             ) : requests.length === 0 ? (
               <View style={styles.centerBlock}>
+                <Ionicons name="checkmark-circle-outline" size={48} color="#10B981" style={{ marginBottom: 12 }} />
                 <Text style={styles.emptyText}>No new follow requests</Text>
+                <Text style={styles.emptySubtext}>You're all caught up!</Text>
               </View>
             ) : (
               <FlatList
@@ -521,7 +565,7 @@ export default function Notifications() {
   );
 }
 
-/* ---- theme / styles (matches TravelMate look) ---- */
+/* ---- Styles ---- */
 const COLORS = {
   page: "#F6FAFD",
   card: "#FFFFFF",
@@ -566,22 +610,34 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     minHeight: 420,
     ...(Platform.OS === "web"
-      ? { boxSizing: "border-box", boxShadow: "0 8px 24px rgba(15,58,107,0.06)" }
+      ? { boxShadow: "0 8px 24px rgba(15,58,107,0.06)" }
       : { elevation: 2 }),
   },
 
-  centerBlock: { alignItems: "center", justifyContent: "center", paddingVertical: 28 },
-  loadingText: { marginTop: 6, color: COLORS.subtext, fontWeight: "600" },
-  emptyText: { color: COLORS.subtext, fontWeight: "600" },
+  centerBlock: { alignItems: "center", justifyContent: "center", paddingVertical: 40 },
+  loadingText: { marginTop: 8, color: COLORS.subtext, fontWeight: "600" },
+  emptyText: { color: COLORS.text, fontWeight: "700", fontSize: 16 },
+  emptySubtext: { marginTop: 4, color: COLORS.subtext, fontSize: 14 },
 
   bannerError: { backgroundColor: "#FEF3F2", borderWidth: 1, borderColor: "#FEE4E2" },
-  bannerErrorText: { color: "#B42318", fontWeight: "600" },
+  bannerErrorText: { color: "#B42318", fontWeight: "600", flex: 1 },
   link: { color: COLORS.primary, fontWeight: "700" },
 
-  cardRow: { flexDirection: "row", alignItems: "center", paddingVertical: 12, paddingHorizontal: 6 },
-  avatar: { width: 48, height: 48, borderRadius: 24, marginRight: 12, backgroundColor: "#EAF0F6" },
+  cardRow: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    paddingVertical: 12, 
+    paddingHorizontal: 6 
+  },
+  avatar: { 
+    width: 48, 
+    height: 48, 
+    borderRadius: 24, 
+    marginRight: 12, 
+    backgroundColor: "#EAF0F6" 
+  },
   name: { color: "#0F172A", fontWeight: "700", fontSize: 15 },
-  meta: { color: COLORS.subtext, fontSize: 13 },
+  meta: { color: COLORS.subtext, fontSize: 13, marginTop: 2 },
 
   actions: { flexDirection: "row", gap: 8, marginLeft: 10 },
   btn: {
@@ -589,11 +645,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingVertical: 8,
     paddingHorizontal: 14,
+    minWidth: 80,
+    alignItems: "center",
   },
   btnPrimary: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  btnPrimaryText: { color: "#FFFFFF", fontWeight: "800" },
+  btnPrimaryText: { color: "#FFFFFF", fontWeight: "800", fontSize: 13 },
   btnGhost: { backgroundColor: "#EEF3F9", borderColor: COLORS.border },
-  btnGhostText: { color: "#0F172A", fontWeight: "800" },
+  btnGhostText: { color: "#0F172A", fontWeight: "800", fontSize: 13 },
 
   separator: { height: 1, backgroundColor: "#F1F5F9", marginLeft: 66 },
 });

@@ -86,18 +86,29 @@ func AddUserToGroupChat(c *gin.Context) {
 	GET /users/:user_id/conversations
 	=========================
 */
+// func GetConversationsForUser(c *gin.Context) {
+// 	uid, err := strconv.Atoi(c.Param("id"))
+// 	if err != nil {
+// 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+// 		return
+// 	}
+// 	convs, err := models.GetConversationsForUser(uid)
+// 	if err != nil {
+// 		log.Printf("[GetConversationsForUser] model err: %v", err)
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch conversations"})
+// 		return
+// 	}
+// 	c.JSON(http.StatusOK, convs)
+// }
+
 func GetConversationsForUser(c *gin.Context) {
 	uid, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
 		return
 	}
-	
-	// By default, exclude group-related conversations for Community tab
-	// This keeps group chats separate from community chats
-	excludeGroupChats := c.DefaultQuery("exclude_group", "true") == "true"
-	
-	convs, err := models.GetConversationsForUser(uid, excludeGroupChats)
+
+	convs, err := models.GetConversationsForUserWithMembers(uid)
 	if err != nil {
 		log.Printf("[GetConversationsForUser] model err: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch conversations"})
@@ -113,6 +124,26 @@ func GetConversationsForUser(c *gin.Context) {
 	GET /conversations/:id/messages?limit=100
 	=========================
 */
+// func GetMessagesByConversation(c *gin.Context) {
+// 	convID, err := strconv.Atoi(c.Param("id"))
+// 	if err != nil {
+// 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid conversation id"})
+// 		return
+// 	}
+// 	limit := 100
+// 	if s := c.Query("limit"); s != "" {
+// 		if n, err := strconv.Atoi(s); err == nil && n > 0 {
+// 			limit = n
+// 		}
+// 	}
+// 	msgs, err := models.GetMessagesByConversation(convID, limit)
+// 	if err != nil {
+// 		log.Printf("[GetMessagesByConversation] model err: %v", err)
+// 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch messages"})
+// 		return
+// 	}
+// 	c.JSON(http.StatusOK, msgs)
+// }
 func GetMessagesByConversation(c *gin.Context) {
 	convID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -125,7 +156,8 @@ func GetMessagesByConversation(c *gin.Context) {
 			limit = n
 		}
 	}
-	msgs, err := models.GetMessagesByConversation(convID, limit)
+
+	msgs, err := models.GetMessagesByConversationWithSender(convID, limit)
 	if err != nil {
 		log.Printf("[GetMessagesByConversation] model err: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch messages"})

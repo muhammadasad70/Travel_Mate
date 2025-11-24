@@ -191,6 +191,7 @@ func main() {
 	routes.RegisterCulturalServiceRoutes(router)
 	routes.RegisterBookingChatRoutes(router)
 	routes.RegisterSocialAuthRoutes(router)
+	routes.RegisterEmergencyRoutes(router)
 
 	// ❌ REMOVE the next line to avoid duplicate /public/cultural/services registration
 	// routes.RegisterPublicRoutes(router)

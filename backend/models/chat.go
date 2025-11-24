@@ -274,3 +274,138 @@ func MarkMessageRead(messageID, userID int) error {
 	`, messageID, userID)
 	return err
 }
+
+// GetConversationMembers returns user details for all members of a conversation
+func GetConversationMembers(conversationID int) ([]User, error) {
+	rows, err := database.DB.Query(`
+		SELECT u.id, u.email, u.first_name, u.last_name, u.country_code, 
+		       u.phone, u.country, u.role, u.is_profile_complete, u.created_at
+		FROM users u
+		JOIN conversation_members cm ON cm.user_id = u.id
+		WHERE cm.conversation_id = $1
+	`, conversationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []User
+	for rows.Next() {
+		var u User
+		if err := rows.Scan(
+			&u.Id, &u.Email, &u.FirstName, &u.LastName, &u.CountryCode,
+			&u.Phone, &u.Country, &u.Role, &u.IsProfileComplete, &u.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		users = append(users, u)
+	}
+	return users, nil
+}
+
+// ConversationWithMembers includes member details
+type ConversationWithMembers struct {
+	ID        int       `json:"id"`
+	Type      string    `json:"type"`
+	Title     *string   `json:"title"`
+	GroupID   *int      `json:"group_id"`
+	CreatedAt time.Time `json:"created_at"`
+	Members   []User    `json:"members"`
+}
+
+// GetConversationsForUserWithMembers returns conversations with member details
+func GetConversationsForUserWithMembers(userID int) ([]ConversationWithMembers, error) {
+	rows, err := database.DB.Query(`
+		SELECT c.id, c.type, c.title, c.group_id, c.created_at
+		  FROM conversations c
+		  JOIN conversation_members cm ON cm.conversation_id = c.id
+		 WHERE cm.user_id = $1
+		 ORDER BY c.created_at DESC
+	`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []ConversationWithMembers
+	for rows.Next() {
+		var c ConversationWithMembers
+		if err := rows.Scan(&c.ID, &c.Type, &c.Title, &c.GroupID, &c.CreatedAt); err != nil {
+			return nil, err
+		}
+
+		// Get members for this conversation
+		members, err := GetConversationMembers(c.ID)
+		if err == nil {
+			c.Members = members
+		}
+
+		out = append(out, c)
+	}
+	return out, nil
+}
+
+// MessageWithSender includes sender details
+type MessageWithSender struct {
+	ID             int       `json:"id"`
+	ConversationID int       `json:"conversation_id"`
+	SenderID       *int      `json:"sender_id"`
+	Content        *string   `json:"content"`
+	FileURL        *string   `json:"file_url"`
+	MessageType    string    `json:"message_type"`
+	CreatedAt      time.Time `json:"created_at"`
+	Sender         *User     `json:"sender,omitempty"`
+}
+
+// GetMessagesByConversationWithSender returns messages with sender info
+func GetMessagesByConversationWithSender(conversationID int, limit int) ([]MessageWithSender, error) {
+	if limit <= 0 || limit > 500 {
+		limit = 100
+	}
+	rows, err := database.DB.Query(`
+		SELECT 
+			m.id, m.conversation_id, m.sender_id, m.content, m.file_url, 
+			m.message_type, m.created_at,
+			u.id, COALESCE(u.first_name,''), COALESCE(u.last_name,''),
+			COALESCE(u.email,''), u.role
+		FROM messages m
+		LEFT JOIN users u ON u.id = m.sender_id
+		WHERE m.conversation_id=$1
+		ORDER BY m.created_at DESC
+		LIMIT $2
+	`, conversationID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var msgs []MessageWithSender
+	for rows.Next() {
+		var m MessageWithSender
+		var senderID sql.NullInt64
+		var firstName, lastName, email, role sql.NullString
+
+		if err := rows.Scan(
+			&m.ID, &m.ConversationID, &senderID, &m.Content, &m.FileURL,
+			&m.MessageType, &m.CreatedAt,
+			&senderID, &firstName, &lastName, &email, &role,
+		); err != nil {
+			return nil, err
+		}
+
+		if senderID.Valid {
+			sid := int(senderID.Int64)
+			m.SenderID = &sid
+			m.Sender = &User{
+				Id:        sid,
+				FirstName: firstName.String,
+				LastName:  lastName.String,
+				Email:     email.String,
+				Role:      role.String,
+			}
+		}
+
+		msgs = append(msgs, m)
+	}
+	return msgs, nil
+}

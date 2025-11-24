@@ -23,7 +23,7 @@
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "We need access to your photos to pick a cover image.",
         "NSCameraUsageDescription": "We need camera access if you want to take a photo.",
-        "NSCalendarsUsageDescription": "We need access to add events to your calendar."
+        "NSCalendarsUsageDescription": "Allow TravelMate to add events to your calendar."
       }
     },
     "android": {
@@ -61,6 +61,12 @@
         "expo-image-picker",
         {
           "photosPermission": "Allow TravelMate to access your photos to select a cover image."
+        }
+      ],
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "Allow TravelMate to add events to your calendar."
         }
       ],
       "expo-web-browser"
