@@ -816,6 +816,50 @@ CREATE INDEX IF NOT EXISTS idx_booking_conversations_vendor ON booking_conversat
 CREATE INDEX IF NOT EXISTS idx_booking_messages_conversation ON booking_messages(conversation_id);
 CREATE INDEX IF NOT EXISTS idx_booking_messages_sender ON booking_messages(sender_id);
 CREATE INDEX IF NOT EXISTS idx_booking_messages_created ON booking_messages(created_at DESC);
+
+
+-- Main emergency contacts table
+CREATE TABLE IF NOT EXISTS emergency_contacts (
+    id SERIAL PRIMARY KEY,
+    city VARCHAR(100) NOT NULL,
+    parent_city VARCHAR(100),
+    category VARCHAR(50) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    phone VARCHAR(50) NOT NULL,
+    alternate_phone VARCHAR(50),
+    address TEXT,
+    latitude DOUBLE PRECISION,
+    longitude DOUBLE PRECISION,
+    is_24_7 BOOLEAN DEFAULT true,
+    notes TEXT,
+    is_verified BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+-- City mappings (tourist destinations → major cities)
+CREATE TABLE IF NOT EXISTS city_mappings (
+    id SERIAL PRIMARY KEY,
+    tourist_destination VARCHAR(100) NOT NULL,
+    major_city VARCHAR(100) NOT NULL,
+    distance_km INTEGER,
+    travel_time_hours DECIMAL(3,1),
+    notes TEXT,
+    UNIQUE(tourist_destination, major_city)
+);
+-- Categories reference
+CREATE TABLE IF NOT EXISTS emergency_categories (
+    id SERIAL PRIMARY KEY,
+    category_key VARCHAR(50) UNIQUE NOT NULL,
+    category_name VARCHAR(100) NOT NULL,
+    icon VARCHAR(50),
+    priority INTEGER DEFAULT 0,
+    description TEXT
+);
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_emergency_city ON emergency_contacts(city);
+CREATE INDEX IF NOT EXISTS idx_emergency_parent_city ON emergency_contacts(parent_city);
+CREATE INDEX IF NOT EXISTS idx_emergency_category ON emergency_contacts(category);
+CREATE INDEX IF NOT EXISTS idx_city_mappings_dest ON city_mappings(tourist_destination);
 `
 
 func InitSchema() {

@@ -57,6 +57,18 @@ type Saved struct {
 	CreatedAt   time.Time `json:"created_at" gorm:"autoCreateTime"`
 }
 
+type PostWithItinerary struct {
+	ID         int       `json:"id"`
+	UserID     int       `json:"user_id"`
+	ContentID  int       `json:"content_id"`
+	Visibility string    `json:"visibility"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+
+	User      User       `json:"user"`
+	Itinerary *Itinerary `json:"itinerary,omitempty"`
+}
+
 /* =========================
    Posts (content_id only)
    ========================= */
@@ -87,13 +99,49 @@ func CreatePost(userID, contentID int, visibility string) (Post, error) {
 	}, nil
 }
 
-func GetAllPosts() ([]Post, error) {
+// func GetAllPosts() ([]Post, error) {
+// 	rows, err := database.DB.Query(`
+// 		SELECT
+// 			p.id, p.user_id, p.content_id, p.visibility, p.created_at, p.updated_at,
+// 		    u.id, COALESCE(u.first_name,''), COALESCE(u.last_name,'')
+// 		FROM posts p
+// 		JOIN users u ON u.id = p.user_id
+// 		ORDER BY p.created_at DESC
+// 	`)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	defer rows.Close()
+
+// 	var out []Post
+// 	for rows.Next() {
+// 		var p Post
+// 		var u User
+// 		if err := rows.Scan(
+// 			&p.ID, &p.UserID, &p.ContentID, &p.Visibility, &p.CreatedAt, &p.UpdatedAt,
+// 			&u.Id, &u.FirstName, &u.LastName,
+// 		); err != nil {
+// 			return nil, err
+// 		}
+// 		p.User = u
+// 		out = append(out, p)
+// 	}
+// 	return out, nil
+// }
+
+func GetAllPosts() ([]PostWithItinerary, error) {
 	rows, err := database.DB.Query(`
 		SELECT 
 			p.id, p.user_id, p.content_id, p.visibility, p.created_at, p.updated_at,
-		    u.id, COALESCE(u.first_name,''), COALESCE(u.last_name,'')
+
+		    u.id, COALESCE(u.first_name,''), COALESCE(u.last_name,''),
+
+		    i.id, i.title, i.description, i.city, i.budget, i.style,
+		    i.start_date, i.end_date, i.cover_url, i.created_at
+
 		FROM posts p
 		JOIN users u ON u.id = p.user_id
+		LEFT JOIN itineraries i ON i.id = p.content_id
 		ORDER BY p.created_at DESC
 	`)
 	if err != nil {
@@ -101,19 +149,93 @@ func GetAllPosts() ([]Post, error) {
 	}
 	defer rows.Close()
 
-	var out []Post
+	type rawPostRow struct {
+		PostID      int
+		UserID      int
+		ContentID   int
+		Visibility  string
+		PostCreated time.Time
+		PostUpdated time.Time
+
+		UId        int
+		UFirstName string
+		ULastName  string
+
+		IId        sql.NullInt64
+		ITitle     sql.NullString
+		IDesc      sql.NullString
+		ICity      sql.NullString
+		IBudget    sql.NullString
+		IStyle     sql.NullString
+		IStart     sql.NullTime
+		IEnd       sql.NullTime
+		ICover     sql.NullString
+		ICreatedAt sql.NullTime
+	}
+
+	var out []PostWithItinerary
+
 	for rows.Next() {
-		var p Post
-		var u User
-		if err := rows.Scan(
-			&p.ID, &p.UserID, &p.ContentID, &p.Visibility, &p.CreatedAt, &p.UpdatedAt,
-			&u.Id, &u.FirstName, &u.LastName,
-		); err != nil {
+		var r rawPostRow
+
+		err := rows.Scan(
+			&r.PostID, &r.UserID, &r.ContentID, &r.Visibility, &r.PostCreated, &r.PostUpdated,
+			&r.UId, &r.UFirstName, &r.ULastName,
+			&r.IId, &r.ITitle, &r.IDesc, &r.ICity, &r.IBudget, &r.IStyle,
+			&r.IStart, &r.IEnd, &r.ICover, &r.ICreatedAt,
+		)
+		if err != nil {
 			return nil, err
 		}
-		p.User = u
-		out = append(out, p)
+
+		// Build Post object
+		item := PostWithItinerary{
+			ID:         r.PostID,
+			UserID:     r.UserID,
+			ContentID:  r.ContentID,
+			Visibility: r.Visibility,
+			CreatedAt:  r.PostCreated,
+			UpdatedAt:  r.PostUpdated,
+			User: User{
+				Id:        r.UId,
+				FirstName: r.UFirstName,
+				LastName:  r.ULastName,
+			},
+		}
+
+		// If itinerary exists → attach
+		if r.IId.Valid {
+			it := Itinerary{
+				Id:          int(r.IId.Int64),
+				UserId:      r.UserID,
+				Title:       r.ITitle.String,
+				Description: r.IDesc.String,
+				City:        r.ICity.String,
+				Budget:      r.IBudget.String,
+				Style:       r.IStyle.String,
+				CoverURL:    r.ICover.String,
+			}
+
+			if r.IStart.Valid {
+				it.StartDate = r.IStart.Time
+			}
+			if r.IEnd.Valid {
+				it.EndDate = r.IEnd.Time
+			}
+			if r.ICreatedAt.Valid {
+				it.CreatedAt = r.ICreatedAt.Time
+			}
+
+			// Load days
+			days, _ := GetDaysByItinerary(it.Id)
+			it.Days = days
+
+			item.Itinerary = &it
+		}
+
+		out = append(out, item)
 	}
+
 	return out, nil
 }
 

@@ -71,30 +71,19 @@ import MyBookings from './screens/traveler/MyBookings';
 
 /* Offline Screens */
 import OfflineScreen from './screens/OfflineScreen';
-import OfflineCenterScreen from './components/Offline/OfflineCenterScreen';
-import OfflineItineraryViewer from './components/Offline/OfflineItineraryViewer';
-import OfflineEmergency from './components/Offline/OfflineEmergency';
+import EmergencyInfoScreen from './screens/EmergencyInfoScreen';
 
 
 import BookingChatList from './screens/BookingChatList';
 import BookingChat from './screens/BookingChat';
 import WeatherAwareRecommendationsScreen from './screens/CrowdsourceItineraries/WeatherAwareRecommendationsScreen';
 
-/* Offline hook: start auto-sync once */
-import { startAutoSync } from './hooks/useOfflineItineraries';
 
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
   const navRef = useNavigationContainerRef();
-
-  /* 🔹 Start offline auto-sync (reconnect → push queued edits) */
-  useEffect(() => {
-    const unsub = startAutoSync();
-    return () => unsub && unsub();
-  }, []);
-
   /* Keep your auth / precondition redirects */
   useEffect(() => {
     setOnUnauthorized(() => {
@@ -135,10 +124,7 @@ export default function App() {
 
             {/* Offline Screens */}
             <Stack.Screen name="OfflineScreen" component={OfflineScreen} />
-            <Stack.Screen name="OfflineCenter" component={OfflineCenterScreen} />
-            <Stack.Screen name="OfflineItineraryViewer" component={OfflineItineraryViewer} />
-            <Stack.Screen name="OfflineEmergency" component={OfflineEmergency} />
-
+            <Stack.Screen name="EmergencyInfo" component={EmergencyInfoScreen}/>
             {/* Community / Messages */}
             <Stack.Screen name="MessagesScreen" component={MessagesScreen} />
             <Stack.Screen name="Messages" component={MessagesScreen} />

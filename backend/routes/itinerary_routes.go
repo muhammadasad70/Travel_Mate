@@ -11,7 +11,7 @@ import (
 // routes/itineraries.go
 func RegisterItineraryRoutes(router *gin.Engine) {
 	it := router.Group("/itineraries")
-	it.Use(middlewares.AuthMiddleware(), middlewares.RequireCompleteProfile())
+	it.Use(middlewares.RequireCompleteProfile())
 	{
 		// create + list
 		it.POST("", controllers.CreateItinerary)

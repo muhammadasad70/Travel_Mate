@@ -10,10 +10,13 @@
 // import { Ionicons } from "@expo/vector-icons";
 // import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// /* 🔹 NEW: offline hook */
-// import { downloadItinerary } from "../../hooks/useOfflineItineraries";
 
-// /* same base/url style as your other screens */
+
+// /* ✅ Share functionality */
+// import ShareButton from '../../components/ShareButton';
+// import { getShareImage, getShareMessage, getShareUrl, isOfflineContent } from '../../utils/shareImageHelper';
+
+// /* Base URL */
 // import getBaseURL from "../../config/env";
 // const API_BASE = getBaseURL().replace(/\/+$/, "");
 // const TOKEN_KEYS = ["token", "auth_token", "jwt", "access_token", "AUTH_TOKEN", "userToken"];
@@ -50,13 +53,16 @@
 //   const navigation = useNavigation();
 //   const route = useRoute();
 
-//   // you can pass either {id} or the whole {itinerary}; we’ll refetch by id if we can
+//   // you can pass either {id} or the whole {itinerary}; we'll refetch by id if we can
 //   const passed = route.params?.itinerary || {};
 //   const id = route.params?.id || passed?.id || passed?._id;
 
 //   const [data, setData] = useState(passed || null);
 //   const [loading, setLoading] = useState(!passed?.days?.length);
 //   const [imgError, setImgError] = useState(false);
+
+//   // ✅ Check if this is offline content
+//   const isOfflineItem = isOfflineContent(passed) || isOfflineContent(data);
 
 //   useEffect(() => {
 //     navigation.setOptions?.({ title: "Itinerary" });
@@ -102,12 +108,12 @@
 
 //   const { title, cover_url, city, style, budget, start_date, end_date, description, days = [] } = data;
 
-//   /* 🔹 Download current itinerary for offline (cover/map are optional) */
+//   /* Download current itinerary for offline (cover/map are optional) */
 //   const handleDownloadOffline = async () => {
 //     try {
 //       const normalized = { ...data, id: data.id ?? data._id };
 //       await downloadItinerary({
-//         itinerary: data,
+//         itinerary: normalized,
 //         coverUrl: cover_url || null,
 //         staticMapUrl: null, // OK to keep null for now
 //       });
@@ -172,25 +178,36 @@
 //           </View>
 //         </View>
 
-//         {/* 🔹 Download for Offline button */}
-//         <View style={{ paddingHorizontal: 4, marginTop: 4 }}>
-//           <Pressable
-//             onPress={handleDownloadOffline}
-//             style={{
-//               backgroundColor: PRIMARY,
-//               paddingVertical: 12,
-//               paddingHorizontal: 14,
-//               borderRadius: 12,
-//               alignSelf: "flex-start",
-//               flexDirection: "row",
-//               alignItems: "center",
-//               gap: 8,
-//             }}
-//           >
-//             <Ionicons name="cloud-download-outline" size={18} color="#fff" />
-//             <Text style={{ color: "#fff", fontWeight: "800" }}>Download for Offline</Text>
-//           </Pressable>
-//         </View>
+//         {/* ✅ Action buttons - Only show for online content */}
+//         {!isOfflineItem && (
+//           <View style={styles.actionRow}>
+//             {/* Download for Offline button */}
+//             <Pressable onPress={handleDownloadOffline} style={styles.actionButton}>
+//               <Ionicons name="cloud-download-outline" size={18} color="#fff" />
+//               <Text style={styles.actionButtonText}>Download</Text>
+//             </Pressable>
+
+//             {/* ✅ Share button */}
+//             <ShareButton
+//               title={`Travel Itinerary: ${title || 'My Trip'}`}
+//               message={getShareMessage(data, 'itinerary')}
+//               url={getShareUrl(data, 'itinerary')}
+//               imageUrl={getShareImage(data, 'itinerary')}
+//               style={styles.shareButtonStyle}
+//               onShareComplete={() => {
+//                 console.log('✅ Itinerary shared:', title);
+//               }}
+//             />
+//           </View>
+//         )}
+
+//         {/* ✅ Offline indicator */}
+//         {isOfflineItem && (
+//           <View style={styles.offlineBanner}>
+//             <Ionicons name="cloud-done-outline" size={20} color="#065F46" />
+//             <Text style={styles.offlineBannerText}>Available Offline</Text>
+//           </View>
+//         )}
 
 //         {/* Description */}
 //         {description ? (
@@ -277,6 +294,55 @@
 //   metaItem: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#fff", borderWidth: 1, borderColor: BORDER, borderRadius: 10, paddingVertical: 6, paddingHorizontal: 10 },
 //   metaText: { color: EMPHASIS, fontWeight: "600" },
 
+//   /* ✅ Action buttons row */
+//   actionRow: {
+//     flexDirection: 'row',
+//     gap: 10,
+//     marginTop: 12,
+//     marginBottom: 4,
+//     paddingHorizontal: 4,
+//   },
+//   actionButton: {
+//     flex: 1,
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//     gap: 8,
+//     backgroundColor: PRIMARY,
+//     paddingVertical: 12,
+//     paddingHorizontal: 14,
+//     borderRadius: 12,
+//   },
+//   actionButtonText: {
+//     color: '#fff',
+//     fontWeight: '800',
+//     fontSize: 15,
+//   },
+//   shareButtonStyle: {
+//     flex: 1,
+//   },
+
+//   /* ✅ Offline banner */
+//   offlineBanner: {
+//     flexDirection: 'row',
+//     alignItems: 'center',
+//     gap: 10,
+//     backgroundColor: '#ECFDF5',
+//     borderWidth: 1,
+//     borderColor: '#D1FAE5',
+//     paddingVertical: 12,
+//     paddingHorizontal: 16,
+//     borderRadius: 12,
+//     marginTop: 12,
+//     marginBottom: 4,
+//     marginHorizontal: 4,
+//   },
+//   offlineBannerText: {
+//     color: '#065F46',
+//     fontWeight: '700',
+//     fontSize: 15,
+//   },
+
 //   card: {
 //     backgroundColor: "#fff", borderWidth: 1, borderColor: BORDER, borderRadius: 16, padding: 14, marginTop: 10
 //   },
@@ -315,8 +381,12 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-/* Offline hook */
-import { downloadItinerary } from "../../hooks/useOfflineItineraries";
+/* ✅ Offline functionality */
+import { 
+  saveItineraryOffline, 
+  isItinerarySavedOffline,
+  removeOfflineItinerary 
+} from '../../utils/offlineStorage';
 
 /* ✅ Share functionality */
 import ShareButton from '../../components/ShareButton';
@@ -339,6 +409,7 @@ const PRIMARY = "#003366";
 const SUBTEXT = "#6B7280";
 const EMPHASIS = "#0f172a";
 const SOFT_BG = "#F7F9FC";
+const SUCCESS = "#10B981";
 
 function formatRange(start, end) {
   if (!start || !end) return "Dates TBD";
@@ -367,12 +438,31 @@ export default function ItineraryDetailScreen() {
   const [loading, setLoading] = useState(!passed?.days?.length);
   const [imgError, setImgError] = useState(false);
 
+  // ✅ Offline state management
+  const [savedOffline, setSavedOffline] = useState(false);
+  const [savingOffline, setSavingOffline] = useState(false);
+  const [checkingOffline, setCheckingOffline] = useState(true);
+
   // ✅ Check if this is offline content
   const isOfflineItem = isOfflineContent(passed) || isOfflineContent(data);
 
   useEffect(() => {
     navigation.setOptions?.({ title: "Itinerary" });
   }, [navigation]);
+
+  // ✅ Check if already saved offline when data loads
+  useEffect(() => {
+    checkOfflineStatus();
+  }, [data]);
+
+  const checkOfflineStatus = async () => {
+    if (data?.id || data?._id) {
+      setCheckingOffline(true);
+      const isSaved = await isItinerarySavedOffline(data.id || data._id);
+      setSavedOffline(isSaved);
+      setCheckingOffline(false);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -397,6 +487,65 @@ export default function ItineraryDetailScreen() {
     return () => { cancelled = true; };
   }, [id]);
 
+  // ✅ FIXED: Download for offline functionality
+  const handleDownloadOffline = async () => {
+    if (!data) {
+      Alert.alert('Error', 'No itinerary data to save');
+      return;
+    }
+
+    setSavingOffline(true);
+
+    try {
+      // Normalize the data structure
+      const normalizedData = {
+        ...data,
+        id: data.id || data._id,
+        destination: data.city || data.destination || 'Unknown',
+      };
+
+      const success = await saveItineraryOffline(normalizedData);
+
+      if (success) {
+        setSavedOffline(true);
+        Alert.alert(
+          '✓ Saved for Offline',
+          `"${data.title || 'This itinerary'}" is now available offline.\n\nAccess it from: Profile → Offline`,
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert('Error', 'Could not save itinerary offline. Please try again.');
+      }
+    } catch (error) {
+      console.error('Save offline error:', error);
+      Alert.alert('Error', 'An error occurred while saving offline');
+    } finally {
+      setSavingOffline(false);
+    }
+  };
+
+  // ✅ Remove from offline storage
+  const handleRemoveOffline = () => {
+    Alert.alert(
+      'Remove Offline Access',
+      'This will remove the itinerary from offline storage. You can download it again anytime.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            const success = await removeOfflineItinerary(data.id || data._id);
+            if (success) {
+              setSavedOffline(false);
+              Alert.alert('Removed', 'Itinerary removed from offline storage');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (!data && loading) {
     return (
       <SafeAreaView style={[styles.safe, { paddingTop: insets.top }]}>
@@ -413,26 +562,6 @@ export default function ItineraryDetailScreen() {
   }
 
   const { title, cover_url, city, style, budget, start_date, end_date, description, days = [] } = data;
-
-  /* Download current itinerary for offline (cover/map are optional) */
-  const handleDownloadOffline = async () => {
-    try {
-      const normalized = { ...data, id: data.id ?? data._id };
-      await downloadItinerary({
-        itinerary: normalized,
-        coverUrl: cover_url || null,
-        staticMapUrl: null, // OK to keep null for now
-      });
-      Alert.alert(
-        "Saved for offline",
-        Platform.OS === "web"
-          ? "Stored in browser storage for demo."
-          : "Find it in Profile → Offline."
-      );
-    } catch (e) {
-      Alert.alert("Download failed", "Please try again.");
-    }
-  };
 
   return (
     <SafeAreaView style={[styles.safe, { paddingTop: Platform.OS === "web" ? 0 : insets.top }]}>
@@ -484,13 +613,26 @@ export default function ItineraryDetailScreen() {
           </View>
         </View>
 
-        {/* ✅ Action buttons - Only show for online content */}
-        {!isOfflineItem && (
+        {/* ✅ UPDATED: Action buttons - Show for online content */}
+        {!isOfflineItem && !savedOffline && (
           <View style={styles.actionRow}>
             {/* Download for Offline button */}
-            <Pressable onPress={handleDownloadOffline} style={styles.actionButton}>
-              <Ionicons name="cloud-download-outline" size={18} color="#fff" />
-              <Text style={styles.actionButtonText}>Download</Text>
+            <Pressable 
+              onPress={handleDownloadOffline} 
+              style={[
+                styles.actionButton,
+                savingOffline && styles.actionButtonDisabled
+              ]}
+              disabled={savingOffline || checkingOffline}
+            >
+              <Ionicons 
+                name={savingOffline ? "hourglass-outline" : "cloud-download-outline"} 
+                size={18} 
+                color="#fff" 
+              />
+              <Text style={styles.actionButtonText}>
+                {savingOffline ? 'Saving...' : 'Download'}
+              </Text>
             </Pressable>
 
             {/* ✅ Share button */}
@@ -507,11 +649,22 @@ export default function ItineraryDetailScreen() {
           </View>
         )}
 
-        {/* ✅ Offline indicator */}
-        {isOfflineItem && (
+        {/* ✅ UPDATED: Show saved offline badge with remove option */}
+        {(isOfflineItem || savedOffline) && (
           <View style={styles.offlineBanner}>
-            <Ionicons name="cloud-done-outline" size={20} color="#065F46" />
-            <Text style={styles.offlineBannerText}>Available Offline</Text>
+            <View style={styles.offlineBannerLeft}>
+              <Ionicons name="cloud-done" size={20} color={SUCCESS} />
+              <Text style={styles.offlineBannerText}>Saved Offline</Text>
+            </View>
+            {!isOfflineItem && savedOffline && (
+              <TouchableOpacity 
+                onPress={handleRemoveOffline}
+                style={styles.removeOfflineButton}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="trash-outline" size={18} color="#EF4444" />
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
@@ -619,6 +772,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 12,
   },
+  actionButtonDisabled: {
+    opacity: 0.6,
+  },
   actionButtonText: {
     color: '#fff',
     fontWeight: '800',
@@ -628,11 +784,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  /* ✅ Offline banner */
+  /* ✅ UPDATED: Offline banner with remove option */
   offlineBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    justifyContent: 'space-between',
     backgroundColor: '#ECFDF5',
     borderWidth: 1,
     borderColor: '#D1FAE5',
@@ -643,10 +799,20 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     marginHorizontal: 4,
   },
+  offlineBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
   offlineBannerText: {
     color: '#065F46',
     fontWeight: '700',
     fontSize: 15,
+  },
+  removeOfflineButton: {
+    backgroundColor: '#FEE2E2',
+    padding: 8,
+    borderRadius: 8,
   },
 
   card: {

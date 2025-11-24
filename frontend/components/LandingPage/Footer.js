@@ -47,7 +47,7 @@ const Footer = ({ onScrollToTop }) => {
         </View>
 
         {/* Newsletter Section */}
-        <View style={styles.newsletterBox}>
+        {/* <View style={styles.newsletterBox}>
           <Text style={styles.newsletterHeading}>📩 Stay in the Loop</Text>
           <Text style={styles.newsletterSubtext}>Get updates on new itineraries, local experiences & more.</Text>
 
@@ -64,7 +64,7 @@ const Footer = ({ onScrollToTop }) => {
               <Text style={styles.subscribeText}>Subscribe</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </View> */}
 
         {/* Bottom Section */}
         <View style={styles.bottomRow}>
