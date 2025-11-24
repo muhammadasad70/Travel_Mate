@@ -266,9 +266,7 @@ const sampleItinerary = {
 
 const RAW_CARDS = [
   { title: "Create Itinerary",       subtitle: "Start a new travel plan",  icon: "add-circle-outline" },
-  !isWeb && { title: "Save as PDF",  subtitle: "Download your itinerary",  icon: "download-outline"   },
   { title: "Manage My Itineraries",  subtitle: "Access your itineraries",  icon: "folder-open-outline", badge: savedCount },
-  { title: "Itinerary Feedback",     subtitle: "Skardu Adventure stats",   icon: "chatbubble-ellipses-outline" },
 ].filter(Boolean);
 
 export default function CrowdsourceItinerariesScreen() {
