@@ -285,17 +285,27 @@ func AcceptInvite(c *gin.Context) {
 		// Get group ID and user info for notification
 		groupID, err := models.GetGroupIDByInvite(inviteID)
 		if err == nil {
-			// Get user name
-			var userName string
-			const getUserName = `SELECT COALESCE(name, first_name || ' ' || last_name, email, 'A member') FROM users WHERE id = $1`
-			database.DB.QueryRow(getUserName, userID).Scan(&userName)
-
-			// Get group name
+			// Get group info (for conversation title and notification)
 			group, err := models.GetGroupByID(groupID)
 			groupName := "the group"
 			if err == nil {
 				groupName = group.Name
 			}
+			
+			// Add user to group conversation (automatic when member joins)
+			groupNamePtr := &groupName
+			_, _, _, err = models.AddUserToGroupConversationOnJoin(groupID, userID, groupNamePtr)
+			if err != nil {
+				log.Printf("[AcceptInvite] Failed to add user to group conversation: %v", err)
+				// Don't fail the request if conversation add fails
+			} else {
+				log.Printf("[AcceptInvite] User %d automatically added to group conversation for group %d", userID, groupID)
+			}
+
+			// Get user name for notification
+			var userName string
+			const getUserName = `SELECT COALESCE(name, first_name || ' ' || last_name, email, 'A member') FROM users WHERE id = $1`
+			database.DB.QueryRow(getUserName, userID).Scan(&userName)
 
 			// Notify all group members (except the new member)
 			if err := models.NotifyGroupMembers(

@@ -241,6 +241,7 @@ export default function GroupsBottomBar({ groupId, onTabChange, currentTab = 'ov
     () => [
       { k: 'overview', label: 'Overview', icon: 'grid-outline' },
       { k: 'polls',    label: 'Polls',    icon: 'stats-chart-outline' },
+      { k: 'plan',     label: 'Plan',     icon: 'calendar-outline' },
       { k: 'members',  label: 'Members',  icon: 'people-outline' },
       { k: 'settings', label: 'Settings', icon: 'settings-outline' },
     ],

@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 const BORDER = '#E6EDF7';
 const PRIMARY = '#003366';
 
-export default function ItineraryCard({ item, onPress, onView, onEdit, onDelete }) {
+export default function ItineraryCard({ item, onPress, onView, onEdit, onDelete, onShareToGroup }) {
   const [imageError, setImageError] = useState(false);
 
   // ✅ FIXED: Better image source handler
@@ -214,6 +214,14 @@ export default function ItineraryCard({ item, onPress, onView, onEdit, onDelete 
             <Ionicons name="share-social-outline" size={16} color={PRIMARY} />
             <Text style={styles.actionText}>Share</Text>
           </TouchableOpacity>
+
+          {/* ✅ Share to Group button */}
+          {onShareToGroup && (
+            <TouchableOpacity style={styles.actionBtn} onPress={onShareToGroup}>
+              <Ionicons name="people-outline" size={16} color={PRIMARY} />
+              <Text style={styles.actionText}>Share to Group</Text>
+            </TouchableOpacity>
+          )}
 
           {onDelete && (
             <TouchableOpacity style={[styles.actionBtn, styles.actionBtnDanger]} onPress={onDelete}>

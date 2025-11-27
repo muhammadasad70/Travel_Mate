@@ -62,6 +62,51 @@ func CreateGroup(creatorID int, name, description string) (int, error) {
 	}
 	log.Printf("[CreateGroup] Admin member added successfully")
 
+	// Create group conversation within the transaction
+	log.Printf("[CreateGroup] Creating group conversation for group %d", gid)
+	groupNamePtr := &name
+	var convID int
+	
+	// Check if conversation already exists (shouldn't, but handle it)
+	const findConvQ = `SELECT id FROM conversations WHERE type='group' AND group_id=$1 LIMIT 1`
+	err = tx.QueryRow(findConvQ, gid).Scan(&convID)
+	if err == nil {
+		log.Printf("[CreateGroup] Group conversation already exists with id=%d", convID)
+	} else if errors.Is(err, sql.ErrNoRows) {
+		// Create new conversation
+		err = tx.QueryRow(`
+			INSERT INTO conversations (type, title, group_id, created_at)
+			VALUES ('group', $1, $2, NOW())
+			RETURNING id
+		`, groupNamePtr, gid).Scan(&convID)
+		if err != nil {
+			log.Printf("[CreateGroup] Failed to create group conversation: %v", err)
+			return 0, fmt.Errorf("failed to create group conversation: %w", err)
+		}
+		log.Printf("[CreateGroup] Group conversation created with id=%d", convID)
+	} else {
+		log.Printf("[CreateGroup] Error checking for existing conversation: %v", err)
+		return 0, fmt.Errorf("failed to check for existing conversation: %w", err)
+	}
+
+	// Add admin to conversation (use same transaction)
+	log.Printf("[CreateGroup] Adding admin to group conversation...")
+	res, err := tx.Exec(`
+		INSERT INTO conversation_members (conversation_id, user_id, role, joined_at)
+		VALUES ($1, $2, 'member', NOW())
+		ON CONFLICT (conversation_id, user_id) DO NOTHING
+	`, convID, creatorID)
+	if err != nil {
+		log.Printf("[CreateGroup] Failed to add admin to conversation: %v", err)
+		return 0, fmt.Errorf("failed to add admin to group conversation: %w", err)
+	}
+	rowsAffected, _ := res.RowsAffected()
+	if rowsAffected > 0 {
+		log.Printf("[CreateGroup] Admin added to group conversation successfully")
+	} else {
+		log.Printf("[CreateGroup] Admin already in group conversation")
+	}
+
 	if err = tx.Commit(); err != nil {
 		log.Printf("[CreateGroup] Failed to commit transaction: %v", err)
 		return 0, fmt.Errorf("failed to commit transaction: %w", err)

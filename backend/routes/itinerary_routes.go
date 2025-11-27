@@ -61,5 +61,9 @@ func RegisterItineraryRoutes(router *gin.Engine) {
 
 		// delete
 		it.DELETE("/:id", controllers.DeleteItinerary)
+
+		// Get user's itineraries for sharing (both user-created and AI-created)
+		// This route must come before /:id to avoid route conflicts
+		it.GET("/for-sharing", controllers.GetUserItinerariesForSharing) // GET /itineraries/for-sharing
 	}
 }

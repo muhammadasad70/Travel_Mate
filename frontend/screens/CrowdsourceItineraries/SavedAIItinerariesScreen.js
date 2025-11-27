@@ -543,7 +543,7 @@
 //   },
 // });
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -557,6 +557,8 @@ import {
   Platform,
   SafeAreaView,
   StatusBar,
+  Modal,
+  FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -622,6 +624,13 @@ export default function SavedAIItinerariesScreen() {
   // ✅ Track offline status for each itinerary
   const [offlineStatus, setOfflineStatus] = useState({});
   const [downloading, setDownloading] = useState(null);
+  
+  // Share to Group functionality
+  const [showGroupModal, setShowGroupModal] = useState(false);
+  const [selectedItinerary, setSelectedItinerary] = useState(null);
+  const [userGroups, setUserGroups] = useState([]);
+  const [loadingGroups, setLoadingGroups] = useState(false);
+  const [sharing, setSharing] = useState(false);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -780,6 +789,95 @@ export default function SavedAIItinerariesScreen() {
         },
       ]
     );
+  };
+
+  // Fetch user's groups for sharing
+  const fetchUserGroups = useCallback(async () => {
+    setLoadingGroups(true);
+    try {
+      const token = await getAuthToken();
+      const res = await fetch(`${API_BASE}/groups/mine`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const groupsData = Array.isArray(data) ? data : (data.groups || []);
+        setUserGroups(groupsData);
+      }
+    } catch (err) {
+      console.error('Failed to fetch groups:', err);
+      Alert.alert('Error', 'Failed to load your groups.');
+    } finally {
+      setLoadingGroups(false);
+    }
+  }, []);
+  
+  // Handle share to group button click
+  const handleShareToGroup = (itin) => {
+    setSelectedItinerary(itin);
+    setShowGroupModal(true);
+    fetchUserGroups();
+  };
+  
+  // Share itinerary to selected group
+  const shareItineraryToGroup = async (groupId) => {
+    if (!selectedItinerary || !groupId) return;
+    
+    try {
+      setSharing(true);
+      const token = await getAuthToken();
+      if (!token) {
+        Alert.alert('Error', 'Not authenticated. Please log in again.');
+        return;
+      }
+      
+      const itineraryId = selectedItinerary.id;
+      if (!itineraryId) {
+        Alert.alert('Error', 'Invalid itinerary ID');
+        return;
+      }
+      
+      // Share AI itinerary - backend will fetch the itinerary data from database
+      const res = await fetch(`${API_BASE}/groups/${groupId}/itineraries/share`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          itinerary_type: 'ai_created',
+          itinerary_id: itineraryId
+        })
+      });
+      
+      if (res.ok) {
+        setShowGroupModal(false);
+        setSelectedItinerary(null);
+        if (Platform.OS === 'web') {
+          window.alert('Itinerary shared successfully!');
+        } else {
+          Alert.alert('Success', 'Itinerary shared successfully!');
+        }
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        const errorMsg = errorData.error || 'Failed to share itinerary';
+        if (Platform.OS === 'web') {
+          window.alert(`Error: ${errorMsg}`);
+        } else {
+          Alert.alert('Error', errorMsg);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to share itinerary:', err);
+      const errorMsg = err.message || 'Failed to share itinerary';
+      if (Platform.OS === 'web') {
+        window.alert(`Error: ${errorMsg}`);
+      } else {
+        Alert.alert('Error', errorMsg);
+      }
+    } finally {
+      setSharing(false);
+    }
   };
 
   const handleShare = async (itin) => {
@@ -1031,6 +1129,15 @@ Find more on TravelMate! 🎯`;
                       </TouchableOpacity>
                     )}
 
+                    {/* Share to Group Button */}
+                    <TouchableOpacity
+                      style={styles.actionBtn}
+                      onPress={() => handleShareToGroup(itin)}
+                    >
+                      <Ionicons name="people-outline" size={16} color="#8b5cf6" />
+                      <Text style={styles.actionBtnText}>Share to Group</Text>
+                    </TouchableOpacity>
+
                     {/* Share Button */}
                     <TouchableOpacity
                       style={styles.actionBtn}
@@ -1061,6 +1168,95 @@ Find more on TravelMate! 🎯`;
             })}
           </ScrollView>
         )}
+        
+        {/* Share to Group Modal */}
+        <Modal
+          visible={showGroupModal}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => {
+            setShowGroupModal(false);
+            setSelectedItinerary(null);
+          }}
+        >
+          <View style={modalStyles.overlay}>
+            <View style={modalStyles.container}>
+              <View style={modalStyles.header}>
+                <Text style={modalStyles.title}>Share to Group</Text>
+                <TouchableOpacity 
+                  onPress={() => {
+                    setShowGroupModal(false);
+                    setSelectedItinerary(null);
+                  }}
+                  disabled={sharing}
+                >
+                  <Ionicons name="close" size={24} color="#6B7280" />
+                </TouchableOpacity>
+              </View>
+
+              {selectedItinerary && (
+                <View style={modalStyles.selectedInfo}>
+                  <Text style={modalStyles.selectedTitle}>
+                    Sharing: {selectedItinerary.title}
+                  </Text>
+                  {selectedItinerary.city && (
+                    <Text style={modalStyles.selectedSubtitle}>{selectedItinerary.city}</Text>
+                  )}
+                </View>
+              )}
+
+              <ScrollView style={modalStyles.scrollView}>
+                {loadingGroups ? (
+                  <View style={modalStyles.loadingContainer}>
+                    <ActivityIndicator size="small" color="#8b5cf6" />
+                  </View>
+                ) : userGroups.length === 0 ? (
+                  <View style={modalStyles.emptyContainer}>
+                    <Ionicons name="people-outline" size={48} color="#9CA3AF" />
+                    <Text style={modalStyles.emptyText}>
+                      You are not a member of any groups yet.
+                    </Text>
+                    <Text style={modalStyles.emptySubtext}>
+                      Create or join a group to share itineraries.
+                    </Text>
+                  </View>
+                ) : (
+                  userGroups.map((group) => {
+                    const groupId = group.id || group.Id || group.groupId;
+                    const groupName = group.name || group.Name || 'Unnamed Group';
+                    const groupDesc = group.description || group.Description;
+
+                    return (
+                      <TouchableOpacity
+                        key={groupId}
+                        onPress={() => shareItineraryToGroup(groupId)}
+                        disabled={sharing}
+                        style={[modalStyles.groupItem, sharing && { opacity: 0.5 }]}
+                      >
+                        <View style={modalStyles.groupIcon}>
+                          <Ionicons name="people" size={24} color="#FFFFFF" />
+                        </View>
+                        <View style={modalStyles.groupInfo}>
+                          <Text style={modalStyles.groupName}>{groupName}</Text>
+                          {groupDesc && (
+                            <Text style={modalStyles.groupDesc} numberOfLines={2}>
+                              {groupDesc}
+                            </Text>
+                          )}
+                        </View>
+                        {sharing ? (
+                          <ActivityIndicator size="small" color="#8b5cf6" />
+                        ) : (
+                          <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })
+                )}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
       </View>
     </SafeAreaView>
   );
@@ -1313,5 +1509,103 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#8b5cf6',
+  },
+});
+
+// Modal styles for Share to Group
+const modalStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  container: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    maxHeight: '80%',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  selectedInfo: {
+    backgroundColor: '#F3F4F6',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  selectedTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 4,
+  },
+  selectedSubtitle: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  scrollView: {
+    maxHeight: '60%',
+  },
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyText: {
+    color: '#6B7280',
+    textAlign: 'center',
+    marginTop: 12,
+    fontSize: 14,
+  },
+  emptySubtext: {
+    color: '#9CA3AF',
+    textAlign: 'center',
+    marginTop: 4,
+    fontSize: 12,
+  },
+  groupItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    marginBottom: 12,
+  },
+  groupIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#8b5cf6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  groupInfo: {
+    flex: 1,
+  },
+  groupName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  groupDesc: {
+    fontSize: 13,
+    color: '#6B7280',
   },
 });

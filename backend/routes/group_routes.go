@@ -131,8 +131,17 @@ func RegisterGroupRoutes(r *gin.Engine) {
 		g.GET("/:group_id/plans/:plan_id/comments", controllers.ListPlanCommentsHandler)   // GET  /groups/:group_id/plans/:plan_id/comments
 		g.DELETE("/:group_id/plans/:plan_id/comments/:comment_id", controllers.DeletePlanCommentHandler) // DELETE /groups/:group_id/plans/:plan_id/comments/:comment_id
 
+		// Shared Itineraries - must come before /:group_id
+		g.POST("/:group_id/itineraries/share", controllers.ShareItineraryToGroup)  // POST /groups/:group_id/itineraries/share
+		g.GET("/:group_id/itineraries", controllers.GetGroupSharedItineraries)     // GET  /groups/:group_id/itineraries
+		g.PUT("/:group_id/itineraries/:shared_itinerary_id", controllers.UpdateSharedItinerary)  // PUT /groups/:group_id/itineraries/:shared_itinerary_id
+		g.POST("/:group_id/itineraries/:shared_itinerary_id/comments", controllers.AddSharedItineraryComment)  // POST /groups/:group_id/itineraries/:shared_itinerary_id/comments
+		g.GET("/:group_id/itineraries/:shared_itinerary_id/comments", controllers.ListSharedItineraryComments)  // GET /groups/:group_id/itineraries/:shared_itinerary_id/comments
+		g.DELETE("/:group_id/itineraries/:shared_itinerary_id/comments/:comment_id", controllers.DeleteSharedItineraryComment)  // DELETE /groups/:group_id/itineraries/:shared_itinerary_id/comments/:comment_id
+
 		// Group Conversations (separate from community chat)
 		g.GET("/:group_id/conversations", controllers.GetGroupConversationsHandler) // GET /groups/:group_id/conversations
+		g.GET("/:group_id/chat", controllers.GetGroupChatHandler) // GET /groups/:group_id/chat (get or ensure group conversation)
 		g.GET("/:group_id/chat/unread-count", controllers.GetGroupChatUnreadCountHandler) // GET /groups/:group_id/chat/unread-count
 		
 		// Group Notifications

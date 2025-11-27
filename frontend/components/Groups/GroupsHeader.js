@@ -493,6 +493,7 @@ const GroupsHeader = ({ groupId, onTabChange }) => {
   const tabs = [
     { label: 'Overview', key: 'overview', icon: 'grid-outline' },
     { label: 'Polls',    key: 'polls',    icon: 'stats-chart-outline' },
+    { label: 'Plan',     key: 'plan',     icon: 'calendar-outline' },
     { label: 'Members',  key: 'members',  icon: 'people-outline' },
   ];
 

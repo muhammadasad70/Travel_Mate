@@ -111,6 +111,8 @@ func UpdateInviteStatus(inviteID int, status string) (bool, error) {
 		}
 		rows, _ := result.RowsAffected()
 		memberAdded = rows > 0
+		// Note: Adding user to group conversation is handled in the controller
+		// after the transaction commits to avoid transaction isolation issues
 	}
 
 	// Delete invite if declined or canceled

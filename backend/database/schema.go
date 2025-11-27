@@ -635,6 +635,43 @@ CREATE TABLE IF NOT EXISTS group_plan_comments (
 CREATE INDEX IF NOT EXISTS idx_group_plan_comments_plan_id ON group_plan_comments(plan_id);
 CREATE INDEX IF NOT EXISTS idx_group_plan_comments_user_id ON group_plan_comments(user_id);
 
+-- group shared itineraries (user-created or AI-created itineraries shared to groups)
+CREATE TABLE IF NOT EXISTS group_shared_itineraries (
+  id BIGSERIAL PRIMARY KEY,
+  group_id BIGINT NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+  shared_by_user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  itinerary_type TEXT NOT NULL CHECK (itinerary_type IN ('user_created', 'ai_created')),
+  itinerary_id BIGINT NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT,
+  city TEXT,
+  budget TEXT,
+  style TEXT,
+  duration TEXT,
+  start_date DATE,
+  end_date DATE,
+  cover_url TEXT,
+  highlights JSONB,
+  reasoning TEXT,
+  confidence TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_group_shared_itineraries_group_id ON group_shared_itineraries(group_id);
+CREATE INDEX IF NOT EXISTS idx_group_shared_itineraries_shared_by ON group_shared_itineraries(shared_by_user_id);
+CREATE INDEX IF NOT EXISTS idx_group_shared_itineraries_type_id ON group_shared_itineraries(itinerary_type, itinerary_id);
+CREATE INDEX IF NOT EXISTS idx_group_shared_itineraries_created ON group_shared_itineraries(created_at DESC);
+
+-- group shared itinerary comments
+CREATE TABLE IF NOT EXISTS group_shared_itinerary_comments (
+  id BIGSERIAL PRIMARY KEY,
+  shared_itinerary_id BIGINT NOT NULL REFERENCES group_shared_itineraries(id) ON DELETE CASCADE,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  comment TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_group_shared_itinerary_comments_itinerary_id ON group_shared_itinerary_comments(shared_itinerary_id);
+CREATE INDEX IF NOT EXISTS idx_group_shared_itinerary_comments_user_id ON group_shared_itinerary_comments(user_id);
+
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -890,7 +927,7 @@ BEGIN
       AND conname = 'notifications_type_check';
       
       -- Check if it contains the new notification types
-      has_new_types := constraint_def LIKE '%group_poll_created%';
+      has_new_types := constraint_def LIKE '%group_poll_created%' OR constraint_def LIKE '%group_itinerary_shared%';
     END IF;
     
     -- If constraint doesn't exist or doesn't have new types, update it
@@ -925,7 +962,7 @@ BEGIN
       BEGIN
         ALTER TABLE notifications 
         ADD CONSTRAINT notifications_type_check 
-        CHECK (type IN ('booking_request', 'booking_confirmed', 'booking_declined', 'booking_cancelled', 'new_message', 'follow_request', 'system', 'group_invite', 'group_member_joined', 'group_poll_created', 'group_poll_voted'));
+        CHECK (type IN ('booking_request', 'booking_confirmed', 'booking_declined', 'booking_cancelled', 'new_message', 'follow_request', 'system', 'group_invite', 'group_member_joined', 'group_poll_created', 'group_poll_voted', 'group_itinerary_shared'));
       EXCEPTION WHEN duplicate_object THEN
         -- Constraint already exists, skip
         NULL;

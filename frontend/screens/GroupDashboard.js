@@ -305,6 +305,7 @@ import {
   TouchableOpacity,
   Alert,
   FlatList,
+  Modal,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -1427,6 +1428,798 @@ const PollsScreen = ({ groupId }) => {
     </View>
   );
 };
+
+// PlanScreen component for sharing itineraries
+const PlanScreen = ({ groupId }) => {
+  const [loading, setLoading] = useState(true);
+  const [sharedItineraries, setSharedItineraries] = useState([]);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [userItineraries, setUserItineraries] = useState({ user_created: [], ai_created: [] });
+  const [loadingItineraries, setLoadingItineraries] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const [auth, setAuth] = useState({ token: null, userId: null });
+  
+  // Edit functionality
+  const [editingItineraryId, setEditingItineraryId] = useState(null);
+  const [editFormData, setEditFormData] = useState({});
+  const [saving, setSaving] = useState(false);
+  
+  // Comment functionality
+  const [expandedItineraryId, setExpandedItineraryId] = useState(null);
+  const [comments, setComments] = useState({});
+  const [loadingComments, setLoadingComments] = useState({});
+  const [commentText, setCommentText] = useState({});
+  const [submittingComment, setSubmittingComment] = useState({});
+
+  useEffect(() => {
+    (async () => {
+      const [[, token], [, userId]] = await AsyncStorage.multiGet(["token", "user_id"]);
+      setAuth({ token: token || null, userId: userId ? parseInt(userId, 10) : null });
+    })();
+  }, []);
+
+  const loadSharedItineraries = useCallback(async () => {
+    if (!groupId || !auth.token) return;
+    
+    try {
+      setLoading(true);
+      const res = await fetch(`${getBaseURL()}/groups/${groupId}/itineraries`, {
+        headers: { Authorization: `Bearer ${auth.token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSharedItineraries(data.itineraries || []);
+      }
+    } catch (err) {
+      console.error('[PlanScreen] Failed to load shared itineraries:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [groupId, auth.token]);
+
+  useEffect(() => {
+    if (auth.token) {
+      loadSharedItineraries();
+    }
+  }, [loadSharedItineraries, auth.token]);
+
+  const loadUserItineraries = async () => {
+    if (!auth.token || !auth.userId) return;
+    
+    try {
+      setLoadingItineraries(true);
+      const res = await fetch(`${getBaseURL()}/itineraries/for-sharing`, {
+        headers: { Authorization: `Bearer ${auth.token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUserItineraries({
+          user_created: data.user_created || [],
+          ai_created: data.ai_created || []
+        });
+      }
+    } catch (err) {
+      console.error('[PlanScreen] Failed to load user itineraries:', err);
+    } finally {
+      setLoadingItineraries(false);
+    }
+  };
+
+  const handleShareItinerary = async (itinerary, type) => {
+    if (!groupId || !auth.token || sharing) return;
+    
+    try {
+      setSharing(true);
+      
+      // Prepare itinerary data for sharing
+      const itineraryData = {
+        title: itinerary.title || '',
+        description: itinerary.description || null,
+        city: itinerary.city || null,
+        budget: itinerary.budget || null,
+        style: itinerary.style || null,
+        duration: itinerary.duration || null,
+        start_date: itinerary.start_date || itinerary.startDate || null,
+        end_date: itinerary.end_date || itinerary.endDate || null,
+        cover_url: itinerary.cover_url || itinerary.coverURL || null,
+        highlights: itinerary.highlights || null,
+        reasoning: itinerary.reasoning || null,
+        confidence: itinerary.confidence || null,
+      };
+
+      const res = await fetch(`${getBaseURL()}/groups/${groupId}/itineraries/share`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${auth.token}`
+        },
+        body: JSON.stringify({
+          itinerary_type: type,
+          itinerary_id: itinerary.id,
+          itinerary_data: itineraryData
+        })
+      });
+
+      if (res.ok) {
+        // Refresh shared itineraries
+        await loadSharedItineraries();
+        setShowShareModal(false);
+        if (Platform.OS === 'web') {
+          window.alert('Itinerary shared successfully!');
+        } else {
+          Alert.alert('Success', 'Itinerary shared successfully!');
+        }
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        const errorMsg = errorData.error || 'Failed to share itinerary';
+        if (Platform.OS === 'web') {
+          window.alert(`Error: ${errorMsg}`);
+        } else {
+          Alert.alert('Error', errorMsg);
+        }
+      }
+    } catch (err) {
+      console.error('[PlanScreen] Failed to share itinerary:', err);
+      const errorMsg = err.message || 'Failed to share itinerary';
+      if (Platform.OS === 'web') {
+        window.alert(`Error: ${errorMsg}`);
+      } else {
+        Alert.alert('Error', errorMsg);
+      }
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  // Load comments for an itinerary
+  const loadComments = async (itineraryId) => {
+    if (!groupId || !auth.token || loadingComments[itineraryId]) return;
+    
+    try {
+      setLoadingComments(prev => ({ ...prev, [itineraryId]: true }));
+      const res = await fetch(`${getBaseURL()}/groups/${groupId}/itineraries/${itineraryId}/comments`, {
+        headers: { Authorization: `Bearer ${auth.token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setComments(prev => ({ ...prev, [itineraryId]: data || [] }));
+      }
+    } catch (err) {
+      console.error('[PlanScreen] Failed to load comments:', err);
+    } finally {
+      setLoadingComments(prev => ({ ...prev, [itineraryId]: false }));
+    }
+  };
+
+  // Handle expanding/collapsing itinerary to show comments
+  const toggleItineraryExpanded = (itineraryId) => {
+    if (expandedItineraryId === itineraryId) {
+      setExpandedItineraryId(null);
+    } else {
+      setExpandedItineraryId(itineraryId);
+      if (!comments[itineraryId]) {
+        loadComments(itineraryId);
+      }
+    }
+  };
+
+  // Handle adding comment
+  const handleAddComment = async (itineraryId) => {
+    const comment = commentText[itineraryId]?.trim();
+    if (!comment || !groupId || !auth.token || submittingComment[itineraryId]) return;
+    
+    try {
+      setSubmittingComment(prev => ({ ...prev, [itineraryId]: true }));
+      const res = await fetch(`${getBaseURL()}/groups/${groupId}/itineraries/${itineraryId}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${auth.token}`
+        },
+        body: JSON.stringify({ comment })
+      });
+      
+      if (res.ok) {
+        setCommentText(prev => ({ ...prev, [itineraryId]: '' }));
+        await loadComments(itineraryId);
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        Alert.alert('Error', errorData.error || 'Failed to add comment');
+      }
+    } catch (err) {
+      console.error('[PlanScreen] Failed to add comment:', err);
+      Alert.alert('Error', 'Failed to add comment');
+    } finally {
+      setSubmittingComment(prev => ({ ...prev, [itineraryId]: false }));
+    }
+  };
+
+  // Handle editing itinerary
+  const handleEditItinerary = (itinerary) => {
+    setEditingItineraryId(itinerary.id);
+    setEditFormData({
+      title: itinerary.title || '',
+      description: itinerary.description || '',
+      city: itinerary.city || '',
+      budget: itinerary.budget || '',
+      style: itinerary.style || '',
+      duration: itinerary.duration || '',
+      start_date: itinerary.start_date ? new Date(itinerary.start_date).toISOString().split('T')[0] : '',
+      end_date: itinerary.end_date ? new Date(itinerary.end_date).toISOString().split('T')[0] : '',
+    });
+  };
+
+  // Handle saving edited itinerary
+  const handleSaveEdit = async () => {
+    if (!editingItineraryId || !groupId || !auth.token || saving) return;
+    
+    try {
+      setSaving(true);
+      const res = await fetch(`${getBaseURL()}/groups/${groupId}/itineraries/${editingItineraryId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${auth.token}`
+        },
+        body: JSON.stringify(editFormData)
+      });
+      
+      if (res.ok) {
+        setEditingItineraryId(null);
+        setEditFormData({});
+        await loadSharedItineraries();
+        Alert.alert('Success', 'Itinerary updated successfully');
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        Alert.alert('Error', errorData.error || 'Failed to update itinerary');
+      }
+    } catch (err) {
+      console.error('[PlanScreen] Failed to update itinerary:', err);
+      Alert.alert('Error', 'Failed to update itinerary');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const renderItineraryCard = (itinerary) => {
+    const formatDate = (dateStr) => {
+      if (!dateStr) return '';
+      const date = new Date(dateStr);
+      return date.toLocaleDateString();
+    };
+
+    const isExpanded = expandedItineraryId === itinerary.id;
+    const itineraryComments = comments[itinerary.id] || [];
+
+    return (
+      <View key={itinerary.id} style={[styles.card, { marginTop: 16 }]}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+          <Text style={[styles.title, { flex: 1 }]}>{itinerary.title}</Text>
+          <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+            {itinerary.itinerary_type === 'ai_created' && (
+              <View style={{ backgroundColor: '#E0E7FF', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 }}>
+                <Text style={{ fontSize: 11, color: '#4338CA', fontWeight: '600' }}>AI</Text>
+              </View>
+            )}
+            <TouchableOpacity onPress={() => handleEditItinerary(itinerary)} style={{ padding: 4 }}>
+              <Ionicons name="create-outline" size={18} color="#2563EB" />
+            </TouchableOpacity>
+          </View>
+        </View>
+        
+        {itinerary.description && (
+          <Text style={[styles.desc, { marginBottom: 8 }]}>{itinerary.description}</Text>
+        )}
+        
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+          {itinerary.city && (
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="location-outline" size={14} color="#6B7280" />
+              <Text style={{ fontSize: 13, color: '#6B7280', marginLeft: 4 }}>{itinerary.city}</Text>
+            </View>
+          )}
+          {itinerary.budget && (
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="wallet-outline" size={14} color="#6B7280" />
+              <Text style={{ fontSize: 13, color: '#6B7280', marginLeft: 4 }}>{itinerary.budget}</Text>
+            </View>
+          )}
+          {itinerary.duration && (
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="time-outline" size={14} color="#6B7280" />
+              <Text style={{ fontSize: 13, color: '#6B7280', marginLeft: 4 }}>{itinerary.duration}</Text>
+            </View>
+          )}
+        </View>
+
+        {(itinerary.start_date || itinerary.end_date) && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+            <Ionicons name="calendar-outline" size={14} color="#6B7280" />
+            <Text style={{ fontSize: 13, color: '#6B7280', marginLeft: 4 }}>
+              {formatDate(itinerary.start_date)} - {formatDate(itinerary.end_date)}
+            </Text>
+          </View>
+        )}
+
+        {itinerary.shared_by_name && (
+          <Text style={{ fontSize: 12, color: '#9CA3AF', fontStyle: 'italic', marginTop: 8, marginBottom: 8 }}>
+            Shared by {itinerary.shared_by_name}
+          </Text>
+        )}
+
+        {/* Daily Plans Section */}
+        {(itinerary.days && itinerary.days.length > 0) || (itinerary.highlights && itinerary.highlights.length > 0) ? (
+          <View style={{ marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#E5E7EB' }}>
+            <Text style={{ fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 12 }}>
+              Daily Plan
+            </Text>
+            
+            {/* For user_created itineraries: show days */}
+            {itinerary.days && itinerary.days.length > 0 && (
+              <View>
+                {itinerary.days.map((day, index) => (
+                  <View key={day.id || index} style={{
+                    marginBottom: 12,
+                    padding: 12,
+                    backgroundColor: '#F9FAFB',
+                    borderRadius: 8,
+                    borderLeftWidth: 3,
+                    borderLeftColor: '#2563EB',
+                  }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                      <View style={{
+                        backgroundColor: '#2563EB',
+                        paddingHorizontal: 8,
+                        paddingVertical: 4,
+                        borderRadius: 4,
+                        marginRight: 8,
+                      }}>
+                        <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '700' }}>
+                          Day {day.day_number || index + 1}
+                        </Text>
+                      </View>
+                      {day.place && (
+                        <Text style={{ fontSize: 14, fontWeight: '600', color: '#111827', flex: 1 }}>
+                          {day.place}
+                        </Text>
+                      )}
+                      {(day.start_time || day.end_time) && (
+                        <Text style={{ fontSize: 12, color: '#6B7280' }}>
+                          {day.start_time || ''} {day.start_time && day.end_time ? '-' : ''} {day.end_time || ''}
+                        </Text>
+                      )}
+                    </View>
+                    {day.activities && (
+                      <Text style={{ fontSize: 13, color: '#374151', lineHeight: 18, marginTop: 4 }}>
+                        {day.activities}
+                      </Text>
+                    )}
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* For AI_created itineraries: show highlights */}
+            {!itinerary.days && itinerary.highlights && itinerary.highlights.length > 0 && (
+              <View>
+                {itinerary.highlights.map((highlight, index) => (
+                  <View key={index} style={{
+                    marginBottom: 10,
+                    padding: 10,
+                    backgroundColor: '#F9FAFB',
+                    borderRadius: 8,
+                    borderLeftWidth: 3,
+                    borderLeftColor: '#8B5CF6',
+                  }}>
+                    <Text style={{ fontSize: 13, color: '#374151', lineHeight: 18 }}>
+                      {highlight}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        ) : null}
+
+        {/* Comments Section */}
+        <TouchableOpacity
+          onPress={() => toggleItineraryExpanded(itinerary.id)}
+          style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: '#E5E7EB' }}
+        >
+          <Ionicons name={isExpanded ? "chevron-up-outline" : "chevron-down-outline"} size={18} color="#6B7280" />
+          <Text style={{ fontSize: 13, color: '#6B7280', marginLeft: 4 }}>
+            {itineraryComments.length} {itineraryComments.length === 1 ? 'comment' : 'comments'}
+          </Text>
+        </TouchableOpacity>
+
+        {isExpanded && (
+          <View style={{ marginTop: 12 }}>
+            {/* Comment Input */}
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+              <TextInput
+                style={{
+                  flex: 1,
+                  borderWidth: 1,
+                  borderColor: '#E5E7EB',
+                  borderRadius: 8,
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                  fontSize: 14,
+                }}
+                placeholder="Add a comment..."
+                value={commentText[itinerary.id] || ''}
+                onChangeText={(text) => setCommentText(prev => ({ ...prev, [itinerary.id]: text }))}
+                multiline
+                maxLength={500}
+              />
+              <TouchableOpacity
+                onPress={() => handleAddComment(itinerary.id)}
+                disabled={!commentText[itinerary.id]?.trim() || submittingComment[itinerary.id]}
+                style={{
+                  backgroundColor: '#2563EB',
+                  paddingHorizontal: 16,
+                  paddingVertical: 8,
+                  borderRadius: 8,
+                  justifyContent: 'center',
+                  opacity: (!commentText[itinerary.id]?.trim() || submittingComment[itinerary.id]) ? 0.5 : 1,
+                }}
+              >
+                {submittingComment[itinerary.id] ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Ionicons name="send-outline" size={18} color="#FFFFFF" />
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {/* Comments List */}
+            {loadingComments[itinerary.id] ? (
+              <ActivityIndicator style={{ marginVertical: 16 }} />
+            ) : itineraryComments.length === 0 ? (
+              <Text style={{ fontSize: 13, color: '#9CA3AF', fontStyle: 'italic', marginBottom: 8 }}>
+                No comments yet. Be the first to comment!
+              </Text>
+            ) : (
+              itineraryComments.map((comment) => (
+                <View key={comment.id} style={{ marginBottom: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+                    <Text style={{ fontSize: 13, fontWeight: '600', color: '#111827' }}>{comment.user_name || 'Anonymous'}</Text>
+                    <Text style={{ fontSize: 11, color: '#9CA3AF' }}>
+                      {new Date(comment.created_at).toLocaleDateString()}
+                    </Text>
+                  </View>
+                  <Text style={{ fontSize: 13, color: '#374151', lineHeight: 20 }}>{comment.comment}</Text>
+                </View>
+              ))
+            )}
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  if (!groupId || groupId === 0) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+        <Text style={{ color: '#666', textAlign: 'center' }}>No group selected</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ flex: 1 }}>
+      {/* Header with Share Button */}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <Text style={[styles.title, { fontSize: 20 }]}>Shared Itineraries</Text>
+        <TouchableOpacity
+          onPress={() => {
+            loadUserItineraries();
+            setShowShareModal(true);
+          }}
+          style={{
+            backgroundColor: '#2563EB',
+            paddingHorizontal: 16,
+            paddingVertical: 10,
+            borderRadius: 999,
+            flexDirection: 'row',
+            alignItems: 'center',
+          }}
+        >
+          <Ionicons name="add-outline" size={18} color="#FFFFFF" />
+          <Text style={{ color: '#FFFFFF', fontWeight: '700', marginLeft: 6 }}>Share</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Shared Itineraries List */}
+      {loading && (
+        <View style={{ paddingVertical: 16, alignItems: 'center' }}>
+          <ActivityIndicator />
+        </View>
+      )}
+
+      {!loading && sharedItineraries.map(renderItineraryCard)}
+
+      {!loading && sharedItineraries.length === 0 && (
+        <View style={[styles.card, { marginTop: 16 }]}>
+          <Text style={styles.title}>No shared itineraries yet</Text>
+          <Text style={styles.desc}>Share your saved itineraries to help plan your group trip.</Text>
+        </View>
+      )}
+
+      {/* Share Modal */}
+      {showShareModal && (
+        <Modal
+          visible={showShareModal}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setShowShareModal(false)}
+        >
+          <View style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            justifyContent: 'flex-end',
+          }}>
+            <View style={{
+              backgroundColor: '#FFFFFF',
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              padding: 20,
+              maxHeight: '80%',
+            }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <Text style={{ fontSize: 20, fontWeight: '700', color: '#111827' }}>Select Itinerary to Share</Text>
+                <TouchableOpacity onPress={() => setShowShareModal(false)}>
+                  <Ionicons name="close" size={24} color="#6B7280" />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView style={{ maxHeight: '70%' }}>
+                {loadingItineraries ? (
+                  <View style={{ padding: 20, alignItems: 'center' }}>
+                    <ActivityIndicator />
+                  </View>
+                ) : (
+                  <>
+                    {userItineraries.user_created.length > 0 && (
+                      <>
+                        <Text style={{ fontSize: 16, fontWeight: '600', color: '#374151', marginTop: 12, marginBottom: 8 }}>
+                          My Itineraries
+                        </Text>
+                        {userItineraries.user_created.map((itinerary) => (
+                          <TouchableOpacity
+                            key={`user-${itinerary.id}`}
+                            onPress={() => handleShareItinerary(itinerary, 'user_created')}
+                            disabled={sharing}
+                            style={[styles.card, { marginBottom: 12, opacity: sharing ? 0.5 : 1 }]}
+                          >
+                            <Text style={styles.title}>{itinerary.title}</Text>
+                            {itinerary.city && (
+                              <Text style={[styles.desc, { marginTop: 4 }]}>{itinerary.city}</Text>
+                            )}
+                          </TouchableOpacity>
+                        ))}
+                      </>
+                    )}
+
+                    {userItineraries.ai_created.length > 0 && (
+                      <>
+                        <Text style={{ fontSize: 16, fontWeight: '600', color: '#374151', marginTop: 12, marginBottom: 8 }}>
+                          AI-Generated Itineraries
+                        </Text>
+                        {userItineraries.ai_created.map((itinerary) => (
+                          <TouchableOpacity
+                            key={`ai-${itinerary.id}`}
+                            onPress={() => handleShareItinerary(itinerary, 'ai_created')}
+                            disabled={sharing}
+                            style={[styles.card, { marginBottom: 12, opacity: sharing ? 0.5 : 1 }]}
+                          >
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                              <Text style={[styles.title, { flex: 1 }]}>{itinerary.title}</Text>
+                              <View style={{ backgroundColor: '#E0E7FF', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 }}>
+                                <Text style={{ fontSize: 11, color: '#4338CA', fontWeight: '600' }}>AI</Text>
+                              </View>
+                            </View>
+                            {itinerary.city && (
+                              <Text style={[styles.desc, { marginTop: 4 }]}>{itinerary.city}</Text>
+                            )}
+                          </TouchableOpacity>
+                        ))}
+                      </>
+                    )}
+
+                    {userItineraries.user_created.length === 0 && userItineraries.ai_created.length === 0 && (
+                      <View style={{ padding: 20, alignItems: 'center' }}>
+                        <Text style={{ color: '#6B7280', textAlign: 'center' }}>
+                          You don't have any saved itineraries to share.
+                        </Text>
+                      </View>
+                    )}
+                  </>
+                )}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+      )}
+
+      {/* Edit Itinerary Modal */}
+      {editingItineraryId && (
+        <Modal
+          visible={!!editingItineraryId}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setEditingItineraryId(null)}
+        >
+          <View style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            justifyContent: 'flex-end',
+          }}>
+            <View style={{
+              backgroundColor: '#FFFFFF',
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              padding: 20,
+              maxHeight: '90%',
+            }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <Text style={{ fontSize: 20, fontWeight: '700', color: '#111827' }}>Edit Itinerary</Text>
+                <TouchableOpacity onPress={() => setEditingItineraryId(null)}>
+                  <Ionicons name="close" size={24} color="#6B7280" />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView style={{ maxHeight: '80%' }}>
+                <TextInput
+                  style={{
+                    borderWidth: 1,
+                    borderColor: '#E5E7EB',
+                    borderRadius: 8,
+                    paddingHorizontal: 12,
+                    paddingVertical: 10,
+                    fontSize: 16,
+                    marginBottom: 12,
+                  }}
+                  placeholder="Title"
+                  value={editFormData.title || ''}
+                  onChangeText={(text) => setEditFormData(prev => ({ ...prev, title: text }))}
+                />
+                
+                <TextInput
+                  style={{
+                    borderWidth: 1,
+                    borderColor: '#E5E7EB',
+                    borderRadius: 8,
+                    paddingHorizontal: 12,
+                    paddingVertical: 10,
+                    fontSize: 16,
+                    marginBottom: 12,
+                    minHeight: 80,
+                  }}
+                  placeholder="Description"
+                  value={editFormData.description || ''}
+                  onChangeText={(text) => setEditFormData(prev => ({ ...prev, description: text }))}
+                  multiline
+                />
+
+                <TextInput
+                  style={{
+                    borderWidth: 1,
+                    borderColor: '#E5E7EB',
+                    borderRadius: 8,
+                    paddingHorizontal: 12,
+                    paddingVertical: 10,
+                    fontSize: 16,
+                    marginBottom: 12,
+                  }}
+                  placeholder="City"
+                  value={editFormData.city || ''}
+                  onChangeText={(text) => setEditFormData(prev => ({ ...prev, city: text }))}
+                />
+
+                <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
+                  <TextInput
+                    style={{
+                      flex: 1,
+                      borderWidth: 1,
+                      borderColor: '#E5E7EB',
+                      borderRadius: 8,
+                      paddingHorizontal: 12,
+                      paddingVertical: 10,
+                      fontSize: 16,
+                    }}
+                    placeholder="Budget"
+                    value={editFormData.budget || ''}
+                    onChangeText={(text) => setEditFormData(prev => ({ ...prev, budget: text }))}
+                  />
+                  <TextInput
+                    style={{
+                      flex: 1,
+                      borderWidth: 1,
+                      borderColor: '#E5E7EB',
+                      borderRadius: 8,
+                      paddingHorizontal: 12,
+                      paddingVertical: 10,
+                      fontSize: 16,
+                    }}
+                    placeholder="Duration"
+                    value={editFormData.duration || ''}
+                    onChangeText={(text) => setEditFormData(prev => ({ ...prev, duration: text }))}
+                  />
+                </View>
+
+                <View style={{ flexDirection: 'row', gap: 12, marginBottom: 20 }}>
+                  <TextInput
+                    style={{
+                      flex: 1,
+                      borderWidth: 1,
+                      borderColor: '#E5E7EB',
+                      borderRadius: 8,
+                      paddingHorizontal: 12,
+                      paddingVertical: 10,
+                      fontSize: 16,
+                    }}
+                    placeholder="Start Date (YYYY-MM-DD)"
+                    value={editFormData.start_date || ''}
+                    onChangeText={(text) => setEditFormData(prev => ({ ...prev, start_date: text }))}
+                  />
+                  <TextInput
+                    style={{
+                      flex: 1,
+                      borderWidth: 1,
+                      borderColor: '#E5E7EB',
+                      borderRadius: 8,
+                      paddingHorizontal: 12,
+                      paddingVertical: 10,
+                      fontSize: 16,
+                    }}
+                    placeholder="End Date (YYYY-MM-DD)"
+                    value={editFormData.end_date || ''}
+                    onChangeText={(text) => setEditFormData(prev => ({ ...prev, end_date: text }))}
+                  />
+                </View>
+
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <TouchableOpacity
+                    onPress={() => setEditingItineraryId(null)}
+                    style={{
+                      flex: 1,
+                      backgroundColor: '#F3F4F6',
+                      paddingVertical: 12,
+                      borderRadius: 8,
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Text style={{ color: '#374151', fontWeight: '600' }}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={handleSaveEdit}
+                    disabled={saving}
+                    style={{
+                      flex: 1,
+                      backgroundColor: '#2563EB',
+                      paddingVertical: 12,
+                      borderRadius: 8,
+                      alignItems: 'center',
+                      opacity: saving ? 0.5 : 1,
+                    }}
+                  >
+                    {saving ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <Text style={{ color: '#FFFFFF', fontWeight: '600' }}>Save</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+      )}
+    </View>
+  );
+};
+
 const SettingsScreen = ({ groupId }) => {
   const [auth, setAuth] = useState({ token: null, userId: null });
   const [groupName, setGroupName] = useState('');
@@ -1993,14 +2786,13 @@ const Notifications = ({ groupId }) => {
     </View>
   );
 };
-// ChatScreen component with member search
+// ChatScreen component - shows single group chat for all members
 const ChatScreen = ({ groupId }) => {
   const [auth, setAuth] = useState({ token: null, userId: null });
-  const [members, setMembers] = useState([]);
+  const [conversation, setConversation] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedConversation, setSelectedConversation] = useState(null);
-  const [selectedMember, setSelectedMember] = useState(null);
+  const [error, setError] = useState(null);
+  const [groupName, setGroupName] = useState('');
 
   useEffect(() => {
     (async () => {
@@ -2014,213 +2806,115 @@ const ChatScreen = ({ groupId }) => {
     [auth.token]
   );
 
-  // Load group members
-  const loadMembers = useCallback(async () => {
-    if (!groupId || !auth.token) return;
+  // Load group conversation (single group chat)
+  const loadGroupChat = useCallback(async () => {
+    if (!groupId || !auth.token) {
+      setLoading(false);
+      return;
+    }
     
     try {
       setLoading(true);
-      const res = await fetch(`${getBaseURL()}/groups/${groupId}/members`, {
+      setError(null);
+      
+      // Get group conversation (ensures it exists and adds user to it if not already)
+      const res = await fetch(`${getBaseURL()}/groups/${groupId}/chat`, {
         headers: authHeaders
       });
       
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${res.status}`);
+      }
       
-      const data = await res.json();
-      console.log('[ChatScreen] Raw API response:', data);
+      const conv = await res.json();
+      console.log('[ChatScreen] Group conversation loaded:', conv);
+      setConversation(conv);
       
-      // Handle both { members: [...] } and direct array response
-      const membersArray = Array.isArray(data) ? data : (data?.members || []);
-      console.log('[ChatScreen] Extracted members array:', membersArray.length, membersArray);
-      
-      // Map members to consistent structure (same as MembersScreen)
-      const mappedMembers = membersArray.map((r) => {
-        // Handle multiple possible field names from API (backend uses snake_case: first_name, last_name)
-        const userId = Number(r.userId ?? r.user_id ?? r.userid ?? r.id ?? 0);
-        const firstName = (r.first_name || r.firstName || "").trim();
-        const lastName = (r.last_name || r.lastName || "").trim();
-        const email = (r.email || "").trim();
-        
-        const member = {
-          userId,
-          first_name: firstName,
-          last_name: lastName,
-          email,
-          role: r.role || "member",
-        };
-        console.log('[ChatScreen] Mapped member:', member);
-        return member;
-      });
-      
-      console.log('[ChatScreen] Total mapped members:', mappedMembers.length);
-      
-      // Filter out current user
-      const otherMembers = mappedMembers.filter(m => {
-        const isOther = Number(m.userId) !== Number(auth.userId);
-        if (!isOther) {
-          console.log('[ChatScreen] Filtered out current user:', m);
+      // Also get group name for display
+      if (conv.title) {
+        setGroupName(conv.title);
+      } else {
+        // Fetch group name separately if not in conversation
+        const groupRes = await fetch(`${getBaseURL()}/groups/${groupId}`, {
+          headers: authHeaders
+        });
+        if (groupRes.ok) {
+          const groupData = await groupRes.json();
+          setGroupName(groupData.name || 'Group Chat');
         }
-        return isOther;
-      });
-      console.log('[ChatScreen] Other members (after filtering current user):', otherMembers.length, otherMembers);
-      setMembers(otherMembers);
+      }
     } catch (err) {
-      console.error('[ChatScreen] Failed to load members:', err);
+      console.error('[ChatScreen] Failed to load group chat:', err);
+      setError(err.message || 'Failed to load group chat');
     } finally {
       setLoading(false);
     }
-  }, [groupId, auth.token, authHeaders, auth.userId]);
+  }, [groupId, auth.token, authHeaders]);
 
   useEffect(() => {
-    loadMembers();
-  }, [loadMembers]);
+    loadGroupChat();
+  }, [loadGroupChat]);
 
-  // Filter members by search query
-  const filteredMembers = useMemo(() => {
-    if (!searchQuery.trim()) return members;
-    
-    const query = searchQuery.toLowerCase().trim();
-    const filtered = members.filter(m => {
-      // Build full name from first and last name
-      const fullName = `${(m.first_name || '').trim()} ${(m.last_name || '').trim()}`.trim().toLowerCase();
-      const firstName = (m.first_name || '').trim().toLowerCase();
-      const lastName = (m.last_name || '').trim().toLowerCase();
-      const email = (m.email || '').trim().toLowerCase();
-      
-      // Check if query matches any part of name or email
-      return fullName.includes(query) || 
-             firstName.includes(query) || 
-             lastName.includes(query) || 
-             email.includes(query);
-    });
-    
-    console.log('[ChatScreen] Search query:', query, 'Results:', filtered.length, filtered);
-    return filtered;
-  }, [members, searchQuery]);
-
-  // Ensure direct conversation exists and open it
-  const openConversation = useCallback(async (member) => {
-    if (!auth.userId || !auth.token) return;
-    
-    try {
-      // Ensure direct conversation exists
-      const res = await fetch(`${getBaseURL()}/follows/ensure-direct`, {
-        method: 'POST',
-        headers: { ...authHeaders, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          follower_id: auth.userId,
-          following_id: member.userId
-        })
-      });
-      
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      
-      const data = await res.json();
-      const conversation = data.conversation;
-      
-      if (conversation) {
-        setSelectedConversation(conversation);
-        setSelectedMember(member);
-      }
-    } catch (err) {
-      console.error('[ChatScreen] Failed to open conversation:', err);
-      Alert.alert('Error', 'Failed to start conversation. Please try again.');
-    }
-  }, [auth.userId, auth.token, authHeaders]);
-
-  // If conversation is selected, show chat window
-  if (selectedConversation) {
+  // Show loading state
+  if (loading) {
     return (
-      <ChatWindow
-        auth={auth}
-        headers={authHeaders}
-        conversation={selectedConversation}
-        memberName={selectedMember ? `${selectedMember.first_name || ''} ${selectedMember.last_name || ''}`.trim() || selectedMember.email : 'Member'}
-        onBack={() => {
-          setSelectedConversation(null);
-          setSelectedMember(null);
-        }}
-        onMessageSent={() => {
-          // Optionally refresh conversations list
-        }}
-      />
+      <View style={styles.card}>
+        <View style={{ padding: 24, alignItems: 'center' }}>
+          <ActivityIndicator size="large" color="#0F70F0" />
+          <Text style={{ marginTop: 12, color: '#5B6B7B' }}>Loading group chat...</Text>
+        </View>
+      </View>
     );
   }
 
-  // Show member list with search
+  // Show error state
+  if (error) {
+    return (
+      <View style={styles.card}>
+        <View style={{ padding: 24, alignItems: 'center' }}>
+          <Ionicons name="alert-circle-outline" size={48} color="#E53E3E" />
+          <Text style={{ marginTop: 12, color: '#E53E3E', textAlign: 'center' }}>{error}</Text>
+          <TouchableOpacity
+            onPress={loadGroupChat}
+            style={[styles.button, { backgroundColor: '#0F70F0', marginTop: 16 }]}
+          >
+            <Text style={{ color: '#FFFFFF', fontWeight: '600' }}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  // Show group chat if conversation is loaded
+  if (conversation) {
+    return (
+      <View style={{ flex: 1 }}>
+        <ChatWindow
+          auth={auth}
+          headers={authHeaders}
+          conversation={conversation}
+          memberName={groupName || conversation.title || 'Group Chat'}
+          isGroupChat={true}
+          onMessageSent={() => {
+            // Refresh if needed
+          }}
+        />
+      </View>
+    );
+  }
+
+  // Fallback
   return (
     <View style={styles.card}>
       <Text style={styles.title}>Group Chat</Text>
-      <Text style={styles.desc}>Search and message group members</Text>
-      
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <Ionicons name="search-outline" size={20} color="#5B6B7B" style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search members by name or email..."
-          placeholderTextColor="#8CA0B3"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity
-            onPress={() => setSearchQuery('')}
-            style={styles.clearButton}
-          >
-            <Ionicons name="close-circle" size={20} color="#5B6B7B" />
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Members List */}
-      {loading ? (
-        <View style={{ padding: 24, alignItems: 'center' }}>
-          <ActivityIndicator size="large" color="#0F70F0" />
-          <Text style={{ marginTop: 12, color: '#5B6B7B' }}>Loading members...</Text>
-        </View>
-      ) : filteredMembers.length === 0 ? (
-        <View style={{ padding: 24, alignItems: 'center' }}>
-          <Ionicons name="people-outline" size={48} color="#C4D1E0" />
-          <Text style={{ marginTop: 12, color: '#5B6B7B', textAlign: 'center' }}>
-            {searchQuery ? 'No members found matching your search' : 'No members to chat with'}
-          </Text>
-        </View>
-      ) : (
-        <FlatList
-          data={filteredMembers}
-          keyExtractor={(item) => String(item.userId)}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.memberItem}
-              onPress={() => openConversation(item)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.memberAvatar}>
-                <Text style={styles.memberAvatarText}>
-                  {(item.first_name?.[0] || item.email?.[0] || '?').toUpperCase()}
-                </Text>
-              </View>
-              <View style={styles.memberInfo}>
-                <Text style={styles.memberName}>
-                  {`${item.first_name || ''} ${item.last_name || ''}`.trim() || item.email || 'Unknown'}
-                </Text>
-                <Text style={styles.memberEmail} numberOfLines={1}>
-                  {item.email}
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#C4D1E0" />
-            </TouchableOpacity>
-          )}
-          contentContainerStyle={{ paddingBottom: 16 }}
-        />
-      )}
+      <Text style={styles.desc}>No conversation available</Text>
     </View>
   );
 };
 
 // ChatWindow component for displaying messages
-const ChatWindow = ({ auth, headers, conversation, memberName, onBack, onMessageSent }) => {
+const ChatWindow = ({ auth, headers, conversation, memberName, onBack, onMessageSent, isGroupChat = false }) => {
   const listRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
@@ -2335,10 +3029,10 @@ const ChatWindow = ({ auth, headers, conversation, memberName, onBack, onMessage
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={styles.chatTitle} numberOfLines={1}>
-            {memberName || 'Member'}
+            {memberName || (isGroupChat ? 'Group Chat' : 'Member')}
           </Text>
           <Text style={styles.chatMeta} numberOfLines={1}>
-            Direct message
+            {isGroupChat ? 'Group chat • All members' : 'Direct message'}
           </Text>
         </View>
       </View>
@@ -2368,8 +3062,17 @@ const ChatWindow = ({ auth, headers, conversation, memberName, onBack, onMessage
             keyExtractor={(m, i) => String(m.id ?? i)}
             renderItem={({ item }) => {
               const isMe = Number(item.sender_id) === Number(auth.userId);
+              const sender = item.sender || {};
+              const senderName = sender.first_name && sender.last_name 
+                ? `${sender.first_name} ${sender.last_name}`.trim()
+                : sender.email || sender.name || 'Unknown';
               return (
                 <View style={[styles.messageBubble, isMe ? styles.messageBubbleMe : styles.messageBubbleOther]}>
+                  {isGroupChat && !isMe && (
+                    <Text style={[styles.messageSender, styles.messageTextOther]}>
+                      {senderName}
+                    </Text>
+                  )}
                   <Text style={[styles.messageText, isMe ? styles.messageTextMe : styles.messageTextOther]}>
                     {item.content || ''}
                   </Text>
@@ -2493,6 +3196,7 @@ const GroupDashboard = () => {
   const Body = useMemo(() => {
     switch (selectedTab) {
       case 'polls':        return <PollsScreen groupId={groupId} />;
+      case 'plan':         return <PlanScreen groupId={groupId} />;
       case 'members':      return <MembersScreen groupId={groupId} />;
       case 'settings':     return <SettingsScreen groupId={groupId} />;
       case 'notification': return <Notifications groupId={groupId} />;
@@ -2825,6 +3529,12 @@ const styles = StyleSheet.create({
   },
   messageTextOther: {
     color: '#0F3A6B',
+  },
+  messageSender: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 4,
+    opacity: 0.8,
   },
   messageTime: {
     fontSize: 11,
